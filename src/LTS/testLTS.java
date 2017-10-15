@@ -1,4 +1,5 @@
 package LTS;
+import java.io.*;
 
 /**
  * A simple class to test the classes
@@ -24,7 +25,15 @@ public class testLTS {
 		test.addNode(node3, "N3");
 		test.toDot("sample.dot");
 		*/
-		test.fromAlloyXML("model.xml");
+		test.fromAlloyXML("model1.xml");
+		try{
+			PrintWriter writer = new PrintWriter("Metamodel.als", "UTF-8");
+			test.toAlloyMetaModel(writer);
+			writer.close();
+		}
+		catch(IOException e){
+			System.out.println("I/O Error");
+		}
 	}
 
 }

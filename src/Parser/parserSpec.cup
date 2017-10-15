@@ -1,0 +1,592 @@
+/**
+*	This is a parser for the specification language
+*	it parses the grammar and construct an abstract syntax tree
+*/
+package Parser;
+
+import java_cup.runtime.*;
+import net.sf.javabdd.*;
+import java.util.*;
+import Spec.*;
+import Formula.*;
+
+parser code {:
+    public void syntax_error(Symbol s){
+        System.err.println("\n\nSyntax Error - line: " +  (s.left+1) +  " - value:" + s.value);
+        
+    }
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {    
+         //System.err.println("\n\nUnrecovered Syntax error line: " +  (s.left+1) +  " - value:" + s.value);
+    	report_fatal_error("", null);
+	}                          	
+:}
+
+	   
+terminal SPEC;
+terminal PLUS;
+terminal MINUS;
+terminal ASTERISK;
+terminal SLASH;
+terminal LPARENT;
+terminal RPARENT;
+terminal LBRACKET;
+terminal RBRACKET;
+terminal LBRACE;
+terminal RBRACE;
+terminal SEMICOLON;
+terminal COLON;
+terminal COMMA;
+terminal OR;
+terminal AND;
+//terminal GT;
+terminal LT;
+terminal INT;
+terminal BOOL;
+terminal INIT;
+terminal PROCESS;
+terminal USES;
+terminal MAIN;
+terminal GLOBAL;
+terminal PRE;
+terminal POST;
+terminal INVARIANT;
+terminal NEG;
+terminal FORALL;
+terminal EXIST;
+terminal NEXT;
+terminal FUTURE;
+terminal UNTIL;
+terminal WEAKUNTIL;
+terminal IMPLIES;
+terminal IFF;
+terminal EQ;
+terminal NEQ;
+terminal GLOBALLY;
+terminal Integer INTEGER;
+terminal TRUE,FALSE;
+terminal String ID;       
+terminal ACTION;  
+terminal FRAME;
+terminal AV;
+terminal OWN;
+terminal PROPERTY;
+terminal DOT;
+                
+                
+non terminal  ExprAux primary, expr, disjunction, conjunction, relation, comparison, addition, term, factor;
+non terminal  ExprAux initialCond;
+non terminal  HashMap<String, Type> declList;
+non terminal  HashMap<String, Type> decl;
+non terminal  LinkedList<String> varDecls;
+non terminal  ProcessAux process, bodyProcess;
+non terminal  HashMap<String, Type> paramList;
+non terminal  HashMap<String, Type> param;
+non terminal  LinkedList<ProcessAux> processList;
+non terminal  HashMap<String,Type> globalDecl;
+non terminal  HashMap<String,Type> globalVarList;
+non terminal  SpecAux specification;
+non terminal  HashMap<String, String> proc, processDecl;
+non terminal  HashMap<String, String> program, body;
+non terminal  Type type;
+non terminal  SpecAux mainSpecification;
+non terminal  ExprAux temporalFormula;
+non terminal  ExprAux precond;
+non terminal  ExprAux postcond;
+non terminal  LinkedList<ExprAux> invariantList;
+non terminal  ExprAux invariant;
+non terminal  ActionAux actiondef;
+non terminal  LinkedList<ActionAux> actionlist;
+//non terminal  LinkedList<String> frame;
+//non terminal  Clause clause;
+//non terminal  LinkedList<Clause> clauses;
+
+//precedence left LPARENT, RPARENT;
+precedence left IMPLIES, IFF;
+precedence left OR;
+precedence left AND;
+precedence left PLUS; 
+precedence left MINUS;
+precedence left ASTERISK;
+precedence left SLASH;
+precedence left NEG;
+precedence left EQ, NEQ;
+precedence nonassoc OWN, AV;
+precedence nonassoc EXIST, FORALL, GLOBALLY, FUTURE, NEXT, WEAKUNTIL, UNTIL;
+precedence left DOT;
+
+
+// The grammar:
+
+start with mainSpecification;
+
+mainSpecification ::= specification:prog {: RESULT = prog; :}
+                    ;
+
+specification ::=  
+                  
+                   SPEC ID:name globalVarList:varList SEMICOLON  processList:pList program:main PROPERTY COLON expr:gf  SEMICOLON
+                                                                                 {: SpecAux spec= new SpecAux(name);
+																					spec.addAllSharedVars(varList);
+																					spec.addAllProcesses(pList);
+																					spec.addInvariant(gf);
+																					Set<String> keys = main.keySet();
+																					Iterator<String> it = keys.iterator();
+																					while (it.hasNext()){
+																						String current = it.next();
+																						spec.addInstance(current, main.get(current));
+																					}
+																					RESULT = spec;
+                                                                                 :}
+
+                                                                
+                  |  SPEC ID:name processList:pList program:main PROPERTY COLON temporalFormula:gf  SEMICOLON  {:  	  SpecAux spec = new SpecAux(name);
+																											    	  spec.addAllProcesses(pList);
+																													  spec.addInvariant(gf);																	 
+																													  RESULT = spec;
+                                                     			  											   :}
+                  | SPEC ID:name globalVarList:varList SEMICOLON  processList:pList program:main 
+                                                                                 {: SpecAux spec= new SpecAux(name);
+																					spec.addAllSharedVars(varList);
+																					spec.addAllProcesses(pList);
+																					RESULT = spec;
+                                                                                 :}
+                 
+                 |   SPEC ID:name processList:pList program:main  											   {:  	  SpecAux spec = new SpecAux(name);     
+																											    	  spec.addAllProcesses(pList);																								  																 
+																													  RESULT = spec;
+                                                     			  											   :}                                 			  											                                              			  											   
+               ;
+
+
+
+globalVarList ::=  globalDecl:listD {:   RESULT = listD;   :}  
+                | globalVarList:list SEMICOLON globalDecl:listD  {: 
+																	//HashMap<String,String> d = new HashMap<String, String>(); 
+																	
+																	Set<String> keys = listD.keySet();
+																	Iterator<String> it = keys.iterator();
+																	while(it.hasNext()){
+																		String elem = it.next();
+																		if (list.containsKey(elem)){
+																			parser.report_error("Repeated var declaration, line:"+listleft, list);
+																		}
+																		else{
+																			list.put(elem, listD.get(elem));
+																		}
+																	}
+																	RESULT = list;
+                                                                 :}            
+            ;
+    
+globalDecl ::=  varDecls:listNames COLON type:t {:		HashMap<String, Type> vars = new HashMap<String,Type>();	
+														for (int i = 0; i < listNames.size(); i++){
+														  	if (vars.containsKey(listNames.get(i))){ // if repeated var then error
+																parser.report_error("Repeated var declaration, line:"+listNamesleft, listNames);
+															}
+															else{
+																vars.put(listNames.get(i), t);
+															}
+														}
+														RESULT = vars;
+                                                :}
+       ;
+
+processList  ::= process:p  {: 
+                               LinkedList<ProcessAux> list = new LinkedList<ProcessAux>();
+							   list.add(p);
+							   RESULT = list;   
+                            :}
+
+              | processList:list process:p  {: list.add(p);
+                                               RESULT = list; 
+                                            :}
+              ;
+
+process ::= PROCESS ID:name USES varDecls:listC bodyProcess:proc {:  
+                                                                    proc.setName(name);
+																	//proc.addAllLocalVars(listC);
+																	RESULT = proc;
+																 :}
+           | PROCESS ID:name LPARENT paramList:listP RPARENT USES varDecls:listC bodyProcess:proc {: proc.setName(name);
+                                                                                                     //proc.addAllLocalVars(listC);
+                                                                                                     RESULT = proc;
+                                                                                                  :}
+
+           | PROCESS ID:name LPARENT paramList:listP RPARENT  bodyProcess:proc                  {:   proc.setName(name);
+                                                                                                     //proc.setParamList(listP);
+                                                                                                     RESULT = proc;
+                                                                                                  :}
+
+
+
+           | PROCESS ID:name bodyProcess:proc {:  proc.setName(name);
+                                                  RESULT = proc;
+                                              :}
+           ;
+
+paramList ::= param:p {:
+                             RESULT = p;
+                      :}  
+            | paramList:list COMMA param:p  {:  
+                                                Set<String> keys = p.keySet();
+												Iterator<String> it = keys.iterator();
+												while(it.hasNext()){
+													String par = it.next();
+													list.put(par, p.get(par));
+												}
+												RESULT = list;
+                                            :}
+            
+            ;
+    
+                
+param ::= ID:name COLON type:t {:  HashMap<String, Type> dec = new HashMap<String, Type>();
+								   dec.put(name, t);
+                               :}
+       ;
+bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: ProcessAux proc = new ProcessAux(listDleft);
+																																					   proc.setInit(init);	
+																																					   proc.addAllLocalVars(listD);
+																																					   //proc.setPre(pre);
+																																					   //proc.setPost(post);
+																																					   proc.addAllActions(aList);
+																																					   proc.addAllInvs(inv);						
+                                                                                                                                     			       RESULT = proc;
+                                                                                                                                      :}
+          
+             | LBRACE initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 		   ProcessAux proc = new ProcessAux(initleft);
+                                                                                                                                       proc.setInit(init);	
+                                                                                                                                       //proc.setPre(pre);
+																																	   //proc.setPost(post);
+																																	   proc.addAllActions(aList);	
+																																	   proc.addAllInvs(inv);						
+                                                                                                                                       RESULT = proc;   
+                                                                                                                          :}
+          ;                
+
+actionlist::= actiondef:a {: LinkedList<ActionAux> res = new LinkedList<ActionAux>();
+							 res.add(a);
+							 RESULT = res;			 
+						  :}
+			| actionlist:listA actiondef:a {: listA.add(a);
+											  RESULT = listA;
+										   :} 
+			;
+			
+// NOTE: ADD PARAMETERS TO ACTIONS
+actiondef ::= ACTION ID:name LPARENT RPARENT LBRACE FRAME COLON varDecls:frameList SEMICOLON  precond:pre SEMICOLON postcond:post SEMICOLON RBRACE {:
+																													 ActionAux a= new ActionAux(name);		
+																													 a.setPre(pre);
+																													 a.setPost(post);
+																													 a.addAllFrame(frameList);
+			 																										 RESULT = a;	
+																												  :}
+			|
+			ACTION ID:name LPARENT RPARENT LBRACE   precond:pre SEMICOLON postcond:post SEMICOLON RBRACE {:
+																													 ActionAux a= new ActionAux(name);		
+																													 a.setPre(pre);
+																													 a.setPost(post);																													 
+			 																										 RESULT = a;	
+																												  :}
+			
+			;
+
+initialCond ::= INIT COLON expr:e  {: RESULT =  e;  
+								  :} 
+              ;
+
+
+declList ::= decl:listD {:  
+                            RESULT = listD;
+                        :}  
+            | declList:list SEMICOLON decl:listD  {: 
+													Set<String> keys = listD.keySet();
+													Iterator<String> it = keys.iterator();
+													
+													while (it.hasNext()){
+														String var = it.next();
+														if (list.containsKey(var))
+															parser.report_error("Duplicated var declaration, line: "+listleft, list);	
+														else
+															list.put(var, listD.get(var));
+													}	
+													RESULT = list;
+                                                  :}
+            ;
+      
+decl ::= varDecls:listNames COLON type:t {: 
+											HashMap<String, Type> res = new HashMap<String, Type>();
+											for (int i=0; i<listNames.size(); i++){
+												if (res.containsKey(listNames.get(i)))
+													parser.report_error("Duplicated var declaration, line: "+listNamesleft, listNames);	
+												else
+													res.put(listNames.get(i), t);
+											}
+											RESULT = res;
+                                          :}
+       ;
+
+
+varDecls ::= ID:i  {:  LinkedList<String> list = new LinkedList<String>();
+                       list.add(i);
+                       RESULT = list; 
+                  :}      
+            | varDecls:list COMMA ID:i {: 
+											if (list.contains(i))
+										  		parser.report_error("Duplicated var declaration, line: "+ileft, i);	
+										  	else{
+												list.add(i);
+                                          		RESULT = list;
+											}
+                                       :}
+            ; 
+
+type ::=   INT    {: 
+					RESULT =Type.INT;
+					//RESULT = new String("INT"); 
+				  :}
+         | BOOL   {: 
+					RESULT = Type.BOOL;
+					//RESULT = new String("BOOL"); 
+				   :}
+         ;
+                   
+//precond ::= PRE COLON clauses:list {: Precondition pre = new Precondition();
+//									  pre.addAllFormulas(list);
+//									  RESULT = pre;
+//    							   :}
+//		;
+precond ::= PRE COLON expr:f {: RESULT =  f;   :}
+	    ;
+	    
+postcond ::= POST COLON expr:f {: RESULT =  f; :} 
+		;
+		
+invariantList ::= invariant:i {:
+								LinkedList<ExprAux> list = new LinkedList<ExprAux>();
+								list.add(i);
+								RESULT = list;
+							  :}
+				  | invariantList:list SEMICOLON invariant:i {:
+																list.add(i);
+																RESULT = list;
+															 :}
+			   ;
+
+invariant ::= 	INVARIANT COLON expr:f {:
+													RESULT = f;
+									  :}		     
+			;
+                                           
+
+
+expr ::= disjunction : val {: RESULT = val;  :};
+
+disjunction ::= conjunction:val {: RESULT = val; :}
+              | disjunction:op1 OR conjunction:op2 {:  RESULT = new ExprAux(Operator.OR, op1, op2, op1left);		
+												  :}								  
+			  ;         
+                
+conjunction  ::= comparison:val {: RESULT = val; :}
+              | conjunction:op1 AND comparison:op2 {:   RESULT = new ExprAux(Operator.AND, op1, op2, op1left);
+												   :}
+              ;                 
+
+comparison ::= relation:val {: RESULT = val;  :}
+              | relation:op1 EQ relation:op2  {: RESULT = new ExprAux(Operator.EQ, op1, op2, op1left); :};
+                      
+relation    ::= addition:val {: RESULT = val; :}
+              ; 
+                
+addition        ::= term:val{: RESULT = val;  :}
+              | addition:op1 PLUS term:op2 {: 
+											 ExprAux sum = new ExprAux(Operator.SUM, op1, op2, op1left);
+											 RESULT = sum;
+										   :}
+              | addition:op1 MINUS term:op2 {:
+											  ExprAux sum = new ExprAux(Operator.MINUS, op1, op2, op1left);
+											  RESULT = sum;
+											:}
+              ; 
+term    ::= factor:val  {: RESULT = val; :}
+
+          | term:op1 ASTERISK factor:op2 {:
+										   ExprAux m = new ExprAux(Operator.MULT, op1, op2, op1left);
+										   RESULT = m;
+										 :}
+          | term:op1 SLASH factor:op2 {:
+   										ExprAux d = new ExprAux(Operator.DIV, op1,  op2, op1left);
+										RESULT = d;
+									  :}
+          ;
+                
+factor  ::= primary:op {:   RESULT = op;  :}     
+           | NEG factor:f  {: RESULT = new ExprAux(Operator.NOT, f, null, fleft); :}
+        ;            
+                        
+primary ::= INTEGER:v  {: ExprAux c = new ExprAux(v, vleft);
+						  RESULT = c;
+					   :}
+          | TRUE:t {: 
+					ExprAux c = new ExprAux(true, tleft);
+					RESULT = c;	
+				  :}
+          | FALSE:f {:   
+					ExprAux c = new ExprAux(false, fleft);
+					RESULT = c;
+				 :}     
+      //    | ID:id {:
+	  //				ExprAux v = new ExprAux(id, idleft);
+	  //				v.setOwner("global"); // if no owner it is global
+	  //				RESULT = v;
+	  //		     :} 
+		  | ID:owner DOT ID:id {:
+									ExprAux v = new ExprAux(owner+"."+id, idleft);
+									v.setOwner(owner); // we set the owner could be this, global or any other process
+									v.setUnqualifiedName(id);
+									RESULT = v;
+			     				:}   
+			     				
+		  | GLOBAL DOT ID:id {:
+									ExprAux v = new ExprAux("global."+id, idleft);
+									v.setOwner("global"); // we set the owner could be this, global or any other process
+									v.setUnqualifiedName(id);
+									RESULT = v;
+			     				:}       				    
+          //| LPARENT expr:ex RPARENT {:  RESULT = ex; :}
+		  | AV LPARENT GLOBAL DOT ID:id RPARENT {: 
+													ExprAux v = new ExprAux("global."+id, idleft);
+													v.setOwner("global");
+													v.setUnqualifiedName(id);
+													RESULT = new ExprAux(Operator.AV, v, null, idleft); 
+												:}
+		  | OWN LPARENT GLOBAL DOT ID:id RPARENT {:
+													ExprAux v = new ExprAux("global."+id, idleft);
+													v.setOwner("global");
+													v.setUnqualifiedName(id);
+													RESULT = new ExprAux(Operator.OWN, v, null, idleft);  
+												 :}
+		  | LPARENT expr:ex RPARENT 	{:  RESULT = ex; :}
+	//	  | NEG expr:ex					{:	RESULT = new ExprAux(Operator.NOT, ex, null, exleft); :}
+		  | temporalFormula:f			{:	RESULT = f;  :}
+          ;
+			
+temporalFormula 	::=		
+      //       		NEG temporalFormula:p 									{: RESULT = new ExprAux(Operator.NOT, p, null, pleft); :}
+      //      | 		LPARENT temporalFormula:p RPARENT 						{: RESULT = p;   :}           
+      //      |		expr:e													{: RESULT = e; :}
+      //      | 		temporalFormula:p AND temporalFormula:q 			 	{: RESULT = new ExprAux(Operator.AND, p, q, pleft);  :}
+      //      | 		temporalFormula:p OR temporalFormula:q 					{: RESULT = new ExprAux(Operator.OR, p, q, pleft);  :}
+      //      | 		temporalFormula:p IMPLIES temporalFormula:q 			{: RESULT = new ExprAux(Operator.IMP, p, q, pleft);  :}
+           // |		temporalFormula:p IFF temporalFormula:q			 		{: RESULT = new Implication(p, q);	:}
+	//		| 		temporalFormula:p EQ temporalFormula:q 					{: RESULT = new ExprAux(Operator.EQ, p, q, pleft); :}
+          //  |		temporalFormula:p NEQ temporalFormula:q		 			{: RESULT = new EqComparison(p, q); :}
+			|	 	EXIST NEXT LBRACKET expr:s RBRACKET 							{: RESULT = new ExprAux(Operator.EX, s, null, sleft); :}
+            | 		EXIST GLOBALLY LBRACKET expr:s RBRACKET						{: RESULT = new ExprAux(Operator.EG, s, null, sleft); :}
+           // |		EXIST FUTURE temporalFormula:s 							{: RESULT = new EG(s); :}
+            |		EXIST LBRACKET expr:p UNTIL expr:q  RBRACKET		{: RESULT = new ExprAux(Operator.EU, p, q, pleft); :}
+            |		EXIST LBRACKET expr:p WEAKUNTIL temporalFormula:q RBRACKET 	{: RESULT = new ExprAux(Operator.EW, p, q, pleft); :}	
+            |		EXIST FUTURE LBRACKET expr:q RBRACKET 						{: RESULT = new ExprAux(Operator.EF, q, null, qleft); :}		
+			|	 	FORALL NEXT LBRACKET expr:s  RBRACKET							{: RESULT = new ExprAux(Operator.AX, s, null, sleft); :}
+            | 		FORALL GLOBALLY LBRACKET expr:s RBRACKET					{: RESULT = new ExprAux(Operator.AG, s, null, sleft); :}
+           // |		FORALL FUTURE temporalFormula:s 						{: RESULT = new AF(s); :}
+            |		FORALL LBRACKET expr:p UNTIL expr:q RBRACKET 		{: RESULT = new ExprAux(Operator.AU, p, q, pleft);	:}
+            |		FORALL LBRACKET expr:p WEAKUNTIL expr:q RBRACKET 	{: RESULT = new ExprAux(Operator.AW, p, q, pleft);	:}
+            |		FORALL FUTURE LBRACKET expr:q RBRACKET 						{: RESULT = new ExprAux(Operator.AF, q, null, qleft); :}		
+		;
+
+//clauses ::= LPARENT clause:cl RPARENT {:
+//										LinkedList<Clause> list = new LinkedList<Clause>();
+//										list.add(cl);
+//										RESULT = list;
+//									  :}
+//		  | LPARENT clauses:list RPARENT OR LPARENT clause:cl RPARENT  {:
+//																			list.add(cl);
+//																			RESULT = list;
+//																		:} 
+//		  | TRUE {: 
+//					LinkedList<Clause> list = new LinkedList<Clause>();
+//					BoolConstant c = new BoolConstant(true);
+//					list.add(c);
+//					RESULT = list;
+//				 :}
+//		  | FALSE {: 
+//					LinkedList<Clause> list = new LinkedList<Clause>();
+//					BoolConstant c = new BoolConstant(false);
+//					list.add(c);
+//					RESULT = list;
+//				  :}
+//         ;
+         
+//clause ::= ID:id  {: BoolVar v = new BoolVar(id); /
+//					 Clause c = new Clause();
+//					 c.addPosElem(c);
+//					 RESULT = c;
+//				  :}
+//         | NEG ID:id {:
+//						ElemNegation neg = new ElemNegation(New BoolVar());
+//						Clause c = new Clause();
+//						c.addNegElem(c);
+//						RESULT = c;
+//					 :}
+//         | LPARENT expr:e1 EQ expr:e2 RPARENT {:
+//												EqComparation eq = new EqComparation(e1, e2);
+//												RESULT =  eq;
+//											:}
+//         | NEG  LPARENT expr:e1 EQ expr:e2 RPARENT {:
+//													ElemNegation neg = new ElemNegation(new EqComparation(e1,e2));	
+//													RESULT = neg;
+//												   :}
+//         | clause:c1 AND clause:c2 {: 
+//										c1.addClause(c2);
+//										RESULT = c1;
+//								   :}
+ //        ;
+         
+         
+
+program ::= MAIN LPARENT RPARENT LBRACE body:dec RBRACE {: 
+														RESULT = dec;
+													  :}
+        ;
+
+//body ::= processDecl:declList SEMICOLON processInvk:invkList SEMICOLON {:  AuxiliarMain main = new AuxiliarMain(declList,invkList); 
+//                                                                           RESULT=main; 
+            //                                                            :}
+//           ;
+body ::= processDecl:declList  SEMICOLON {:
+											RESULT = declList;
+										 :}
+	;
+           
+processDecl ::= proc:lp {:  
+						  RESULT = lp;
+                        :}
+              | processDecl:listProcess SEMICOLON proc:lp {:  
+															Set<String> processes = lp.keySet();
+															Iterator<String> iterator = processes.iterator();
+															while (iterator.hasNext()){
+																String currentProcess = iterator.next();
+																if (listProcess.containsKey(currentProcess))
+																	parser.report_error("Duplicated instance declaration, line: "+lpleft, lp);
+																else
+																	listProcess.put(currentProcess,lp.get(currentProcess));
+															}
+															RESULT = listProcess;
+                                                          :}
+              ;
+
+proc ::= varDecls:listNames COLON ID:typeProc {:
+												HashMap<String,String> processes = new HashMap<String,String>();
+												for (int i=0; i<listNames.size(); i++){
+													if (processes.containsKey(listNames.get(i)))
+														parser.report_error("Duplicated instance declaration, line: "+listNamesleft, listNames);
+													else
+														processes.put(listNames.get(i), typeProc);
+												}
+												RESULT = processes;
+                                          	  :}
+       ;
+      
+
+

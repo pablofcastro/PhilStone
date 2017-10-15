@@ -3,6 +3,7 @@ import java.io.*;
 import java.util.*;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
+import Utils.*;
 //import org.w3c.dom.Document;
 //import org.w3c.dom.NodeList;
 //import org.w3c.dom.Node;
@@ -18,7 +19,8 @@ public class Node {
 	private String name; // the name of the node
 	private LinkedList<Edge> adj; // the adjacents 
 	private LinkedList<String> properties;
-	
+	private LinkedList<String> globalProperties; // it is used for keeping track of the global properties
+	private LTS myLTS; // the LTS where this node resides
 	
 	/**
 	 * A simple constructor
@@ -29,6 +31,7 @@ public class Node {
 		this.name = name;
 		this.adj = new LinkedList<Edge>();
 		this.properties = new LinkedList<String>();
+		this.globalProperties = new LinkedList<String>();
 	}
 
 	/**
@@ -39,7 +42,7 @@ public class Node {
 		return name;
 	}
 	
-
+	
 	/**
 	 * Setter for name
 	 * @param name
@@ -64,6 +67,10 @@ public class Node {
 		this.adj = adj;
 	}
 
+	public void setLTS(LTS lts){
+		this.myLTS = lts;
+	}
+	
 	/**
 	 * Setter for properties
 	 * @return
@@ -94,6 +101,22 @@ public class Node {
 	 */
 	public void addProperty(String name){
 		properties.add(name);
+		if (name.contains("Av") || name.contains("global")) // these keywords are used for global vars
+			this.globalProperties.add(name);
+	}
+	
+	/**
+	 * Returns all the edges with the given name
+	 * @param name
+	 * @return
+	 */
+	public LinkedList<Edge> getEdgesWithName(String name){
+		LinkedList<Edge> result = new LinkedList<Edge>();
+		for (int i=0; i<adj.size(); i++){
+			if (adj.get(i).getName().equals(name))
+				result.add(adj.get(i));
+		}
+		return result;
 	}
 	
 	/**
@@ -115,7 +138,7 @@ public class Node {
 	}
 	
 	/**
-	 * @return	a simple descriotion of the node with its properties, to be used
+	 * @return	a simple description of the node with its properties, to be used
 	 * 			to create the dot
 	 */
 	public String getDescription(){
@@ -126,6 +149,74 @@ public class Node {
 		return result;
 	}
 	
+	/**
+	 * 
+	 * @return	a guard corresponding to the node
+	 */
+	public String getGuard(UnionFind uf){
+		// LST is null
+		String result = "";
+		result += "state == "+ uf.find(this).getName();
+		LinkedList<String> allGlobalProps = this.myLTS.getGlobalProps();
+		
+		// for the guards only the global properties are important, the others are ensured by the actual state
+		for (int i=0; i<allGlobalProps.size(); i++){
+			if (this.globalProperties.contains(allGlobalProps.get(i)))
+				result += " && " + allGlobalProps.get(i);
+			else
+				result += " && !" + allGlobalProps.get(i);
+		}
+		return result;
+	}
+	
+	/**
+	 * 
+	 * @return	A command corresponding to the node, properties in the state are set to true, others to false
+	 */
+	public String getCommand(UnionFind uf){
+		//LinkedList<String> locks = new LinkedList<String>();
+		LinkedList<String> allProps = this.myLTS.getProps();
+		
+		// change this for dealing with integers
+		String result = "state="+uf.find(this).getName()+","; // we use the representative of the equiv. class of the current node
+		for (int i=0; i<allProps.size(); i++){
+			// properties in this node are set to true
+			if (this.properties.contains(allProps.get(i))) // if belongs to the current node then it is set to true
+				result += (i==0) ? allProps.get(i)+"=true" : ","+ allProps.get(i)+"=true"; 
+			else // else it is set to false
+				result += (i==0) ? allProps.get(i)+"=false" : ","+ allProps.get(i)+"=false";
+		}
+		result += ";";
+		return result;
+		
+	}
+	
+	/**
+	 * it inspect the collection of edges, an environmental edge increases the equivalence class of the current node
+	 * @param uf	the union-find object
+	 */
+	public void computeEqClasses(UnionFind uf){
+		for (int i=0; i<this.adj.size(); i++){
+			if (this.adj.get(i).isEnv())
+				uf.union(this, this.adj.get(i).getTarget());
+		}
+	}
+	
+	/**
+	 * 
+	 * @param uf	the equivalence classes of the LTS wrt the environmental transitions
+	 * @return		the branches corresponding to this node
+	 */
+	public String getBranches(UnionFind uf){
+		String result = "";
+		for (int i=0; i<this.adj.size(); i++){
+			Edge currentEdge = this.adj.get(i);
+			if ((currentEdge.getOrigin() == currentEdge.getTarget()) ||  (uf.find(currentEdge.getOrigin()) != uf.find(currentEdge.getTarget()))){ // origin and target must be in different equivalence classes
+				result += this.adj.get(i).getOrigin().getGuard(uf) + " -> " + this.adj.get(i).getTarget().getCommand(uf) + "\n";				  // or the edge must be a loop
+			}
+		}
+		return result;		
+	}
 	
 }
 

@@ -1,0 +1,155 @@
+<alloy builddate="2012-09-25 15:54 EDT">
+
+<instance bitwidth="0" maxseq="0" command="Run getModel for 6" filename="/Users/Pablo/University/Tools/Alloy/Synthesis/Mutual.Exclusion/meta-spec-mutex.als">
+
+<sig label="seq/Int" ID="0" parentID="1" builtin="yes">
+</sig>
+
+<sig label="Int" ID="1" parentID="2" builtin="yes">
+</sig>
+
+<sig label="String" ID="3" parentID="2" builtin="yes">
+</sig>
+
+<sig label="this/Node" ID="4" parentID="2" abstract="yes">
+   <atom label="Node$0"/>
+   <atom label="Node$1"/>
+   <atom label="Node$2"/>
+   <atom label="Node$3"/>
+   <atom label="Node$4"/>
+   <atom label="Node$5"/>
+</sig>
+
+<sig label="this/Prop_NCS" ID="5" parentID="6" one="yes">
+   <atom label="Prop_NCS$0"/>
+</sig>
+
+<sig label="this/Prop_TRYING" ID="7" parentID="6" one="yes">
+   <atom label="Prop_TRYING$0"/>
+</sig>
+
+<sig label="this/Prop_CS" ID="8" parentID="6" one="yes">
+   <atom label="Prop_CS$0"/>
+</sig>
+
+<sig label="this/Av_S" ID="9" parentID="6" one="yes">
+   <atom label="Av_S$0"/>
+</sig>
+
+<sig label="this/Own_S" ID="10" parentID="6" one="yes">
+   <atom label="Own_S$0"/>
+</sig>
+
+<sig label="this/Prop" ID="6" parentID="2" abstract="yes">
+</sig>
+
+<sig label="this/ProcessMeta" ID="11" parentID="2" one="yes">
+   <atom label="ProcessMeta$0"/>
+</sig>
+
+<field label="nodes" ID="12" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$1"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$2"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$5"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> </types>
+</field>
+
+<field label="succs" ID="13" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$0"/> <atom label="Node$2"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$1"/> <atom label="Node$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$2"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$2"/> <atom label="Node$5"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$3"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$3"/> <atom label="Node$4"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Node$1"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Node$4"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$5"/> <atom label="Node$2"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$5"/> <atom label="Node$4"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> <type ID="4"/> </types>
+</field>
+
+<field label="val" ID="14" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$0"/> <atom label="Prop_CS$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$0"/> <atom label="Own_S$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$1"/> <atom label="Prop_TRYING$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$1"/> <atom label="Own_S$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$2"/> <atom label="Prop_NCS$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$3"/> <atom label="Prop_TRYING$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Prop_TRYING$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Av_S$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$5"/> <atom label="Prop_NCS$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$5"/> <atom label="Av_S$0"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> <type ID="6"/> </types>
+</field>
+
+<field label="ACTgetNCS" ID="15" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$0"/> <atom label="Node$2"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> <type ID="4"/> </types>
+</field>
+
+<field label="ACTgetCS" ID="16" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$1"/> <atom label="Node$0"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> <type ID="4"/> </types>
+</field>
+
+<field label="ACTgetTRYING" ID="17" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$2"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$3"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Node$4"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$5"/> <atom label="Node$4"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> <type ID="4"/> </types>
+</field>
+
+<field label="ACTgetS" ID="18" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Node$1"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> <type ID="4"/> </types>
+</field>
+
+<field label="ACTchange_s" ID="19" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$2"/> <atom label="Node$5"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$3"/> <atom label="Node$4"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$5"/> <atom label="Node$2"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> <type ID="4"/> </types>
+</field>
+
+<field label="local" ID="20" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$0"/> <atom label="Node$2"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$1"/> <atom label="Node$0"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$2"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$3"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Node$1"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Node$4"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$5"/> <atom label="Node$4"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> <type ID="4"/> </types>
+</field>
+
+<field label="env" ID="21" parentID="11">
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$2"/> <atom label="Node$5"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$3"/> <atom label="Node$4"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$4"/> <atom label="Node$3"/> </tuple>
+   <tuple> <atom label="ProcessMeta$0"/> <atom label="Node$5"/> <atom label="Node$2"/> </tuple>
+   <types> <type ID="11"/> <type ID="4"/> <type ID="4"/> </types>
+</field>
+
+<sig label="univ" ID="2" builtin="yes">
+</sig>
+
+<skolem label="$getModel_s" ID="22">
+   <tuple> <atom label="Node$5"/> </tuple>
+   <types> <type ID="4"/> </types>
+</skolem>
+
+</instance>
+
+<source filename="/Users/Pablo/University/Tools/Alloy/Synthesis/Mutual.Exclusion/meta-spec-mutex.als" content="-- A Simple MetaModel for Mutex&#x000a;-- Author: Pablo Castro&#x000a;-- Date: 07/25/2017&#x000a;&#x000a;open util/relation&#x000a;&#x000a;abstract sig Node{}&#x000a;-- Propositions are modelled with the following signature&#x000a;abstract sig Prop{}&#x000a;&#x000a;one sig Prop_NCS extends Prop{}&#x000a;&#x000a;pred Prop_NCS[m:ProcessMeta, n:Node]{Prop_NCS in m.val[n]}&#x000a;&#x000a;one sig Prop_TRYING extends Prop{}&#x000a;pred Prop_TRYING[m:ProcessMeta, n:Node]{Prop_TRYING in m.val[n]}&#x000a;&#x000a;one sig Prop_CS extends Prop{}&#x000a;pred Prop_CS[m:ProcessMeta, n:Node]{Prop_CS in m.val[n]}&#x000a;&#x000a;-- It says if S is available&#x000a;one sig Av_S extends Prop{}&#x000a;pred Av_S[m:ProcessMeta, n:Node]{Av_S in m.val[n]}&#x000a;&#x000a;-- It says if s is owned by the process&#x000a;one sig Own_S extends Prop{}&#x000a;pred Own_S[m:ProcessMeta, n:Node]{Own_S in m.val[n]}&#x000a;&#x000a;one sig ProcessMeta{&#x000a;&#x0009;nodes: set Node,&#x000a;&#x0009;succs: nodes -&gt; nodes,&#x000a;    val: nodes -&gt; Prop,&#x000a;&#x0009;ACTgetNCS: nodes -&gt; nodes,&#x000a;&#x0009;ACTgetCS: nodes -&gt; nodes,&#x000a;&#x0009;ACTgetTRYING: nodes -&gt; nodes,&#x000a;&#x0009;ACTgetS: nodes -&gt; nodes,&#x000a;&#x0009;ACTchange_s : nodes -&gt; nodes,&#x000a;&#x0009;local : nodes -&gt; nodes, -- own transitions&#x000a;&#x0009;env : nodes -&gt; nodes -- environmental transitions&#x000a;}&#x000a;{succs = ACTgetNCS + ACTgetCS + ACTgetTRYING + ACTchange_s + ACTgetS&#x000a; local = &#x0009;ACTgetNCS + ACTgetCS + ACTgetTRYING + ACTgetS&#x000a; env = ACTchange_s &#x000a; no (ACTchange_s &amp; local)&#x000a;}&#x000a;&#x000a;-- Auxiliary actions &#x000a;pred CanExecuteACTGetNCS[m:ProcessMeta, n:m.nodes]{ some m.ACTgetNCS[n] }&#x000a;pred CanExecuteACTGetTRYING[m:ProcessMeta, n:m.nodes]{ some m.ACTgetTRYING[n] }&#x000a;pred CanExecuteACTGetCS[m:ProcessMeta, n:m.nodes]{ some m.ACTgetCS[n] }&#x000a;&#x000a;-- Axioms for getNCS&#x000a;fact Action_getNCS_Ax{&#x000a;&#x0009;-- Pre -&gt; Post&#x000a; all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetNCS[s] | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;Prop_CS[ProcessMeta, s] implies (Prop_NCS[ProcessMeta, s&apos;] and (not Own_S[ProcessMeta, s&apos;]))&#x000a;    -- not Pre -&gt; action is not executed&#x000a;    all s:ProcessMeta.nodes | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;not Prop_CS[ProcessMeta, s] implies (no ProcessMeta.ACTgetNCS[s])&#x000a;&#x0009;-- pre -&gt; execution is possible&#x000a;    all s:ProcessMeta.nodes |&#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009; Prop_CS[ProcessMeta, s] implies (some ProcessMeta.ACTgetNCS[s])&#x000a;}&#x000a;&#x000a;-- Axioms for getTrying&#x000a;fact Action_getTRYING_Ax{&#x000a;&#x0009;-- Pre -&gt; Post&#x000a; &#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetTRYING[s] | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;((Prop_NCS[ProcessMeta, s] or Prop_TRYING[ProcessMeta, s]) and (not Own_S[ProcessMeta, s])) &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;implies Prop_TRYING[ProcessMeta, s&apos;]                       &#x000a;//    implies (Prop_TRYING[ProcessMeta, s&apos;] and (Prop_TRYING[ProcessMeta, s] and (Av_S[ProcessMeta, s])  iff Own_S[ProcessMeta, s&apos;]) )        &#x000a;                                                         &#x000a;    -- not Pre -&gt; action is not executed&#x000a;    all s:ProcessMeta.nodes |&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;((not Prop_TRYING[ProcessMeta, s]) and (not Prop_NCS[ProcessMeta, s]) or Own_S[ProcessMeta, s]) implies (no ProcessMeta.ACTgetTRYING[s])&#x000a;&#x0009;&#x000a;-- pre -&gt; execution is possible&#x000a;    all s:ProcessMeta.nodes | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;((Prop_NCS[ProcessMeta, s] or Prop_TRYING[ProcessMeta, s]) and (not Own_S[ProcessMeta, s]))  implies (some ProcessMeta.ACTgetTRYING[s])&#x000a;}&#x000a;&#x000a;-- Axioms for getTrying&#x000a;fact Action_getCS_Ax{&#x000a;&#x0009;-- Pre -&gt; Post&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetCS[s] | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;((Prop_TRYING[ProcessMeta, s] and Own_S[ProcessMeta, s])) &#x000a;                           implies (Prop_CS[ProcessMeta, s&apos;] and Own_S[ProcessMeta, s&apos;]) &#x000a;                                         &#x000a;    -- not Pre -&gt; action is not executed&#x000a;    all s:ProcessMeta.nodes | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;((not Prop_TRYING[ProcessMeta, s]) or (not Own_S[ProcessMeta, s])) implies (no ProcessMeta.ACTgetCS[s])&#x000a;&#x0009;&#x000a;-- pre -&gt; execution is possible&#x000a;    all s:ProcessMeta.nodes | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;(Prop_TRYING[ProcessMeta, s] and Own_S[ProcessMeta, s])   implies (some ProcessMeta.ACTgetCS[s])&#x000a;}&#x000a;&#x000a;-- Axioms for getS&#x000a;fact Action_getS_Ax{&#x000a;&#x0009;&#x0009;-- Pre -&gt; Post&#x000a;&#x0009;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetS[s] | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;((Prop_TRYING[ProcessMeta, s] and Av_S[ProcessMeta, s])) &#x000a;                           implies Own_S[ProcessMeta, s&apos;]&#x000a;&#x000a;&#x0009;&#x0009; -- not Pre -&gt; action is not executed&#x000a;   &#x0009;&#x0009; all s:ProcessMeta.nodes | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;((not Prop_TRYING[ProcessMeta, s]) or (not Av_S[ProcessMeta, s])) implies (no ProcessMeta.ACTgetS[s])&#x000a;&#x000a;&#x0009;&#x0009;-- pre -&gt; execution is possible&#x000a;   &#x0009;&#x0009; all s:ProcessMeta.nodes | &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;(Prop_TRYING[ProcessMeta, s] and Av_S[ProcessMeta, s])   implies (some ProcessMeta.ACTgetS[s])&#x000a;&#x0009;&#x0009;&#x000a;}&#x000a;&#x000a;-- Resource axioms&#x000a;fact ResS{&#x000a;&#x0009; all s:ProcessMeta.nodes | Own_S[ProcessMeta, s] implies (not Av_S[ProcessMeta, s])&#x000a;  &#x0009; all s:ProcessMeta.nodes | (not Own_S[ProcessMeta, s]) implies (some ProcessMeta.ACTchange_s[s])&#x000a;     all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTchange_s[s] | Av_S[ProcessMeta, s] iff (not Av_S[ProcessMeta, s&apos;])&#x000a;&#x0009; all s:ProcessMeta.nodes | all s&apos;:(ProcessMeta.env[s]-ProcessMeta.ACTchange_s[s]) | Av_S[ProcessMeta, s] iff  Av_S[ProcessMeta, s&apos;]&#x000a;}&#x000a;&#x000a;-- One environment action at time&#x000a;--fact OneEnvActionPerInstant{&#x000a;&#x0009;-- here we have a unique environmen action, no needed&#x000a;--}&#x000a;&#x000a;-- Frame Axioms -- no frame axioms in this case&#x000a;fact FrameAxioms{&#x000a;&#x000a;&#x0009;-- Frame axioms for  getNCS&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetNCS[s] | Av_S[ProcessMeta, s] iff Av_S[ProcessMeta, s&apos;]&#x000a;&#x0009;&#x000a;&#x0009;-- Frame axioms for getTRYING&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetTRYING[s] | Own_S[ProcessMeta, s] iff Own_S[ProcessMeta, s&apos;]&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetTRYING[s] | Av_S[ProcessMeta, s] iff Av_S[ProcessMeta, s&apos;]&#x000a;&#x0009;//all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.getTRYING[s] | Av_S[ProcessMeta, s] iff Av_S[ProcessMeta, s&apos;]&#x000a;&#x000a;&#x0009;-- Frame axioms for getCS&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetCS[s] | Own_S[ProcessMeta, s] iff Own_S[ProcessMeta, s&apos;]&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetCS[s] | Av_S[ProcessMeta, s] iff Av_S[ProcessMeta, s&apos;]&#x000a;&#x000a;&#x0009;-- Frame axioms for getS&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetS[s] | Prop_TRYING[ProcessMeta, s] iff Prop_TRYING[ProcessMeta, s&apos;]&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetS[s] | Prop_CS[ProcessMeta, s] iff Prop_CS[ProcessMeta, s&apos;]&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTgetS[s] | Prop_NCS[ProcessMeta, s] iff Prop_NCS[ProcessMeta, s&apos;]&#x000a;&#x000a;&#x0009;--Frame axioms for change_S&#x000a;--&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.getNCS[s] | Av_S[ProcessMeta, s] iff Av_S[ProcessMeta, s&apos;]&#x000a;--&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.getTRYING[s] | Av_S[ProcessMeta, s] iff Av_S[ProcessMeta, s&apos;]&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTchange_s[s] | Prop_TRYING[ProcessMeta, s] iff Prop_TRYING[ProcessMeta, s&apos;]&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTchange_s[s] | Prop_CS[ProcessMeta, s] iff Prop_CS[ProcessMeta, s&apos;]&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTchange_s[s] | Prop_NCS[ProcessMeta, s] iff Prop_NCS[ProcessMeta, s&apos;]&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTchange_s[s] | Prop_NCS[ProcessMeta, s] iff Prop_NCS[ProcessMeta, s&apos;]&#x000a;    all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.ACTchange_s[s] | Own_S[ProcessMeta, s] iff Own_S[ProcessMeta, s&apos;]&#x000a;&#x000a;&#x000a;&#x000a; --&#x0009;all s:ProcessMeta.nodes | all s&apos;:ProcessMeta.getTRYING[s] | Av_S[ProcessMeta, s] iff Av_S[ProcessMeta, s&apos;]&#x000a;&#x0009;&#x000a;}&#x000a;&#x000a;-- TRY, CS, NCS are disjoint&#x000a;fact{&#x000a;&#x0009;all s:ProcessMeta.nodes | all s&apos;:(*(ProcessMeta.succs))[s] | (not (Prop_NCS[ProcessMeta, s&apos;] and Prop_CS[ProcessMeta, s&apos;]))&#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;  and&#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;   &#x0009;(not (Prop_NCS[ProcessMeta, s&apos;] and Prop_TRYING[ProcessMeta, s&apos;]))&#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;    &#x0009;and &#x000a;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;(not (Prop_CS[ProcessMeta, s&apos;] and Prop_TRYING[ProcessMeta, s&apos;]))&#x000a; &#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x0009;&#x000a;}&#x000a;&#x000a;&#x000a;pred getModel[s:ProcessMeta.nodes]{&#x000a;&#x0009;Prop_NCS[ProcessMeta, s] and Av_S[ProcessMeta, s] &#x000a;&#x0009;all s&apos;:(*(ProcessMeta.succs)[s]) | some ProcessMeta.succs[s&apos;]&#x000a;&#x000a;&#x000a;}&#x000a;//pred compile[]{}&#x000a;run getModel for 6&#x000a;&#x000a;&#x000a;&#x000a;&#x000a;&#x000a;&#x000a;&#x000a;&#x000a;"/>
+
+<source filename="/$alloy4$/models/util/integer.als" content="module util/integer&#x000a;&#x000a;/*&#x000a; * A collection of utility functions for using Integers in Alloy.&#x000a; * Note that integer overflows are silently truncated to the current bitwidth&#x000a; * using the 2&apos;s complement arithmetic, unless the &quot;forbid overfows&quot; option is&#x000a; * turned on, in which case only models that don&apos;t have any overflows are &#x000a; * analyzed. &#x000a; */&#x000a;&#x000a;fun add  [n1, n2: Int] : Int { this/plus[n1, n2] }&#x000a;fun plus [n1, n2: Int] : Int { n1 fun/add n2 }&#x000a;&#x000a;fun sub   [n1, n2: Int] : Int { this/minus[n1, n2] }&#x000a;fun minus [n1, n2: Int] : Int { n1 fun/sub n2 }&#x000a;&#x000a;fun mul [n1, n2: Int] : Int { n1 fun/mul n2 }&#x000a;&#x000a;/**&#x000a; * Performs the division with &quot;round to zero&quot; semantics, except the following 3 cases&#x000a; * 1) if a is 0, then it returns 0&#x000a; * 2) else if b is 0, then it returns 1 if a is negative and -1 if a is positive&#x000a; * 3) else if a is the smallest negative integer, and b is -1, then it returns a&#x000a; */&#x000a;fun div [n1, n2: Int] : Int { n1 fun/div n2 }&#x000a;&#x000a;/** answer is defined to be the unique integer that satisfies &quot;a = ((a/b)*b) + remainder&quot; */&#x000a;fun rem [n1, n2: Int] : Int { n1 fun/rem n2 }&#x000a;&#x000a;/** negate */&#x000a;fun negate [n: Int] : Int { 0 fun/sub n }&#x000a;&#x000a;/** equal to */&#x000a;pred eq [n1, n2: Int] { int[n1] = int[n2] }&#x000a;&#x000a;/** greater than */&#x000a;pred gt [n1, n2: Int] { n1 &gt; n2 }&#x000a;&#x000a;/** less then */&#x000a;pred lt [n1, n2: Int] { n1 &lt; n2 }&#x000a;&#x000a;/** greater than or equal */&#x000a;pred gte [n1, n2: Int] { n1 &gt;= n2 }&#x000a;&#x000a;/** less than or equal */&#x000a;pred lte [n1, n2: Int] { n1 &lt;= n2 }&#x000a;&#x000a;/** integer is zero */&#x000a;pred zero [n: Int] { n = 0 }&#x000a;&#x000a;/** positive */&#x000a;pred pos  [n: Int] { n &gt; 0 }&#x000a;&#x000a;/** negative */&#x000a;pred neg  [n: Int] { n &lt; 0 }&#x000a;&#x000a;/** non-positive */&#x000a;pred nonpos [n: Int] { n &lt;= 0 }&#x000a;&#x000a;/** non-negative */&#x000a;pred nonneg [n: Int] { n &gt;= 0 }&#x000a;&#x000a;/** signum (aka sign or sgn) */&#x000a;fun signum [n: Int] : Int { n&lt;0 =&gt; (0 fun/sub 1) else (n&gt;0 =&gt; 1 else 0) }&#x000a;&#x000a;/**&#x000a; * returns the ith element (zero-based) from the set s&#x000a; * in the ordering of &apos;next&apos;, which is a linear ordering&#x000a; * relation like that provided by util/ordering&#x000a; */&#x000a;fun int2elem[i: Int, next: univ-&gt;univ, s: set univ] : lone s {&#x000a;  {e: s | #^next.e = int i }&#x000a;}&#x000a;&#x000a;/**&#x000a; * returns the index of the element (zero-based) in the&#x000a; * ordering of next, which is a linear ordering relation&#x000a; * like that provided by util/ordering&#x000a; */&#x000a;fun elem2int[e: univ, next: univ-&gt;univ] : lone Int {&#x000a;  Int[#^next.e]&#x000a;}&#x000a;&#x000a;/** returns the largest integer in the current bitwidth */&#x000a;fun max:one Int { fun/max }&#x000a;&#x000a;/** returns the smallest integer in the current bitwidth */&#x000a;fun min:one Int { fun/min }&#x000a;&#x000a;/** maps each integer (except max) to the integer after it */&#x000a;fun next:Int-&gt;Int { fun/next }&#x000a;&#x000a;/** maps each integer (except min) to the integer before it */&#x000a;fun prev:Int-&gt;Int { ~next }&#x000a;&#x000a;/** given a set of integers, return the largest element */&#x000a;fun max [es: set Int]: lone Int { es - es.^prev }&#x000a;&#x000a;/** given a set of integers, return the smallest element */&#x000a;fun min [es: set Int]: lone Int { es - es.^next }&#x000a;&#x000a;/** given an integer, return all integers prior to it */&#x000a;fun prevs [e: Int]: set Int { e.^prev }&#x000a;&#x000a;/** given an integer, return all integers following it */&#x000a;fun nexts [e: Int]: set Int { e.^next }&#x000a;&#x000a;/** returns the larger of the two integers */&#x000a;fun larger [e1, e2: Int]: Int { let a=int[e1], b=int[e2] | (a&lt;b =&gt; b else a) }&#x000a;&#x000a;/** returns the smaller of the two integers */&#x000a;fun smaller [e1, e2: Int]: Int { let a=int[e1], b=int[e2] | (a&lt;b =&gt; a else b) }&#x000a;"/>
+
+<source filename="/$alloy4$/models/util/relation.als" content="module util/relation&#x000a;&#x000a;/*&#x000a; * Utilities for some common operations and constraints&#x000a; * on binary relations. The keyword &apos;univ&apos; represents the&#x000a; * top-level type, which all other types implicitly extend.&#x000a; * Therefore, all the functions and predicates in this model&#x000a; * may be applied to binary relations of any type.&#x000a; *&#x000a; * author: Greg Dennis&#x000a; */&#x000a;&#x000a;/** returns the domain of a binary relation */&#x000a;fun dom [r: univ-&gt;univ] : set (r.univ) { r.univ }&#x000a;&#x000a;/** returns the range of a binary relation */&#x000a;fun ran [r: univ-&gt;univ] : set (univ.r) { univ.r }&#x000a;&#x000a;/** r is total over the domain s */&#x000a;pred total [r: univ-&gt;univ, s: set univ] {&#x000a;  all x: s | some x.r&#x000a;}&#x000a;&#x000a;/** r is a partial function over the domain s */&#x000a;pred functional [r: univ-&gt;univ, s: set univ] {&#x000a;  all x: s | lone x.r&#x000a;}&#x000a;&#x000a;/** r is a total function over the domain s */&#x000a;pred function [r: univ-&gt;univ, s: set univ] {&#x000a;  all x: s | one x.r&#x000a;}&#x000a;&#x000a;/** r is surjective over the codomain s */&#x000a;pred surjective [r: univ-&gt;univ, s: set univ] {&#x000a;  all x: s | some r.x&#x000a;}&#x000a;&#x000a;/** r is injective */&#x000a;pred injective [r: univ-&gt;univ, s: set univ] {&#x000a;  all x: s | lone r.x&#x000a;}&#x000a;&#x000a;/** r is bijective over the codomain s */&#x000a;pred bijective[r: univ-&gt;univ, s: set univ] {&#x000a;  all x: s | one r.x&#x000a;}&#x000a;&#x000a;/** r is a bijection over the domain d and the codomain c */&#x000a;pred bijection[r: univ-&gt;univ, d, c: set univ] {&#x000a;  function[r, d] &amp;&amp; bijective[r, c]&#x000a;}&#x000a;&#x000a;/** r is reflexive over the set s */&#x000a;pred reflexive [r: univ -&gt; univ, s: set univ] {s&lt;:iden in r}&#x000a;&#x000a;/** r is irreflexive */&#x000a;pred irreflexive [r: univ -&gt; univ] {no iden &amp; r}&#x000a;&#x000a;/** r is symmetric */&#x000a;pred symmetric [r: univ -&gt; univ] {~r in r}&#x000a;&#x000a;/** r is anti-symmetric */&#x000a;pred antisymmetric [r: univ -&gt; univ] {~r &amp; r in iden}&#x000a;&#x000a;/** r is transitive */&#x000a;pred transitive [r: univ -&gt; univ] {r.r in r}&#x000a;&#x000a;/** r is acyclic over the set s */&#x000a;pred acyclic[r: univ-&gt;univ, s: set univ] {&#x000a;  all x: s | x !in x.^r&#x000a;}&#x000a;&#x000a;/** r is complete over the set s */&#x000a;pred complete[r: univ-&gt;univ, s: univ] {&#x000a;  all x,y:s | (x!=y =&gt; x-&gt;y in (r + ~r))&#x000a;}&#x000a;&#x000a;/** r is a preorder (or a quasi-order) over the set s */&#x000a;pred preorder [r: univ -&gt; univ, s: set univ] {&#x000a;  reflexive[r, s]&#x000a;  transitive[r]&#x000a;}&#x000a;&#x000a;/** r is an equivalence relation over the set s */&#x000a;pred equivalence [r: univ-&gt;univ, s: set univ] {&#x000a;  preorder[r, s]&#x000a;  symmetric[r]&#x000a;}&#x000a;&#x000a;/** r is a partial order over the set s */&#x000a;pred partialOrder [r: univ -&gt; univ, s: set univ] {&#x000a;  preorder[r, s]&#x000a;  antisymmetric[r]&#x000a;}&#x000a;&#x000a;/** r is a total order over the set s */&#x000a;pred totalOrder [r: univ -&gt; univ, s: set univ] {&#x000a;  partialOrder[r, s]&#x000a;  complete[r, s]&#x000a;}&#x000a;"/>
+
+</alloy>

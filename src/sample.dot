@@ -1,0 +1,19 @@
+digraph G{
+Node03->Node03;
+Node03->Node04[style=dotted];
+Node03 [label = "Node03\nProp_try"];
+Node02->Node03;
+Node02->Node05[style=dotted];
+Node02 [label = "Node02\nProp_ncs"];
+Node05->Node04;
+Node05->Node02[style=dotted];
+Node05 [label = "Node05\nProp_ncs\nAv_m"];
+Node04->Node04;
+Node04->Node01;
+Node04->Node03[style=dotted];
+Node04 [label = "Node04\nProp_try\nAv_m"];
+Node01->Node00;
+Node01 [label = "Node01\nProp_try\nOwn_m"];
+Node00->Node05;
+Node00 [label = "Node00\nProp_cs\nOwn_m"];
+}
