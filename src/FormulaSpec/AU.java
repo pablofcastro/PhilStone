@@ -16,6 +16,10 @@ public class AU extends TemporalFormula {
 		return result;
 	}
 	
+	public boolean usesVar(String name){
+		return (this.getExpr1().usesVar(name) || this.getExpr2().usesVar(name));
+	}
+	
 	public String toString(){
 		return "A["+ this.getExpr1().toString() + "U"+ this.getExpr2().toString() +"]";
 	}

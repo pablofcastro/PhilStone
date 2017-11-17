@@ -3,6 +3,7 @@ package FormulaSpec;
 public interface FormulaVisitor {
 	
 	public void visit(BoolVar v);
+	public void visit(BoolPar v);
 	public void visit(OldBoolVar v);
 	public void visit(BoolConstant c);
 	public void visit(Negation n);

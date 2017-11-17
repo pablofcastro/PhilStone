@@ -32,6 +32,10 @@ public class BoolConstant extends TemporalFormula {
 		 return value;		 
 	}	
     
+    public boolean usesVar(String name){
+		return false;
+	}
+    
     public String toAlloy(String metaName, String state){
     	if (value)
     		return "true";

@@ -28,7 +28,7 @@ public class testLTS {
 		test.fromAlloyXML("model1.xml");
 		try{
 			PrintWriter writer = new PrintWriter("Metamodel.als", "UTF-8");
-			test.toAlloyMetaModel(writer);
+			//test.toAlloyMetaModel(writer);
 			writer.close();
 		}
 		catch(IOException e){

@@ -16,6 +16,10 @@ public class MultExpression extends AritExpression {
 		return result;
 	}
 	
+	public boolean usesVar(String name){
+		return (this.getExpr1().usesVar(name) || this.getExpr2().getExpr2().usesVar(name));			
+	}
+	
 	public String toString(){
 		return this.getExpr1().toString() + "*" + this.getExpr2().toString(); 
 	}

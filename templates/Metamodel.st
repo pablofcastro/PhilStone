@@ -35,6 +35,7 @@ one sig <name>Meta{
 	<if(sharedBoolProps)>env = <sharedBoolProps : {s | ACTchange_<s>}; separator="+"><endif>
 	no (local & env)
 }
+
 -- actions axioms
 <if(actions)><actions : {a | fact Action_<a.name>_Ax1{ all s:<name>Meta.nodes | all s':<name>Meta.ACT<a.name>[s] | <a.pre> implies <a.post> \} }; separator="\n"> <endif>
 <if(actions)><actions : {a | fact Action_<a.name>_Ax2{ all s:<name>Meta.nodes | (not <a.pre>) implies (no <name>Meta.ACT<a.name>[s])\} }; separator="\n"> <endif>
@@ -50,21 +51,40 @@ one sig <name>Meta{
 <if(sharedBoolProps)><sharedBoolProps : {sh | fact ResAx4 { all s:<name>Meta.nodes | all s':(<name>Meta.env[s] - <name>Meta.ACTchange_<sh>[s]) | Av_<sh>[<name>Meta,s] iff Av_<sh>[<name>Meta, s'] \}}> <endif>
 
 -- frame axioms
-<if(actions)><actions :  {a | fact FrameAxioms<a.name>{ 
-<a.frameComplement: {fr | all s:<name>Meta.nodes | all s':<name>Meta.ACT<a.name>[s] | Prop_<fr>[<name>Meta,s] iff Prop_<fr>[<name>Meta, s']}; separator="\n" >
-<a.lockFrameComplement: {fr | all s:<name>Meta.nodes | all s':<name>Meta.ACT<a.name>[s] | Av_<fr>[<name>Meta,s] iff Av_<fr>[<name>Meta, s']}; separator="\n" > 
-<a.lockFrameComplement: {fr | all s:<name>Meta.nodes | all s':<name>Meta.ACT<a.name>[s] | Own_<fr>[<name>Meta,s] iff Own_<fr>[<name>Meta, s']}; separator="\n" >
-\}}; separator="\n"><endif>
+<if(actions)> <actions :  {a | fact FrameAxioms<a.name>{ 
+
+<if(a.singletonFrameComplement)> 
+all s:<name>Meta.nodes,  s':<name>Meta.ACT<a.name>[s] |<a.singletonFrameComplement:  {fr | (Prop_<fr>[<name>Meta,s] iff Prop_<fr>[<name>Meta, s'])}; separator=" and " > 
+<endif>
+
+<if(a.frameComplement)>
+all s:<name>Meta.nodes | all s':<name>Meta.ACT<a.name>[s] | <a.frameComplement: {fr | (Prop_<fr>[<name>Meta,s] iff Prop_<fr>[<name>Meta, s'])}; separator=" and " >
+<endif>
+<if(a.lockFrameComplement)>
+ and 
+<a.lockFrameComplement: {fr | (Av_<fr>[<name>Meta,s] iff Av_<fr>[<name>Meta, s'])}; separator=" and " > 
+and
+<a.lockFrameComplement: {fr | (Own_<fr>[<name>Meta,s] iff Own_<fr>[<name>Meta, s'])}; separator=" and " >
+<endif>
+\}
+}; separator="\n">
+
+<endif>
 
 -- frame axioms for locks (shared vars)
 <if(locks)><locks :  {l | fact FrameAxioms<l.varName>{ 
-all s:<name>Meta.nodes | all s':<name>Meta.ACT<l.actionName>[s] | Own_<l.varName>[<name>Meta,s] iff Own_<l.varName>[<name>Meta, s']
-<boolProps: {v | all s:<name>Meta.nodes | all s':<name>Meta.ACT<l.actionName>[s] | Prop_<v>[<name>Meta,s] iff Prop_<v>[<name>Meta, s']}; separator="\n" >
-<l.otherGlobalVars: {fr | all s:<name>Meta.nodes | all s':<name>Meta.ACT<l.actionName>[s] | Av_<fr>[<name>Meta,s] iff Av_<fr>[<name>Meta, s']}; separator="\n" > 
-<l.otherGlobalVars: {fr | all s:<name>Meta.nodes | all s':<name>Meta.ACT<l.actionName>[s] | Own_<fr>[<name>Meta,s] iff Own_<fr>[<name>Meta, s']}; separator="\n" >
-\}}; separator="\n"><endif>
-
-
+all s:<name>Meta.nodes | all s':<name>Meta.ACT<l.actionName>[s] | (Own_<l.varName>[<name>Meta,s] iff Own_<l.varName>[<name>Meta, s'])
+<if(boolProps)> and 
+<boolProps: {v |  (Prop_<v>[<name>Meta,s] iff Prop_<v>[<name>Meta, s'])}; separator=" and " >
+<endif>
+<if(l.otherGlobalVars)>
+and
+<l.otherGlobalVars: {fr | (Av_<fr>[<name>Meta,s] iff Av_<fr>[<name>Meta, s'])}; separator=" and " > 
+and
+<l.otherGlobalVars: {fr |  (Own_<fr>[<name>Meta,s] iff Own_<fr>[<name>Meta, s'])}; separator="and" >
+<endif>
+\}}; separator="\n">
+<endif>
 
 -- Pred with inital condition and Invariants
 pred Mod[s:<name>Meta.nodes]{ 
@@ -73,6 +93,6 @@ pred Mod[s:<name>Meta.nodes]{
     <init>
 }
 
-run Mod for 6
+run Mod for 14
 
 >>

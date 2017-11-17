@@ -16,6 +16,7 @@ public class Spec {
 	private LinkedList<Lock> locks;
 	private LinkedList<TemporalFormula> invs; // the invariants
 	private HashMap<String, ProcessSpec> instances; // the instances in the specification
+	private HashMap<String, LinkedList<Var>> actualPars; // the actual parameters of ech instance
 	
 	public Spec(String name){
 		this.name = name;
@@ -24,6 +25,7 @@ public class Spec {
 		this.locks = new LinkedList<Lock>();
 		this.invs = new LinkedList<TemporalFormula>();
 		this.instances = new HashMap<String, ProcessSpec>();
+		this.actualPars = new HashMap<String, LinkedList<Var>>();
 	}
 	
 	public void addGlobalVar(Var v){
@@ -61,6 +63,16 @@ public class Spec {
 		instances.put(name, process);
 	}
 	
+	public void addInstanceActualPar(String name, Var v){
+		if (this.actualPars.get(name) == null)
+			this.actualPars.put(name, new LinkedList<Var>());
+		this.actualPars.get(name).add(v);
+	}
+	
+	public String getName(){
+		return this.name;
+	}
+	
 	/**
 	 * 
 	 * @return	the name of the process associated to an instance
@@ -81,6 +93,15 @@ public class Spec {
 			result.add(globalVars.get(i).getName());
 		}
 		return result;
+	}
+	
+	public Var getGlobalVarByName(String name){
+		for (int i=0; i<this.globalVars.size();i++){
+			if (this.globalVars.get(i).getUnqualifiedName().equals(name)){
+				return this.globalVars.get(i);
+			}
+		}
+		throw new RuntimeException("Global Variable Not Found");
 	}
 	
 	public HashMap<String, String> getGlobalVarsTypes(){
@@ -121,6 +142,32 @@ public class Spec {
 		}
 	}
 	
+	public ProcessSpec getProcessByName(String name){
+		for (int i=0; i<this.processes.size();i++){
+			if (this.processes.get(i).getName().equals(name)){
+				return this.processes.get(i);
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * 
+	 * @param instance	the instance to which we want to obtain the actual parameters
+	 * @return	the list of the parameters of the instance
+	 */
+	public LinkedList<String> getActualPars(String instance){
+		LinkedList<String> result = new LinkedList<String>();
+		if (this.actualPars.get(instance) != null){
+			Iterator<Var> it = this.actualPars.get(instance).iterator();
+			while(it.hasNext()){
+				Var v = it.next();
+				result.add(v.getName());
+			}
+		}
+		return result;
+	}
+	
 	/** 
 	 * @return	the metamodel of the given process, returns the empty string in the case of 
 	 * 			inexistent Process
@@ -149,7 +196,7 @@ public class Spec {
 	public String toString(){
 		String result = "";
 		result += name + "\n";
-		System.out.println(this.globalVars);
+		//System.out.println(this.globalVars);
 		
 		for(int i = 0; i<globalVars.size(); i++){
 			result += globalVars.get(i).toString();

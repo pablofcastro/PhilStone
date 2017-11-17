@@ -12,6 +12,10 @@ public class UntypedVar implements Expression {
 		return result;
 	}
 	
+	public boolean usesVar(String name){
+		return this.name.equals(name);
+	}
+	
 	public String toAlloy(String metaName, String state){
 		return name;
 	}

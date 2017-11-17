@@ -168,6 +168,7 @@ public class ExprAux {
 		case AND:	return new Conjunction((Formula) this.op1.getExpr(table), (Formula) this.op2.getExpr(table));
 		case AG:	return new AG((Formula) this.op1.getExpr(table));
 		case EG:	return new EG((Formula) this.op1.getExpr(table));
+		case EF:	return new EF((Formula) this.op1.getExpr(table));
 		case MINUS: return new NegExpression((AritExpression) this.op1.getExpr(table));
 		case MULT:  return new MultExpression((AritExpression) this.op1.getExpr(table), (AritExpression) this.op1.getExpr(table));
 		case DIV:	return new DivExpression((AritExpression) this.op1.getExpr(table), (AritExpression) this.op1.getExpr(table));
@@ -228,8 +229,17 @@ public class ExprAux {
 									return mySpec.getTypeVar(this.unqualifiedName, context); // if declared, returns the correct type
 								}
 							}
+							if (this.owner.equals("par")){ // if it is a parameter
+								if (!mySpec.checkParDeclaredInProcess(this.unqualifiedName, context)){ // check if the var is declared in the context
+									this.error = "Undeclared local variable, line: " + Integer.toString(line);
+									return Type.ERROR;
+								}
+								else{
+									return mySpec.getTypePar(this.unqualifiedName, context); // if declared, returns the correct type
+								}
+							}
 							else{ // other variables cannot be called in a local setting
-								this.error = "extern variables cannot be referenced form local context, line: " + Integer.toString(line);
+								this.error = "extern variables cannot be referenced from local context, line: " + Integer.toString(line);
 								return Type.ERROR;
 							}					
 						}						
@@ -238,7 +248,14 @@ public class ExprAux {
 			case AV:
 			case OWN: 	
 						if(op1.getOperator() == Operator.VAR){
+							// If it is a global variable, then true
 							if (mySpec.isLock(op1.getUnqualifiedName())){						
+								return Type.BOOL;
+							}
+							if (mySpec.isParameter(op1.getUnqualifiedName(),op1.getOwner())){			
+								return Type.BOOL;
+							}
+							if (mySpec.getProcessByName(context).containsPar(op1.getUnqualifiedName())){
 								return Type.BOOL;
 							}
 							else{

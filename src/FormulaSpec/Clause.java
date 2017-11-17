@@ -66,6 +66,19 @@ public class Clause implements Formula {
 		return result;
 	}
 	
+	public boolean usesVar(String name){
+		for (int i=0; i<this.neg.size(); i++){
+			if (neg.get(i).usesVar(name))
+				return true;	
+		}
+		for (int i=0; i<this.neg.size(); i++){
+			if (pos.get(i).usesVar(name))
+				return true;
+			
+		}
+		return false;
+	}
+	
 	public String toString(){
 		String result = "";
 		for (int i=0; i< pos.size(); i++){

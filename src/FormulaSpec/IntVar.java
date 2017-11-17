@@ -42,6 +42,10 @@ public class IntVar implements IntegerExpression, Var{
 		return name;
 	}
 	
+	public boolean usesVar(String name){
+		return this.getUnqualifiedName().equals(name);			
+	}
+	
 	public String getUnqualifiedName(){
     	String result = name;
     	for (int i=0; i<name.length(); i++){

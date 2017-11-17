@@ -38,6 +38,10 @@ public class OldIntVar implements IntegerExpression, Var {
 		return name;
 	}
 	
+	public boolean usesVar(String name){
+		return this.name.equals(name);
+	}
+	
 	public String toString(){
 		return "old "+ this.name;
 	}

@@ -23,6 +23,10 @@ public class Av implements ElemFormula{
     	return Type.BOOL;
     }
     
+    public boolean usesVar(String name){
+		return lock.usesVar(name);
+	}
+    
     public String toAlloy(String metaName, String state){
     	String result = "Av_"+lock.getUnqualifiedName()+"["+metaName+","+state+"]";
     	return result;

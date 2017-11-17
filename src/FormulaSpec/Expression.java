@@ -9,5 +9,6 @@ public interface Expression{
 	 * @return
 	 */
 	public String toAlloy(String metaName, String state);
+	public boolean usesVar(String name);
     //public String toString();
 }

@@ -39,6 +39,14 @@ public class Precondition {
 		return result;
 	}
 	
+	public boolean usesVar(String var){
+		for (int i=0; i<formulas.size(); i++){
+			if (formulas.get(i).usesVar(var))
+				return true;
+		}
+		return false;
+	}
+	
 	public String toString(){
 		String result = "Pre: ";
 		for (int i = 0; i<formulas.size(); i++){

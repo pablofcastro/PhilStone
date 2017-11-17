@@ -151,7 +151,7 @@ public class Action {
 		return result;
 	}
 	
-	public LinkedList<String> getFrameComplement(){
+	private LinkedList<String> getAllFrameComplement(){
 		LinkedList<String> vars  = new LinkedList<String>();
 		LinkedList<String> frameNames = this.getFrame();
 		vars.addAll(process.getLocalVarsNames());
@@ -166,19 +166,67 @@ public class Action {
 		return result;
 	}
 	
+	
+	/**
+	 * This method is mainly useful for improving the efficiency of alloy searching
+	 * @return	The linked list containing the complement of the frame, when it is a singleton, 
+	 * 			otherwise it returns the empty list 
+	 */
+	public LinkedList<String> getSingletonFrameComplement(){
+		LinkedList<String> result = getAllFrameComplement();
+		LinkedList<String> lockList = getLockFrameComplement();
+		if (result.size() == 1 && lockList.size()==0)
+			return result;
+		else
+			return new LinkedList<String>(); // else we return the empty list
+	}
+	
+	public LinkedList<String> getFrameComplement(){
+		LinkedList<String> result = getAllFrameComplement();
+		if (result.size() > 1 || getLockFrameComplement().size()>0)
+			return result;
+		else
+			return new LinkedList<String>(); // emptylist
+		//LinkedList<String> vars  = new LinkedList<String>();
+		//LinkedList<String> frameNames = this.getFrame();
+		//vars.addAll(process.getLocalVarsNames());
+		//LinkedList<String> result = new LinkedList<String>();
+		//for (int i=0; i<vars.size(); i++){
+		//	String current = vars.get(i);
+		//	if (!frameNames.contains(current)){
+		//		result.add(current);
+		//	}
+		//}
+		//return result;
+	}
+	
 	public LinkedList<String> getLockFrameComplement(){
 		LinkedList<String> vars  = new LinkedList<String>();
 		LinkedList<String> frameNames = this.getFrame();
 		//vars.addAll(process.getLocalVarsNames());
 		vars.addAll(process.getSharedVarsNames());
+		vars.addAll(process.getBoolParNames());
+		vars.addAll(process.getIntParNames());
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<vars.size(); i++){
 			String current = vars.get(i);
-			if (!frameNames.contains(current)){
+			if (!frameNames.contains(current) && process.usesSharedVar(current)){
 				result.add(current);
 			}
 		}
 		return result;
+	}
+	
+	public boolean usesVar(String var){
+		if (this.pre.usesVar(var))
+			return true;
+		if (this.post.usesVar(var))
+			return true;
+		for (int i=0; i<frame.size();i++){
+			if (frame.get(i).equals(var))
+				return true;
+		}
+		return false;
 	}
 	
 	

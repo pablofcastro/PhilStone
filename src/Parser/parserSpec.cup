@@ -8,7 +8,8 @@ import java_cup.runtime.*;
 import net.sf.javabdd.*;
 import java.util.*;
 import Spec.*;
-import Formula.*;
+import FormulaSpec.*;
+import Utils.*;
 
 parser code {:
     public void syntax_error(Symbol s){
@@ -71,6 +72,7 @@ terminal AV;
 terminal OWN;
 terminal PROPERTY;
 terminal DOT;
+terminal RUN;
                 
                 
 non terminal  ExprAux primary, expr, disjunction, conjunction, relation, comparison, addition, term, factor;
@@ -79,14 +81,14 @@ non terminal  HashMap<String, Type> declList;
 non terminal  HashMap<String, Type> decl;
 non terminal  LinkedList<String> varDecls;
 non terminal  ProcessAux process, bodyProcess;
-non terminal  HashMap<String, Type> paramList;
-non terminal  HashMap<String, Type> param;
+non terminal  LinkedList<Pair<String, Type>> paramList;
+non terminal  LinkedList<Pair<String,Type>> param;
 non terminal  LinkedList<ProcessAux> processList;
 non terminal  HashMap<String,Type> globalDecl;
 non terminal  HashMap<String,Type> globalVarList;
 non terminal  SpecAux specification;
 non terminal  HashMap<String, String> proc, processDecl;
-non terminal  HashMap<String, String> program, body;
+non terminal  Pair<HashMap<String, String>, HashMap<String,LinkedList<String>>> program, body; // a program is just the list of instances with the corresponding list of parameters
 non terminal  Type type;
 non terminal  SpecAux mainSpecification;
 non terminal  ExprAux temporalFormula;
@@ -96,6 +98,11 @@ non terminal  LinkedList<ExprAux> invariantList;
 non terminal  ExprAux invariant;
 non terminal  ActionAux actiondef;
 non terminal  LinkedList<ActionAux> actionlist;
+non terminal  HashMap<String, LinkedList<String>> processInvk;
+non terminal  HashMap<String, LinkedList<String>> invk;
+non terminal  LinkedList<String> invkParamList;
+non terminal  LinkedList<String> invkParam;
+
 //non terminal  LinkedList<String> frame;
 //non terminal  Clause clause;
 //non terminal  LinkedList<Clause> clauses;
@@ -129,11 +136,19 @@ specification ::=
 																					spec.addAllSharedVars(varList);
 																					spec.addAllProcesses(pList);
 																					spec.addInvariant(gf);
-																					Set<String> keys = main.keySet();
+																					// we add the instances
+																					Set<String> keys = main.getFirst().keySet();
 																					Iterator<String> it = keys.iterator();
 																					while (it.hasNext()){
 																						String current = it.next();
-																						spec.addInstance(current, main.get(current));
+																						spec.addInstance(current, main.getFirst().get(current));
+																					}
+																					// we add its parameters
+																					Set<String> keysP = main.getSecond().keySet();
+																					Iterator<String> itP = keysP.iterator();
+																					while (itP.hasNext()){
+																						String currentP = itP.next();
+																						spec.addInstanceActualPars(currentP, main.getSecond().get(currentP));
 																					}
 																					RESULT = spec;
                                                                                  :}
@@ -209,11 +224,13 @@ process ::= PROCESS ID:name USES varDecls:listC bodyProcess:proc {:
 																 :}
            | PROCESS ID:name LPARENT paramList:listP RPARENT USES varDecls:listC bodyProcess:proc {: proc.setName(name);
                                                                                                      //proc.addAllLocalVars(listC);
+																									 proc.addAllParameters(listP);
                                                                                                      RESULT = proc;
                                                                                                   :}
 
            | PROCESS ID:name LPARENT paramList:listP RPARENT  bodyProcess:proc                  {:   proc.setName(name);
                                                                                                      //proc.setParamList(listP);
+																									 proc.addAllParameters(listP);
                                                                                                      RESULT = proc;
                                                                                                   :}
 
@@ -228,23 +245,21 @@ paramList ::= param:p {:
                              RESULT = p;
                       :}  
             | paramList:list COMMA param:p  {:  
-                                                Set<String> keys = p.keySet();
-												Iterator<String> it = keys.iterator();
-												while(it.hasNext()){
-													String par = it.next();
-													list.put(par, p.get(par));
-												}
-												RESULT = list;
+                                                list.addAll(p);
+												RESULT = list;								
                                             :}
             
             ;
     
                 
-param ::= ID:name COLON type:t {:  HashMap<String, Type> dec = new HashMap<String, Type>();
-								   dec.put(name, t);
+param ::= ID:name COLON type:t {:  //HashMap<String, Type> dec = new HashMap<String, Type>();
+								   //dec.put(name, t)
+								   LinkedList<Pair<String, Type>> dec = new LinkedList<Pair<String, Type>>();
+								   dec.add(new Pair(name, t));
+								   RESULT = dec;
                                :}
        ;
-bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: ProcessAux proc = new ProcessAux(listDleft);
+bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
 																																					   proc.setInit(init);	
 																																					   proc.addAllLocalVars(listD);
 																																					   //proc.setPre(pre);
@@ -435,11 +450,12 @@ primary ::= INTEGER:v  {: ExprAux c = new ExprAux(v, vleft);
 					ExprAux c = new ExprAux(false, fleft);
 					RESULT = c;
 				 :}     
-      //    | ID:id {:
-	  //				ExprAux v = new ExprAux(id, idleft);
-	  //				v.setOwner("global"); // if no owner it is global
-	  //				RESULT = v;
-	  //		     :} 
+          | ID:id {:
+	  				ExprAux v = new ExprAux(id, idleft);
+	  				v.setOwner("par"); // if no owner it is a parameter
+					v.setUnqualifiedName(id); // the unqualified name is the same
+	  				RESULT = v;
+	  		     :} 
 		  | ID:owner DOT ID:id {:
 									ExprAux v = new ExprAux(owner+"."+id, idleft);
 									v.setOwner(owner); // we set the owner could be this, global or any other process
@@ -447,6 +463,13 @@ primary ::= INTEGER:v  {: ExprAux c = new ExprAux(v, vleft);
 									RESULT = v;
 			     				:}   
 			     				
+		  | ID:owner DOT OWN LPARENT ID:id RPARENT {:
+														ExprAux v = new ExprAux(owner+"."+id, idleft);
+														v.setOwner(owner);
+														v.setUnqualifiedName(id);
+														RESULT = new ExprAux(Operator.OWN, v, null, idleft);  
+														
+												   :} 	
 		  | GLOBAL DOT ID:id {:
 									ExprAux v = new ExprAux("global."+id, idleft);
 									v.setOwner("global"); // we set the owner could be this, global or any other process
@@ -460,12 +483,26 @@ primary ::= INTEGER:v  {: ExprAux c = new ExprAux(v, vleft);
 													v.setUnqualifiedName(id);
 													RESULT = new ExprAux(Operator.AV, v, null, idleft); 
 												:}
+		  | AV LPARENT ID:id RPARENT {: 
+													ExprAux v = new ExprAux(id, idleft);
+													v.setOwner("par");
+													v.setUnqualifiedName(id);
+													RESULT = new ExprAux(Operator.AV, v, null, idleft); 
+												:}
 		  | OWN LPARENT GLOBAL DOT ID:id RPARENT {:
 													ExprAux v = new ExprAux("global."+id, idleft);
 													v.setOwner("global");
 													v.setUnqualifiedName(id);
 													RESULT = new ExprAux(Operator.OWN, v, null, idleft);  
 												 :}
+		 | OWN LPARENT  ID:id RPARENT {:
+													ExprAux v = new ExprAux(id, idleft);
+													v.setOwner("par");
+													v.setUnqualifiedName(id);
+													RESULT = new ExprAux(Operator.OWN, v, null, idleft);  
+												 :} 									 
+												 
+												 
 		  | LPARENT expr:ex RPARENT 	{:  RESULT = ex; :}
 	//	  | NEG expr:ex					{:	RESULT = new ExprAux(Operator.NOT, ex, null, exleft); :}
 		  | temporalFormula:f			{:	RESULT = f;  :}
@@ -554,9 +591,9 @@ program ::= MAIN LPARENT RPARENT LBRACE body:dec RBRACE {:
 //                                                                           RESULT=main; 
             //                                                            :}
 //           ;
-body ::= processDecl:declList  SEMICOLON {:
-											RESULT = declList;
-										 :}
+body ::= processDecl:declList  SEMICOLON processInvk:invkList SEMICOLON	{:
+																			RESULT = new Pair<HashMap<String,String>,HashMap<String,LinkedList<String>>>(declList, invkList);
+										 								:}
 	;
            
 processDecl ::= proc:lp {:  
@@ -588,5 +625,50 @@ proc ::= varDecls:listNames COLON ID:typeProc {:
                                           	  :}
        ;
       
+processInvk ::= invk:i 		  {:                       
+                                 RESULT = i;
+                              :}
+              |   processInvk:listInvk SEMICOLON invk:i {: 
+														   Iterator<String> it = i.keySet().iterator();
+														   while (it.hasNext()){
+																String current = it.next();
+																listInvk.put(current, i.get(current));
+														   }		  
+                                                           RESULT = listInvk;
+                                                        :}
+              ;
+
+invk ::= RUN ID:id LPARENT RPARENT {:
+									  HashMap<String,LinkedList<String>> inks = new HashMap<String, LinkedList<String>>();
+                                      LinkedList<String> pars = new LinkedList<String>();
+									  inks.put(id, pars); 
+									  RESULT = inks;
+                                   :}
+		| RUN ID:id LPARENT invkParamList:listP RPARENT {:
+													HashMap<String,LinkedList<String>> inks = new HashMap<String, LinkedList<String>>();
+									  				inks.put(id, listP); 
+									  				RESULT = inks;
+                                                :} 
+;
+
+
+invkParamList ::= invkParam:par {:            
+                                    RESULT = par;
+                          	   :}
+				|   invkParamList:listInvk COMMA invkParam:par 		   {: 
+																		  listInvk.addAll(par);
+                                                 						  RESULT = listInvk;
+                                              						   :}
+;
+
+
+
+invkParam::=  ID:id {:  LinkedList<String> l = new LinkedList<String>();
+						l.add(id);
+                        RESULT = l;
+                    :}
+
+
+;
 
 

@@ -30,6 +30,10 @@ public class IntConstant extends TemporalFormula {
 		 return value;		 
 	}	
     
+    public boolean usesVar(String name){
+    	return false;
+    }
+    
     public String toAlloy(String metaName, String state){
     	Integer i = new Integer(value);
 		return i.toString();

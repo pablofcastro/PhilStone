@@ -12,6 +12,7 @@ public class SpecAux {
 
 	private String name;
 	private HashMap<String,ProcessAux> instances; //the instances of the specification as declared in the spec
+	private HashMap<String, LinkedList<String>> instanceActualPars; //the actual parameters of each instance 
 	private LinkedList<ProcessAux> processes; //the list of processes declared
 	private HashMap<String,Type> sharedVars; // the list of the shared var declared
 	private LinkedList<ExprAux> invs; // the list of the invariants
@@ -23,6 +24,7 @@ public class SpecAux {
 	public SpecAux(String name){
 		this.name = name;
 		this.instances = new HashMap<String, ProcessAux>();
+		this.instanceActualPars =  new HashMap<String, LinkedList<String>>(); //the parameters of the instances in the corresponding order 
 		this.processes = new LinkedList<ProcessAux>();
 		this.sharedVars = new HashMap<String,Type>();
 		this.invs = new LinkedList<ExprAux>();
@@ -62,6 +64,36 @@ public class SpecAux {
 		}
 	}
 	
+	
+	public void addInstanceActualPars(String instance, LinkedList<String> pars){
+		// we check if the instance is correct
+		if (!this.instances.containsKey(instance)){
+			this.instancesOK = false;
+			this.errors = this.errors + "Wrong instance invocation in main process!";
+			return;
+		}
+		
+		// first we check if the number of parameters is OK
+		if (pars.size() != this.instances.get(instance).getNumberPars()){
+			
+			this.instancesOK = false;
+			this.errors = this.errors + "Wrong instance invocation in main process!";
+			return;
+		}
+		
+		// we now check whether the types of the variables are ok
+		for (int i=0; i<pars.size(); i++){
+			if (this.sharedVars.get(pars.get(i)) != this.instances.get(instance).getParType(i)){
+				this.instancesOK = false;
+				this.errors = this.errors + "Wrong instance invocation in main process!";
+				return;
+			}	
+		}
+		
+		// if everything is OK we add the pars
+		this.instanceActualPars.put(instance, pars);			
+	}
+	
 	public void addSharedVar(String name, Type type){
 		this.sharedVars.put(name, type);
 	}
@@ -84,7 +116,6 @@ public class SpecAux {
 	}
 	
 	/**
-	 * 
 	 * @return	true iff the spec is grammatically correct
 	 */
 	public boolean typeCheck(){
@@ -195,6 +226,22 @@ public class SpecAux {
 		}
 		
 		// the instances
+		Set<String> ins = this.instances.keySet();
+		Iterator<String> it2 = ins.iterator();
+		while (it2.hasNext()){
+			String current = it2.next();
+			result.addInstance(current, result.getProcessByName(this.instances.get(current).getName()));
+		}
+		
+		// the parameters of the instances
+		Iterator<String> it3 = this.instanceActualPars.keySet().iterator();
+		while (it3.hasNext()){
+			String current = it3.next();
+			for (int i=0; i<this.instanceActualPars.get(current).size(); i++){
+				String actualPar = this.instanceActualPars.get(current).get(i);
+				result.addInstanceActualPar(current, result.getGlobalVarByName(actualPar));
+			}
+		}
 		
 		return result;
 	}
@@ -235,11 +282,26 @@ public class SpecAux {
 	 */
 	public boolean checkVarDeclaredInProcess(String name, String processName){
 		for (int i=0; i<this.processes.size(); i++){
-			if (this.processes.get(i).declaredVar(name))
+			if (this.processes.get(i).declaredVar(name) && this.processes.get(i).getName().equals(processName))
 				return true;
 		}
 		return false;
 	}
+	
+	/**
+	 * 
+	 * @param name	the unqualified name of the var
+	 * @param processName	the process name
+	 * @return	true iff the param is declared in the process
+	 */
+	public boolean checkParDeclaredInProcess(String name, String processName){
+		for (int i=0; i<this.processes.size(); i++){
+			if (this.processes.get(i).containsPar(name) && this.processes.get(i).getName().equals(processName))
+				return true;
+		}
+		return false;
+	}
+	
 	
 	/**
 	 * A method to look up for the type of a var
@@ -272,6 +334,28 @@ public class SpecAux {
 		}
 		
 	}
+	
+	public Type getTypePar(String name, String owner){
+		if (owner.equals("global")){
+				return Type.ERROR; // parameters cannot be global
+		}
+		else{ // it is a local var
+			ProcessAux myProcess = null;
+			for (int i = 0; i<this.processes.size(); i++){
+				if (this.processes.get(i).getName().equals(owner)){
+					myProcess = this.processes.get(i);
+					break;
+				}
+			}
+			if (myProcess == null)
+				return Type.ERROR;
+			else{
+				return myProcess.getParType(name);
+			}
+		}
+		
+	}
+	
 	
 	public Type getTypeVarFromInstance(String name, String instance){
 		if (instance.equals("global")){
@@ -314,4 +398,19 @@ public class SpecAux {
 		return result;
 	}
 	
+	public ProcessAux getProcessByName(String name){
+		for (int i=0; i< this.processes.size(); i++){
+			if (this.processes.get(i).getName().equals(name))
+				return this.processes.get(i);
+		}
+		throw new RuntimeException("Process Not Found.");
+	}
+	
+	
+	public boolean isParameter(String unqualifiedName, String owner){
+		if (this.instances.containsKey(owner))
+			return this.instances.get(owner).containsPar(unqualifiedName);
+		else
+			return false;
+	}
 }

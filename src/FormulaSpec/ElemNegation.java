@@ -22,6 +22,10 @@ public class ElemNegation implements ElemFormula{
 		return result;
 	}
 	
+	public boolean usesVar(String name){
+		return f.usesVar(name);
+	}
+	
 	public String toString(){
 		return "! ("+ f.toString()+")";
 	}

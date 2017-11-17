@@ -58,7 +58,8 @@ EndOfLineComment     = "// " {InputCharacter}* {LineTerminator}
 <YYINITIAL> "frame"				{ return symbol(sym.FRAME, new String(yytext()) ); }  
 <YYINITIAL> "av"				{ return symbol(sym.AV, new String(yytext()) ); }       
 <YYINITIAL> "own"				{ return symbol(sym.OWN, new String(yytext()) ); }    
-<YYINITIAL> "property"			{ return symbol(sym.PROPERTY, new String(yytext()) ); }                                      
+<YYINITIAL> "property"			{ return symbol(sym.PROPERTY, new String(yytext()) ); }    
+<YYINITIAL> "run"				{ return symbol(sym.RUN, new String(yytext()) ); }                                        
 
 
 

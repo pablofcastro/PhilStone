@@ -218,5 +218,14 @@ public class Node {
 		return result;		
 	}
 	
+	/**
+	 * Useful for initial nodes, which equivalence class may contain nodes holding different (global) properties
+	 * initially we assume that resources are free
+	 * @param node	a given node
+	 * @return	All the properties true in the equivalence class of the given node
+	 */
+	public LinkedList<String> getPropertiesOfEquivClass(String node){
+		return null; //TBD
+	}
 }
 

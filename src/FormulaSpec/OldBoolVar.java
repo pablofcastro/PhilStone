@@ -31,6 +31,10 @@ public class OldBoolVar implements Formula, Var{
     	return result;
 	}
     
+    public boolean usesVar(String name){
+    	return this.name.equals(name);  
+    }
+    
     public String getUnqualifiedName(){
     	String result = name;
     	for (int i=0; i<name.length(); i++){

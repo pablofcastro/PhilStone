@@ -50,6 +50,14 @@ public class Postcondition {
 		return formulas;
 	}
 	
+	public boolean usesVar(String var){
+		for (int i=0; i<formulas.size(); i++){
+			if (formulas.get(i).usesVar(var))
+				return true;
+		}
+		return false;
+	}
+	
 	public String toString(){
 		String result = "Post: ";
 		for (int i = 0; i<formulas.size(); i++){

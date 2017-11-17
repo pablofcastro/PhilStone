@@ -9,6 +9,10 @@ public class NegExpression extends AritExpression {
 		v.visit(this);
 	}
 	
+	public boolean usesVar(String name){
+		return this.getExpr1().usesVar(name);
+	}
+	
 	public String toAlloy(String metaName, String state){
 		String result = "- " + this.getExpr1().toAlloy(metaName,state);
 		return result;

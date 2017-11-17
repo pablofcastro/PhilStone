@@ -23,6 +23,10 @@ public class EqComparison implements ElemFormula {
     	return this.exp2;
     	
     }
+    
+    public boolean usesVar(String name){
+    	return (exp1.usesVar(name) || exp2.usesVar(name));
+    }
 	
     public String toAlloy(String metaName, String state){
     	String result = exp1.toAlloy(metaName,state) + " = "  + exp2.toAlloy(metaName,state);

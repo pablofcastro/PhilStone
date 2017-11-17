@@ -8,5 +8,6 @@ public interface IntegerVisitor {
 	public void visit(DivExpression i);
 	public void visit(IntVar e);
 	public void visit(OldIntVar e);
+	public void visit(IntPar e);
  
 }

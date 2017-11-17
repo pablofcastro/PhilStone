@@ -16,7 +16,7 @@ public class BoolVar implements ElemFormula, Var {
 	
 	@Override
     public String toString(){    	
-    	return name;
+    	return (this.getOwner()+".Prop_"+getUnqualifiedName());
     }
     
     public String getName(){
@@ -37,6 +37,21 @@ public class BoolVar implements ElemFormula, Var {
     	for (int i=0; i<name.length(); i++){
     		if (result.charAt(i) == '.'){
     			result = result.substring(i+1);
+    			break;
+    		}
+    	}
+    	return result;	
+    }
+    
+    public boolean usesVar(String name){
+		return this.getUnqualifiedName().equals(name);			
+	}
+    
+    public String getOwner(){
+    	String result = name;
+    	for (int i=0; i<name.length(); i++){
+    		if (result.charAt(i) == '.'){
+    			result = result.substring(0, i);
     			break;
     		}
     	}

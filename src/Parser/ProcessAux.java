@@ -1,5 +1,6 @@
 package Parser;
 import java.util.*;
+import Utils.*;
 
 import FormulaSpec.*;
 import Spec.*;
@@ -9,7 +10,8 @@ import Spec.*;
 public class ProcessAux {
 	private String name; // the name
 	private HashMap<String, Type> localVars; // the local vars
-	private HashMap<String, Type> pars; // the parameters of the process
+	//private HashMap<String, Type> pars; // the parameters of the process
+	private LinkedList<Pair<String, Type>> pars; // the parameters of the process, it is a linked list since the order of apparence matters
 	LinkedList<ActionAux> actions; // the actions of the process
 	private ExprAux init;
 	private LinkedList<ExprAux> invs; // the local invariants
@@ -22,7 +24,8 @@ public class ProcessAux {
 	public ProcessAux(int line){
 		this.name = "";
 		this.localVars = new HashMap<String,Type>();
-		this.pars = new HashMap<String, Type>();
+		//this.pars = new HashMap<String, Type>();
+		this.pars = new LinkedList<Pair<String,Type>>();
 		this.invs = new LinkedList<ExprAux>();
 		this.actions = new LinkedList<ActionAux>();
 		this.line = line;
@@ -33,7 +36,8 @@ public class ProcessAux {
 	public ProcessAux(String name, int line){
 		this.name = name;
 		this.localVars = new HashMap<String,Type>();
-		this.pars = new HashMap<String, Type>();
+		//this.pars = new HashMap<String, Type>();
+		this.pars = new LinkedList<Pair<String,Type>>();
 		this.invs = new LinkedList<ExprAux>();
 		this.actions = new LinkedList<ActionAux>();
 		this.line = line;
@@ -59,6 +63,14 @@ public class ProcessAux {
 	
 	public SpecAux getSpec(){
 		return this.mySpec;
+	}
+	
+	public boolean containsPar(String name){
+		for (int i=0; i < pars.size(); i++){
+			if (pars.get(i).getFirst().equals(name))
+				return true;
+		}
+		return false;
 	}
 	
 	public void setSpec(SpecAux spec){
@@ -114,6 +126,33 @@ public class ProcessAux {
 
 	}
 	
+	public void addParameter(String name, Type t){
+		if (localVars.containsKey(name) || this.containsPar(name)){
+			this.duplicatedVars = true;
+			this.addError("Duplicated variable in Process, line: "+line);
+		}
+		else{
+			this.pars.add(new Pair<String,Type>(name, t));
+		}
+	}
+	
+	public void addAllParameters(LinkedList<Pair<String, Type>> l){		
+		for (int i=0; i<l.size(); i++){
+			this.addParameter(l.get(i).getFirst(), l.get(i).getSecond());
+		}
+	}
+	
+	public int getNumberPars(){
+		return this.pars.size();
+	}
+	
+	public Type getParType(int i){
+		if (i<this.pars.size())
+			return pars.get(i).getSecond();
+		else
+			return Type.ERROR;
+	}
+	
 	public void addInvs(ExprAux i){
 		invs.add(i);
 	}
@@ -133,6 +172,15 @@ public class ProcessAux {
 		else{
 			return Type.ERROR;
 		}
+	}
+	
+	public Type getParType(String name){
+		for (int i=0; i<this.pars.size(); i++){
+			if (this.pars.get(i).getFirst().equals(name)){
+				return this.pars.get(i).getSecond();
+			}
+		}
+		return Type.ERROR;
 	}
 	
 	public Type getLocalVarType(String name){
@@ -180,11 +228,15 @@ public class ProcessAux {
 	 */
 	public ProcessSpec getProcessSpec(HashMap<String, Type> table){
 		ProcessSpec result = new ProcessSpec(this.name);
+		
+		// we add the actions
 		for (int i=0; i<actions.size(); i++){
 			Action currentAction = actions.get(i).getAction(table, mySpec);
 			result.addAction(currentAction);
 			currentAction.setProcess(result);
 		}
+		
+		// we add the local vars
 		Set<String> vars = localVars.keySet();
 		Iterator<String> it = vars.iterator();
 		while (it.hasNext()){
@@ -198,9 +250,25 @@ public class ProcessAux {
 				result.addLocalVar(v);
 			}		
 		}
+		
+		// we add the parameters
+		for (int i=0; i<pars.size(); i++){
+			if (pars.get(i).getSecond() == Type.BOOL){
+				BoolVar v = new BoolVar(pars.get(i).getFirst());
+				result.addPar(v);
+			}
+			if (pars.get(i).getSecond() == Type.INT){
+				IntVar v = new IntVar(pars.get(i).getFirst());
+				result.addPar(v);
+			}	
+		}
+		
+		// we add the invariants
 		for (int i=0; i<invs.size();i++){
 			result.addInv((TemporalFormula) invs.get(i).getExpr(table));
 		}
+		
+		// and the initial condition
 		result.setInit((Formula) init.getExpr(table));
 		return result;
 	}

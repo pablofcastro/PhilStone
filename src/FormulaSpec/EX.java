@@ -16,6 +16,10 @@ public class EX extends TemporalFormula {
 		return result;
 	}
 	
+	public boolean usesVar(String name){
+		return this.getExpr1().usesVar(name);
+	}
+	
 	public String toString(){
 		return "EX["+ this.getExpr1().toString() + "]";
 	}

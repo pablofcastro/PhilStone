@@ -88,6 +88,10 @@ public class ProcessSpec {
 		localVars.add(v);
 	}
 	
+	public void addPar(Var v){
+		this.pars.add(v);
+	}
+	
 	public void addInstance(String name){
 		instances.add(name);
 	}
@@ -114,6 +118,43 @@ public class ProcessSpec {
 			result.add(this.localVars.get(i).getName());
 		}
 		return result;
+	}
+	
+	public LinkedList<String> getBoolParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.BOOL){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
+	/**
+	 * A method to check whether a process mention a global var o nor
+	 * @param var
+	 * @return	true when the global variable is mentioned in the process
+	 */
+	public boolean usesSharedVar(String var){
+		for (int i=0; i<actions.size();i++){
+			if (actions.get(i).usesVar(var))
+				return true;
+		}
+		for (int i=0; i< invs.size();i++){
+			if (invs.get(i).usesVar(var))
+				return true;
+		}
+		return init.usesVar(var);
+	}
+	
+	public LinkedList<String> getIntParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.INT){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
 	}
 	
 	public String metamodelToString(String templateDir){
@@ -148,13 +189,58 @@ public class ProcessSpec {
 		st.add("name", this.name);
 		st.add("boolProps", localBoolProps);
 		//st.add("sharedBoolProps", sharedBoolProps);
-		st.add("sharedBoolProps", mySpec.getGlobalVarsNames());
-		st.add("locks", mySpec.getLocks());
+		LinkedList<String> globalVars = new LinkedList<String>();
+		//globalVars.addAll(mySpec.getGlobalVarsNames());
+		
+		
+		// we add just the global variables used in this process
+		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
+			if (this.usesSharedVar(mySpec.getGlobalVarsNames().get(i))){
+				globalVars.add(mySpec.getGlobalVarsNames().get(i));
+			}
+		}
+		
+		// define usedglobalvars
+		LinkedList<String> usedGlobalVars = new LinkedList<String>();
+		for (int i=0; i<this.mySpec.getGlobalVarsNames().size();i++){
+			if (this.usesSharedVar(this.mySpec.getGlobalVarsNames().get(i)))
+				usedGlobalVars.add(this.mySpec.getGlobalVarsNames().get(i));		
+		}
+		usedGlobalVars.addAll(this.getBoolParNames());
+		
+		// we set the important global vars for the locks
+		for (int i=0; i<this.mySpec.getLocks().size();i++){
+			this.mySpec.getLocks().get(i).setUsedGlobalVars(usedGlobalVars);
+			//System.out.println(this.mySpec.getLocks().get(i).getOtherGlobalVars());
+		}
+		
+		LinkedList<Lock> usedLocks= new LinkedList<Lock>();
+		for (int i=0;i<this.mySpec.getLocks().size();i++){
+			if (usedGlobalVars.contains(this.mySpec.getLocks().get(i).getVarName()))
+				usedLocks.add(this.mySpec.getLocks().get(i));
+		}
+		// parameters are considered global vars
+		globalVars.addAll(this.getBoolParNames());
+		
+		// parameters are also considered locks 
+		for (int i=0; i<this.getBoolParNames().size();i++){
+			Lock parLock = new Lock(this.getBoolParNames().get(i), this.mySpec);
+			parLock.setUsedGlobalVars(usedGlobalVars);
+			usedLocks.add(parLock);
+		}
+		
+		for (int i=0; i<usedLocks.size(); i++){
+			usedLocks.get(i).getOtherGlobalVars();
+		}
+		
+		st.add("sharedBoolProps", globalVars); // we take the parameters as a global variables
+		st.add("locks", usedLocks); //for now the global vars are locks
 		st.add("localActions", localActions);
 		st.add("envActions", envActions);
 		st.add("actions", actions);
 		st.add("invariants", invariants);
 		st.add("init", this.init.toAlloy(this.name+"Meta", "s"));
+		
 		
 		String result = st.render();
 		return result;

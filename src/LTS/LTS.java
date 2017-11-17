@@ -145,10 +145,23 @@ public class LTS {
 	}
 	
 	/**
-	 * Creates an alloy metamodel from the LTS
-	 * @param output
+	 * Creates an Alloy specification for searching instances from this LTS
+	 * @param output	the output filename
+	 * @param templateDir	the folder where the template of the instances is saved
 	 */
-	public void toAlloyMetaModel(PrintWriter writer){
+	//public void toAlloySpecInstance(String output, String templateDir){
+		
+	//}
+	
+	
+	/**
+	 * Creates an alloy specification for  the possible instance from this LTS
+	 * Note: the instance only preserves properties of ACTL, this could be extended to all CTL...
+	 * @param output	
+	 * @param scope		the scope that will passed to Alloy
+	 * @param counterexamples a collection of counterexamples that allows us to refine the specification
+	 */
+	public void getAlloyInstancesSpec(PrintWriter writer, int scope, LinkedList<LinkedList<String>> counterexamples){
 			String space = "    ";
 			//PrintWriter writer = new PrintWriter(output, "UTF-8");
 			writer.println("abstract sig Node{}");
@@ -164,10 +177,11 @@ public class LTS {
 			writer.println("abstract sig Prop{}");		
 			for (int i=0; i<props.size(); i++){
 				writer.println("one sig "+props.get(i)+ " extends Prop{}");
+				writer.println("pred "+props.get(i)+"[m:Instance"+name+",n:Node]{"+props.get(i)+" in m.val[n]}");
 			}
 			
 			// writes down the metamodel of the signature
-			writer.println("abstract sig Meta_"+ name +"{"  );
+			writer.println("abstract sig Instance"+name+"{"  );
 			writer.println(space + "nodes : set Node,");
 			writer.println(space + "succs : nodes -> nodes,");
 			writer.println(space + "val: nodes -> Prop,");
@@ -194,7 +208,14 @@ public class LTS {
 			// the actions
 			for (int i=0; i<actions.size();i++){
 				LinkedList<Edge> edgeList = this.getEdgesWithName(actions.get(i));
-				writer.print(space + actions.get(i)+" = ");
+				if (!env.contains(actions.get(i))){
+					if (actions.get(i).equals("ACTgetLeft") || actions.get(i).equals("ACTgetRight"))
+						writer.print(space + actions.get(i)+" in "); // NOTE: CHANGE THIS!
+					else
+						writer.print(space + actions.get(i)+" = ");
+				}
+				else
+					writer.print(space + actions.get(i)+" = ");
 				for (int j=0; j<edgeList.size();j++){
 					if (j==0)
 						writer.print(edgeList.get(j).getOrigin().getName()+"->"+edgeList.get(j).getTarget().getName());
@@ -228,8 +249,6 @@ public class LTS {
 			}
 			writer.println("");
 			
-			
-			
 			// the env
 			writer.print(space+"env =");
 			for (int i=0;i<env.size();i++){
@@ -242,8 +261,30 @@ public class LTS {
 			
 			// the local actions
 			writer.println(space+"local = succs - env");
-			writer.println("}");
 			
+			// we write down the counterexamples
+			for (int i=0; i<counterexamples.size();i++){
+				LinkedList<String> actualCex = counterexamples.get(i);
+				boolean firstTime = true;
+				for (int j=0; j<actualCex.size()-1;j++){
+					if (!actualCex.get(j).equals(actualCex.get(j+1))){
+						if (firstTime){
+							writer.print("(not ("+actualCex.get(j+1)+" in succs["+actualCex.get(j)+"]))");
+							firstTime = false;
+						}
+						else{
+							writer.print("or (not ("+actualCex.get(j+1)+" in succs["+actualCex.get(j)+"]))");	
+						}
+					}
+				}
+				writer.print("\n");	
+			}
+			writer.println("");
+			writer.println("}");
+			//writer.println("pred compile[s:Node]{s="+ this.initialNode+"\n all n:Instance"+name+".nodes | some Instance"+name+".local[n] }");
+			writer.println("pred compile[s:Node]{s="+ this.initialNode+"\n 	some n':(*(Instance"+name+".succs))[s] | Prop_eating[InstanceNoName, n'] \n 	all n':(*(Instance"+name+".succs))[s] | some n'':(*(Instance"+name+".succs))[n'] | some InstanceNoName.local[n'']}");
+			writer.println("run compile for "+scope + " but 1 Instance"+name);
+			writer.close();
 	}
 	
 	/**
@@ -277,7 +318,7 @@ public class LTS {
 			setEnvActions(instance);
 			this.initialNode = this.getInitialNode(instance);
 			
-			this.toDot("sample.dot");
+			//this.toDot("sample.dot");
 			
 			// we obtain the actions
 			
@@ -289,37 +330,53 @@ public class LTS {
 	/**
 	 * 
 	 * @param parameters	the parameters of the process
+	 * @param processName	the name that the process will have, it has to be passed from the class PhilStone
+	 * @param stateProcess	the name of the state space of the process  (an enum type)
 	 * @return	A description of the LTS for Model Checking, using the FAULTY language
 	 */
-	public String toMCProcess(HashMap<String,String> parameters){
+	public String toMCProcess(HashMap<String,String> parameters, String processName, String stateProcess){
 		String result = "";
-		// by now without parameters
-		//result += "Process " + this.name + "(";
-		//Set<String> pars = parameters.keySet();
-		//Iterator<String> it = pars.iterator();
-		//while (it.hasNext()){
-		//	String current = it.next();
-		//	result += current +":"+parameters.get(current);
-		//}
-		//result+="){\n";
-		result += "Process " + this.name + "{\n";
+		if (!parameters.isEmpty()){
+			result += "Process " + processName + "(";
+			Set<String> pars = parameters.keySet();
+			Iterator<String> it = pars.iterator();
+			while (it.hasNext()){
+				String current = it.next();
+				if (it.hasNext())
+					result += current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL,";
+				else 
+					result += current +":"+parameters.get(current) +", "+"Av_"+current+":BOOL";
+			}
+			result+="){\n";
+		}
+		else{
+			result += "Process " + processName + "{\n";
+		}
+		boolean ftime = true;
 		for (int i=0; i < this.props.size(); i++){
-			if (i==0)
-				result += props.get(i);
-			else
-				result += ", "+props.get(i);
+			if (!props.get(i).contains("Av")){
+				if (ftime){
+					result += props.get(i);
+					ftime = false;
+				}
+				else{
+					result += ", "+props.get(i);
+				}
+			}
 		}
 		result += " : BOOL;\n"; // until now we deal only with booleans 
-		result += "state : " + "state"+this.name+";\n";
+		result += "state : " + "state"+stateProcess+";\n";
 		// we compute the equivalence classes
 		this.computeEqClasses();
 	
 		// the get equivalence class of the initial node
 		Node init = this.eqClasses.find(this.nodes.get(initialNode)); 
 		
+		
 		// we set the initial condition
 		result += "Initial : state == "+init.getName();
-		LinkedList<String> ps = init.getProperties();
+		//LinkedList<String> ps = init.getProperties(); // test this
+		LinkedList<String> ps = this.getPropertiesOfEquivClass(init);
 		for (int i=0; i< this.props.size(); i++){
 			if (ps.contains(this.props.get(i)))
 				result += " && " +this.props.get(i);
@@ -376,7 +433,8 @@ public class LTS {
 		for (int j=0; j< list.getLength(); j++){
 			if (! (list.item(j).getNodeType() == org.w3c.dom.Node.TEXT_NODE)){
 			    if (list.item(j).getChildNodes().item(1).getAttributes().item(0).getNodeValue().startsWith("Node")){				    	
-			    	result = list.item(j).getChildNodes().item(1).getAttributes().item(0).getNodeValue().replace('$', '0');
+			    	//result = list.item(j).getChildNodes().item(1).getAttributes().item(0).getNodeValue().replace('$', '0');
+			    	result = removeDollarSign(list.item(j).getChildNodes().item(1).getAttributes().item(0).getNodeValue());
 			
 			    }
 			}
@@ -399,8 +457,10 @@ public class LTS {
 			org.w3c.dom.NodeList list = items.item(i).getChildNodes();
 			for (int j=0; j< list.getLength(); j++){
 				if (! (list.item(j).getNodeType() == org.w3c.dom.Node.TEXT_NODE)){
-				    if (list.item(j).getChildNodes().item(3).getAttributes().item(0).getNodeValue().startsWith("Node")){				    	
-				    	Node myNode = new Node(list.item(j).getChildNodes().item(3).getAttributes().item(0).getNodeValue().replace('$', '0'));
+				    if (list.item(j).getChildNodes().item(3).getAttributes().item(0).getNodeValue().startsWith("Node")){
+				    	//Node myNode = new Node(list.item(j).getChildNodes().item(3).getAttributes().item(0).getNodeValue().replace('$', '0'));
+				    	//Node myNode = new Node(list.item(j).getChildNodes().item(3).getAttributes().item(0).getNodeValue().replace("$", ""));
+				    	Node myNode = new Node(removeDollarSign(list.item(j).getChildNodes().item(3).getAttributes().item(0).getNodeValue()));
 				    	result.add(myNode);
 				    }
 				}
@@ -424,7 +484,8 @@ public class LTS {
 				if (items.item(i).getNodeName().equals("tuple")){
 					String origin = getIthFromTuple(items.item(i), 2).getAttributes().item(0).getNodeValue();
 					String target = getIthFromTuple(items.item(i), 3).getAttributes().item(0).getNodeValue();
-					result.add(new Edge(nodes.get(origin.replace('$', '0')), nodes.get(target.replace('$', '0')), false, ""));
+					//result.add(new Edge(nodes.get(origin.replace('$', '0')), nodes.get(target.replace('$', '0')), false, ""));
+					result.add(new Edge(nodes.get(removeDollarSign(origin)), nodes.get(removeDollarSign(target)), false, ""));
 				}
 					
 			}
@@ -445,7 +506,8 @@ public class LTS {
 				if (items.item(i).getNodeName().equals("tuple")){
 					String state = getIthFromTuple(items.item(i), 2).getAttributes().item(0).getNodeValue();
 					String prop = getIthFromTuple(items.item(i), 3).getAttributes().item(0).getNodeValue();
-					nodes.get(state.replace('$', '0')).addProperty(prop.replace('$','0').replaceAll("0",""));					
+					//nodes.get(state.replace('$', '0')).addProperty(prop.replace('$','0').replaceAll("0",""));		
+					nodes.get(removeDollarSign(state)).addProperty(prop.replace('$','0').replaceAll("0",""));	
 					this.addProposition(prop.replace('$','0').replaceAll("0",""));
 				}
 					
@@ -468,8 +530,10 @@ public class LTS {
 			for (int j=0; j<items.getLength(); j++){
 				if ( items.item(j).getNodeType() != org.w3c.dom.Node.TEXT_NODE){
 					if (items.item(j).getNodeName().equals("tuple")){
-						String source = getIthFromTuple(items.item(j), 2).getAttributes().item(0).getNodeValue().replace('$', '0');
-						String target = getIthFromTuple(items.item(j), 3).getAttributes().item(0).getNodeValue().replace('$', '0');
+						//String source = getIthFromTuple(items.item(j), 2).getAttributes().item(0).getNodeValue().replace('$', '0');
+						//String target = getIthFromTuple(items.item(j), 3).getAttributes().item(0).getNodeValue().replace('$', '0');
+						String source = removeDollarSign(getIthFromTuple(items.item(j), 2).getAttributes().item(0).getNodeValue());
+						String target = removeDollarSign(getIthFromTuple(items.item(j), 3).getAttributes().item(0).getNodeValue());
 						//this.actions.put(name, new Pair<String, String>(source, target));	
 						this.nodes.get(source).addEdge(new Edge(nodes.get(source), nodes.get(target), false, name));
 					}
@@ -492,8 +556,12 @@ public class LTS {
 			if (items.item(i).getNodeType()!= org.w3c.dom.Node.TEXT_NODE){
 				// if they are tuples then we get the contain
 				if (items.item(i).getNodeName().equals("tuple")){
-					String source = getIthFromTuple(items.item(i), 2).getAttributes().item(0).getNodeValue().replace('$', '0');
-					String target = getIthFromTuple(items.item(i), 3).getAttributes().item(0).getNodeValue().replace('$', '0');
+					//String source = getIthFromTuple(items.item(i), 2).getAttributes().item(0).getNodeValue().replace('$', '0');
+					//String target = getIthFromTuple(items.item(i), 3).getAttributes().item(0).getNodeValue().replace('$', '0');
+					//String source = getIthFromTuple(items.item(i), 2).getAttributes().item(0).getNodeValue().replace("$", "");
+					//String target = getIthFromTuple(items.item(i), 3).getAttributes().item(0).getNodeValue().replace("$", "");
+					String source = removeDollarSign(getIthFromTuple(items.item(i), 2).getAttributes().item(0).getNodeValue());
+					String target = removeDollarSign(getIthFromTuple(items.item(i), 3).getAttributes().item(0).getNodeValue());
 					LinkedList<Edge> edges = nodes.get(source).getAdj();
 					// we set the corresponding arcs true
 					for (int j=0; j<edges.size();j++){
@@ -581,4 +649,42 @@ public class LTS {
 			currentNode.computeEqClasses(this.eqClasses);
 		}
 	}
+	
+	/**
+	 * Useful for initial nodes, which equivalence class may contain nodes holding different (global) properties
+	 * initially we assume that resources are free
+	 * @param nodeName	a given node
+	 * @return	All the properties true in the equivalence class of the given node
+	 */
+	public LinkedList<String> getPropertiesOfEquivClass(Node par){
+		LinkedList<String> result = new LinkedList<String>();
+		Iterator<Node> it = this.nodes.values().iterator();
+		//Node par = this.nodes.get(nodeName);
+		result.addAll(par.getProperties());
+		while (it.hasNext()){
+			Node current = it.next();
+			if (this.eqClasses.find(current) == this.eqClasses.find(par)){
+				for (int i=0; i<current.getProperties().size();i++){
+					if (!result.contains(current.getProperties().get(i)))
+						result.add(current.getProperties().get(i));
+				}
+			}
+		}
+		return result; 
+	}
+	
+	/**
+	 * 
+	 * @param str	the string to be modifed
+	 * @return	the string removing the $ character in a convenient way
+	 */
+	private String removeDollarSign(String str){
+		if (str.equals("Node$0"))
+			return "Node0";
+		if (str.endsWith("$0")){
+			return str.replaceAll("\\$0", "");
+		}
+		return str.replace("$", "");
+	}
+	
 }
