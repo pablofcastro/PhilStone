@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 public class Disjunction extends TemporalFormula {
 	
 	public Disjunction(Formula e1, Formula e2){
@@ -20,10 +22,24 @@ public class Disjunction extends TemporalFormula {
 		return (this.getExpr1().usesVar(name) || this.getExpr2().usesVar(name));
 	}
 	
+	public String getAuxPred(String modelName){
+		String result = "";
+		return result;
+	}
+	
 	public String toString(){
 		//System.out.println(this.getExpr1());
 		//System.out.println(this.getExpr2());
 		return this.getExpr1().toString() + " | " + this.getExpr2().toString(); 
 	}
+	
+	public LinkedList<String> generatePreds(String modelName){
+    	LinkedList<String> result = new LinkedList<String>();
+    	if (this.getExpr1() instanceof TemporalFormula)
+			result.addAll(((TemporalFormula)this.getExpr1()).generatePreds(modelName));
+		if (this.getExpr2() instanceof TemporalFormula)
+			result.addAll(((TemporalFormula)this.getExpr2()).generatePreds(modelName));
+    	return result;
+    }
 
 }

@@ -1,6 +1,6 @@
 // this file describes the alloy metamodel for processes
 // Author: Pablo Castro
-metamodel(name,boolProps,sharedBoolProps, locks, localActions,envActions,actions,invariants, init)  ::=
+metamodel(name,boolProps,sharedBoolProps, locks, localActions,envActions,actions, auxVars, auxAxioms, auxPreds, invariants, init, scope)  ::=
 <<
 open util/relation
 
@@ -19,6 +19,8 @@ abstract sig Prop{}
 
 <sharedBoolProps:{ s | pred Own_<s>[m:<name>Meta, n:Node]{Own_<s> in m.val[n]\}}; separator="\n">
 
+<auxVars:{ s | <s>}; separator="\n">
+
 one sig <name>Meta{
 	nodes:set Node,
 	val: nodes -> Prop,
@@ -34,6 +36,7 @@ one sig <name>Meta{
 	<! <if(envActions)>env = <envActions : {a | ACT<a.name>}; separator="+"> <endif> !>
 	<if(sharedBoolProps)>env = <sharedBoolProps : {s | ACTchange_<s>}; separator="+"><endif>
 	no (local & env)
+    <auxAxioms: {s | <s>}; separator="\n">
 }
 
 -- actions axioms
@@ -86,13 +89,16 @@ and
 \}}; separator="\n">
 <endif>
 
+<auxPreds: {p | <p>}; separator="\n">
+
 -- Pred with inital condition and Invariants
 pred Mod[s:<name>Meta.nodes]{ 
     all s':(*(<name>Meta.succs)[s]) | some <name>Meta.succs[s']
     <if(invariants)> <invariants : {inv | <inv>}; separator="\n">  <endif>
     <init>
+    
 }
 
-run Mod for 14
+run Mod for <scope>
 
 >>

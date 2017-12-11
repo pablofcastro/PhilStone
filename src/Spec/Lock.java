@@ -5,12 +5,25 @@ public class Lock{
 	private String varName; // the associated var name to the lock
 	private Spec mySpec;
 	private LinkedList<String> usedGlobalVars;
+	private boolean onlyLock; // this variable is use to point out that the associated variables is only a lock, do not need more data
 	
 	
 	public Lock(String varName, Spec mySpec) {
 		this.varName = "change_"+varName;
 		this.varName = varName;
 		this.mySpec = mySpec;
+		this.onlyLock = false;
+	}
+	
+	public Lock(String varName, Spec mySpec, boolean onlyLock) {
+		this.varName = "change_"+varName;
+		this.varName = varName;
+		this.mySpec = mySpec;
+		this.onlyLock = onlyLock;
+	}
+	
+	public boolean getOnlyLock(){
+		return this.onlyLock;
 	}
 	
 	public void setUsedGlobalVars(LinkedList<String> list){

@@ -119,6 +119,16 @@ public class Node {
 		return result;
 	}
 	
+	public LinkedList<Edge> searchEdgesByEqClass(Node target){
+		LinkedList<Edge> result = new LinkedList<Edge>();
+		for (int i=0;i<this.adj.size();i++){
+			if (this.myLTS.getUnionFind().find(this.adj.get(i).getTarget()) == this.myLTS.getUnionFind().find(target))
+				result.add(this.adj.get(i));
+		}
+		return result; 
+	}
+	
+	
 	/**
 	 * It outputs a description of the node's adjancent in Dot format
 	 * @param writer	the place where the dot will be written

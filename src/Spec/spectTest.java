@@ -14,7 +14,7 @@ public class spectTest {
 		
 		p.addAction(getNCS);
 		p.addLocalVar(NCS);
-		p.generateMetamodel(null, "/Users/Pablo/University/my-papers/drafts/Alloy.Synt/Tool/local/templates");
+		p.generateMetamodel(null, "/Users/Pablo/University/my-papers/drafts/Alloy.Synt/Tool/local/templates", 14);
 	}
 
 }

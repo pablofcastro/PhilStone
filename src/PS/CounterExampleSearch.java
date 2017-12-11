@@ -35,13 +35,17 @@ public class CounterExampleSearch {
 	LinkedList<CounterExample> counterExamples; 						// a set containing all the counter examples found until now,
 	HashMap<String, LinkedList<LinkedList<String>>> cexForInstance; // it contains for each instance a queue contain a collection of counterexamples
 	HashMap<String, LinkedList<LinkedList<String>>> cexActualRun; // it keeps the counter examples found in the actual execution of the algorithm
+	HashMap<String, Boolean> disjointCexFound; // says if a new coutnerexample was found for the corresponding instance
 	Spec mySpec;			// the specification
 	String outputPath;		// the output path for the synthesized program
 	String templatePath;	// the path to the template,
 	int numberIns; 			// number of the running processes
 	HashMap<String, Integer> currentCex; // used for synthesis, the maps points out the current cex used for each process, -1 indicates no counterexample
 	boolean showInfo = false; // when true the methods will show the info of the search
-	
+	boolean printPDF;
+	boolean cexFound = false;
+	boolean cexRefined = false; // a boolean 
+	int scope;
 	
 	/**
 	 * A basic constructor
@@ -49,9 +53,12 @@ public class CounterExampleSearch {
 	 * @param outputPath
 	 * @param templatePath
 	 */
-	public CounterExampleSearch(Spec mySpec, String outputPath, String templatePath){
+	public CounterExampleSearch(Spec mySpec, String outputPath, String templatePath, boolean showInfo, boolean printPDF, int scope){
 		this.syntProgram = "";
 		this.mySpec = mySpec;
+		this.showInfo = showInfo;
+		this.printPDF = printPDF;
+		this.scope = scope;
 		processes = mySpec.getProcessesNames();
 		this.instances = mySpec.getInstanceTypes();
 		instancesList = new LinkedList<String>(instances.keySet());
@@ -68,6 +75,13 @@ public class CounterExampleSearch {
 		for (int i=0; i<instancesList.size(); i++){
 			this.cexForInstance.put(instancesList.get(i), new LinkedList<LinkedList<String>>());
 		}
+		
+		// we initialized all the elements of 
+		this.disjointCexFound = new HashMap<String, Boolean>();
+		for (int i=0; i<instancesList.size(); i++){
+			this.disjointCexFound.put(instancesList.get(i), new Boolean(false));
+		}
+		
 		this.cexActualRun = new HashMap<String, LinkedList<LinkedList<String>>>();
 		this.outputPath = outputPath;
 		this.templatePath = templatePath;
@@ -98,7 +112,7 @@ public class CounterExampleSearch {
 			
 			// we obtain the alloy specification for the laxest model
 			//String myProcess = instances.get(currentProcess);
-			String metamodel = mySpec.metamodelToString(currentProcess, templatePath);
+			String metamodel = mySpec.metamodelToString(currentProcess, templatePath, scope);
 			try{			
 				// we write the specification to a file
 			    PrintWriter writer = new PrintWriter(outputPath+currentProcess+"Template.als", "UTF-8");
@@ -111,7 +125,7 @@ public class CounterExampleSearch {
 		
 			A4Reporter rep = new A4Reporter();
 			Module world = null;
-			LTS lts = new LTS();
+			LTS lts = new LTS(mySpec.getProcessByName(currentProcess));
 			try{
 				world = CompUtil.parseEverything_fromFile(rep, null, outputPath+currentProcess+"Template.als");
 				A4Options opt = new A4Options();
@@ -141,6 +155,7 @@ public class CounterExampleSearch {
 			for (int j=0; j<instancesList.size();j++){
 				if (instances.get(instancesList.get(j)).equals(currentProcess))
 					mapInsModels.put(instancesList.get(j), lts); // if the instance has as type the current process then the lts is set
+					lts.toDot(outputPath+"lax"+instancesList.get(j)+".dot");
 			}
 			
 		}
@@ -158,10 +173,10 @@ public class CounterExampleSearch {
 		if (found){
 			System.out.println("Program Synthesized, saved to output folder.."); 
 			
-			// we print the dots
-			for (int i=0; i<this.instancesList.size(); i++)
-				this.mapInsModels.get(instancesList.get(i)).toDot(outputPath+instancesList.get(i)+".dot");
-			
+			if (this.printPDF){  // we print the dots			
+				for (int i=0; i<this.instancesList.size(); i++)
+					this.mapInsModels.get(instancesList.get(i)).toDot(outputPath+instancesList.get(i)+".dot");
+			}
 			// the program is written to the output folder
 			try{
 				PrintWriter writer = new PrintWriter(outputPath+mySpec.getName()+".imp", "UTF-8");
@@ -178,27 +193,35 @@ public class CounterExampleSearch {
 	
 	public boolean counterExampleSearch(int insNumber, int scope){
 		boolean result = false; // an attribute to save the result
-		
 		String currentIns = instancesList.get(insNumber);
 		LTS originalModel = mapInsModels.get(currentIns);
+		if (showInfo){
+			System.out.println("Inspecting instance: "+currentIns);
+		}
 		
 		if (insNumber == this.numberIns - 1){ // if so we are in the base case
 			if (modelCheck(currentIns, new LinkedList<LinkedList<String>>())){ // if false, we add the counterexamples to the corresponding queues
 				return true;
 			}
 			else{
+				this.cexFound = false; 
 				// we try to get a program for all the cex
-				int cexNumber = -1; // we use -1 for the case when no counterexample is analyzed
+				int cexNumber = 0; // we use -1 for the case when no counterexample is analyzed
 				// we use a collection of actual counterexamples, the idea is to add new counterexample found during hte execution of the algorithm
 				LinkedList<LinkedList<String>> actualCexs = new LinkedList<LinkedList<String>>();
-				while (cexNumber < this.cexForInstance.get(this.instancesList.get(insNumber)).size()){
-					if (cexNumber > 0)
-						actualCexs.add(this.cexForInstance.get(currentIns).get(cexNumber)); // we add the current cex	
+				this.disjointCexFound.put(currentIns, new Boolean(false));
+				int j = 0;
+				while (cexNumber < this.cexForInstance.get(this.instancesList.get(insNumber)).size() & !this.disjointCexFound.get(currentIns)){
+					if (cexNumber > -1){
+						actualCexs.add(this.cexForInstance.get(currentIns).get(cexNumber)); // we add the current cex
+					}
 					// WE GET A POSSIBLE PROGRAM AND MODEL CHECK IT
 					try{
+						cexRefined = false;
 						A4Reporter rep = new A4Reporter();
 						Module world = null;
-						LTS lts = new LTS();
+						LTS lts = new LTS(mySpec.getProcessSpec(currentIns));
+						LTS formerLTS = mapInsModels.get(currentIns);
 						PrintWriter writer = new PrintWriter(outputPath+"Instances.als", "UTF-8");
 						mapInsModels.get(currentIns).getAlloyInstancesSpec(writer,scope, actualCexs);	
 						A4Options opt = new A4Options();
@@ -207,20 +230,27 @@ public class CounterExampleSearch {
 						world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"Instances.als");
 						Command cmd = world.getAllCommands().get(0);
 						A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
-						assert sol.satisfiable();
-						sol.writeXML(outputPath+"temp.xml");
-						lts.fromAlloyXML(outputPath+"temp.xml");
-						//lts.toDot(outputPath+"instance"+i+".dot");
-						//System.out.println("Instance Number:"+i);
-						//i++;
-						mapInsModels.put(currentIns, lts);
-						changed.put(currentIns, new Boolean(true));
-						// if we generate a correct program then output true
-						if (modelCheck(currentIns, actualCexs)) // model check generates new counterexamples, TBD: we need to add any found instance to actualCexs
-							return true;
+						while (sol.satisfiable() & !disjointCexFound.get(currentIns) & !cexRefined){ //add refined
+							sol.writeXML(outputPath+"temp.xml");
+							lts.fromAlloyXML(outputPath+"temp.xml");
+							lts.toDot(outputPath+currentIns+j+".dot");
+							if (showInfo)
+								System.out.println("Instance "+ currentIns + ", Iteration Number:"+j);
+							j++;
+							mapInsModels.put(currentIns, lts);
+							changed.put(currentIns, new Boolean(true));
+							// if we generate a correct program then output true
+							if (modelCheck(currentIns, actualCexs)) // model check generates new counterexamples, TBD: we need to add any found instance to actualCexs
+								return true;
 						
-						// else continue with the search, and restore the previous values
-						changed.put(currentIns, new Boolean(false));
+							// else continue with the search, and restore the previous values
+							mapInsModels.put(currentIns, formerLTS);
+							changed.put(currentIns, new Boolean(false));
+							sol = sol.next();
+						}
+						//else{
+						//	break;
+						//}
 					}// end of try
 					catch(Exception e){
 						System.out.println("Input-Output Error trying to write Alloy files.");
@@ -232,7 +262,9 @@ public class CounterExampleSearch {
 						System.out.println(e.getMessage());
 						e.printStackTrace();//System.out.println(e);
 					}
-					cexNumber++;
+					if (!cexRefined)
+						cexNumber++;
+					//j++;
 				}
 				// after this while we know that no program was found for this instance of the search
 				return false;
@@ -242,6 +274,8 @@ public class CounterExampleSearch {
 			int cexNumber = -1; // at the beginning we start with no counterexample
 			LinkedList<LinkedList<String>> actualCexs = new LinkedList<LinkedList<String>>();
 			// while there are counterexamples in the queue try...
+			int k =0;
+			
 			while (cexNumber < this.cexForInstance.get(currentIns).size()){
 						
 				if (cexNumber == -1){ // if -1 then no counterexample will take into account
@@ -249,16 +283,23 @@ public class CounterExampleSearch {
 						return true;
 				}
 				else{
+					if (showInfo){
+						System.out.println("Instance:"+currentIns);
+						System.out.println(actualCexs.size());
+						System.out.println(this.cexActualRun.get(currentIns).size());
+						
+					}
 					actualCexs.add(this.cexForInstance.get(currentIns).get(cexNumber)); // we add the current cexs	
-			
+					int p = 0;
 					// while we can get more counterexamples using the current counterexamples we try to find a program
-					while (actualCexs.size() < this.cexActualRun.get(currentIns).size()){
+					while (cexNumber < this.cexForInstance.get(currentIns).size()){//actualCexs.size() < this.cexActualRun.get(currentIns).size()){
 						
 						// WE GET A POSSIBLE PROGRAM AND MODEL CHECK IT
 						try{
 							A4Reporter rep = new A4Reporter();
 							Module world = null;
-							LTS lts = new LTS();
+							LTS lts = new LTS(mySpec.getProcessSpec(currentIns));;
+							LTS formerLTS = mapInsModels.get(currentIns);
 							PrintWriter writer = new PrintWriter(outputPath+"Instances.als", "UTF-8");
 							mapInsModels.get(currentIns).getAlloyInstancesSpec(writer,scope, actualCexs);		
 							A4Options opt = new A4Options();
@@ -267,24 +308,31 @@ public class CounterExampleSearch {
 							world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"Instances.als");
 							Command cmd = world.getAllCommands().get(0);
 							A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
-							assert sol.satisfiable();
-							sol.writeXML(outputPath+"temp.xml");
-							lts.fromAlloyXML(outputPath+"temp.xml");
-							//lts.toDot(outputPath+"instance"+i+".dot");
-							//System.out.println("Instance Number:"+i);
-							//i++;
-							mapInsModels.put(currentIns, lts);
-							changed.put(currentIns, new Boolean(true));
-							
-							// we try with this model recursively
-							if (counterExampleSearch(insNumber+1, scope)) // model check generates new counterexamples, TBD: we need to add any found instance to actualCexs
-								return true;
+							while (sol.satisfiable()){
+								if (showInfo)
+									System.out.println("Instance "+ currentIns + ", Iteration Number:"+p);
+								sol.writeXML(outputPath+"temp.xml");
+								lts.fromAlloyXML(outputPath+"temp.xml");
+								//lts.toDot(outputPath+"instance"+i+".dot");
+								//System.out.println("Instance Number:"+i);
+								p++;
+								mapInsModels.put(currentIns, lts);
+								changed.put(currentIns, new Boolean(true));
+								
+								// we try with this model recursively
+								if (counterExampleSearch(insNumber+1, scope)) // model check generates new counterexamples, TBD: we need to add any found instance to actualCexs
+									return true;
 					
-							// else continue with the search, and restore the previous values
-							changed.put(currentIns, new Boolean(false));
-						
-							// and with add more counterexamples to the bag
-							actualCexs.addLast(this.cexActualRun.get(currentIns).get(actualCexs.size()));
+								// else continue with the search, and restore the previous values
+								changed.put(currentIns, new Boolean(false));
+								mapInsModels.put(currentIns, formerLTS);
+								// and with add more counterexamples to the bag
+								//actualCexs.addLast(this.cexActualRun.get(currentIns).get(actualCexs.size()));
+								sol = sol.next();
+							}
+							
+							System.out.println("trying...."+k);
+							k++;
 					
 						}// end of try
 						catch(Exception e){
@@ -303,29 +351,82 @@ public class CounterExampleSearch {
 	}
 	
 	private void addCounterExToProcess(String process, LinkedList<String> cex){
-		//System.out.println(cex);
-		LinkedList<LinkedList<String>> cexList = cexForInstance.get(process);
-		boolean inCexList = false;
-		for (int i=0; i<cexList.size(); i++){
-			if (cexList.get(i).equals(cex)) // if the counterexample is already in the queue
-				inCexList = true;
+		if (showInfo){
+			System.out.println("Cex to add:");
+			System.out.println(cex);
+			System.out.println("Cex in the Queue:");
+			System.out.println(this.cexForInstance.get(process));
 		}
-		// else we add it at the end of the queue
-		if (!inCexList)
-			cexList.addLast(cex);
+		if (cex.size() < 2 ){ // For ACTL!: if size is less than 2 then the current process do not participate in the counterexample and all the branch of the backtracking can be pruned
+			this.disjointCexFound.put(process, new Boolean(true));
+			return;
+		}
+		boolean inCexList = false;
+		LinkedList<LinkedList<String>> cexList = cexForInstance.get(process);
+		for (int i=0; i<cexList.size(); i++){
+			if (lInclusion(cexList.get(i), cex)){ // if the counterexample is already in the queue, cexList[i] is included in cex
+				inCexList = true; // we do not need to add it
+				if (showInfo)
+					System.out.println("rinclusion");
+			}
+			if (rInclusion(cexList.get(i), cex)){
+				cexList.remove(i);
+				cexList.add(i, cex); // we swap the former cex for the new one
+									    // since the left inclusion says that the right one is more refined		
+				inCexList = true;
+				if (showInfo)
+					System.out.println("linclusion");
+			}
+			//if (disjoint(cexList.get(i), cex)){
+			//	this.disjointCexFound.put(process, new Boolean(true)); // a disjoint cex was found
+			//	cexList.addLast(cex);
+			//}
+				
+		}
+		if (!inCexList){
+				cexList.addLast(cex);
+				this.disjointCexFound.put(process, new Boolean(true));
+		}
 		boolean inRunningList = false;
 		for (int i=0; i<this.cexActualRun.get(process).size(); i++){
-			if (this.cexActualRun.get(process).equals(cex)) // if the counterexample is already in the queue
+			if (rInclusion(cexActualRun.get(process).get(i), cex)) // if the counterexample is already in the queue
+				inRunningList = true; // we do not need to add it
+			if (lInclusion(cexActualRun.get(process).get(i), cex)){
+				cexActualRun.get(process).remove(i);
+				cexActualRun.get(process).add(i, cex); // we swap the former cex for the new one
+									    // since the left inculsion says that the right one is more refined		
+				//cexActualRun.get(process).add(cex);
 				inRunningList = true;
+				cexRefined = true;
+			}
+			//if (disjoint(cexActualRun.get(process).get(i), cex)){
+			//	this.disjointCexFound.put(process, new Boolean(true)); // a disjoint cex was found
+			//	cexActualRun.get(process).addLast(cex);
+			//}
 		}
-		if (!inRunningList)
-			this.cexActualRun.get(process).addLast(cex);
+		if (!inRunningList){
+			cexActualRun.get(process).addLast(cex);
+			this.disjointCexFound.put(process, new Boolean(true));
+		}
 	}
 	
 	private void processCounterExample(CounterExample c){	
-		for (int i=0; i<this.instancesList.size(); i++){
-			addCounterExToProcess(this.instancesList.get(i), c.getRuns(this.instancesList.get(i)));
-		}	
+		if (this.counterExamples.contains(c)){
+			this.cexFound = false;
+		}
+		else{
+			this.cexFound = true;
+			//System.out.println(this.counterExamples);
+			//System.out.println("new counter example");
+			if (showInfo){
+				System.out.println("CounterExample found:");
+				System.out.println(c);
+			}
+			this.counterExamples.add(c);
+			for (int i=0; i<this.instancesList.size(); i++){
+				addCounterExToProcess(this.instancesList.get(i), c.getRuns(this.instancesList.get(i)));
+			}
+		}
 	}
 	
 	/**
@@ -364,7 +465,7 @@ public class CounterExampleSearch {
 			else // otherwise is an instance with its own process definition
 				currentLTS = this.mapInsModels.get(currentProcess);
 			program += "Enum state"+currentProcess +" = {";
-			LinkedList<String> nodes = currentLTS.getNodeNames();
+			LinkedList<String> nodes = currentLTS.getEqClassesNames();
 			for (int i=0; i<nodes.size(); i++){
 				program += (i==0)? nodes.get(i) : ","+nodes.get(i);
 			}
@@ -380,7 +481,7 @@ public class CounterExampleSearch {
 			//if (it2.hasNext())
 			//	program += currentVar+" : "+ globalVars.get(currentVar)+",";
 			//else
-				program += "Global "+currentVar+" : "+ globalVars.get(currentVar)+";\n";
+				//program += "Global "+currentVar+" : "+ globalVars.get(currentVar)+";\n"; // this has to be added when we have monitors
 				program += "Global "+"Av_"+currentVar+" : BOOL;\n"; // for each global var we have a lock
 		}
 		program += "\n";
@@ -432,14 +533,17 @@ public class CounterExampleSearch {
 			LinkedList<String> parameters = mySpec.getActualPars(currentInstance);
 			for (int i=0; i<parameters.size();i++){
 				if (i==0)
-					program+=parameters.get(i) + ", Av_"+parameters.get(i);
+					//program+=parameters.get(i) + ", Av_"+parameters.get(i); // this must be changed for monitors
+					program+=" Av_"+parameters.get(i);
 				else
-					program+=","+parameters.get(i)+ ", Av_"+parameters.get(i);
+					//program+=","+parameters.get(i)+ ", Av_"+parameters.get(i);
+					program+=", Av_"+parameters.get(i);
 			}
 			program += ");";
 		}
 		program += "}";
 		//System.out.println(program);
+		
 		
 		// we parse the program with the model checker
 		ProgramParser pparser = new ProgramParser();
@@ -454,7 +558,8 @@ public class CounterExampleSearch {
 	    FormulaElement form = formulaParser.parseFromString(formString);
 	    //model.buildModel();
 	   
-	    //System.out.println(program);
+	    if (showInfo)
+	    	System.out.println(program);
 	    // we model check the specification together with the formula
 	    if (DCTL_MC.mc_algorithm_eq(form, model)){
 	    	syntProgram = program; // if true we save the program
@@ -463,7 +568,10 @@ public class CounterExampleSearch {
 	    else{ // if the model checking is not sucessful we search for counterexamples
 	    	FormulaElement negForm = new formula.Negation("!", form);
 	    	CounterExample c = new CounterExample();
+	    	if (showInfo)
+	    		System.out.println("Cex from model checker: "+DCTL_MC.getWitnessAsMaps(negForm, model, ins));
 	    	c.addRuns(DCTL_MC.getWitnessAsMaps(negForm, model, ins));
+	    	//System.out.println(c);
 	    	cexs.addLast(c.getRuns(ins)); // we add the counterexample to the collection of counterexamples of the current instance
 	    	this.processCounterExample(c);
 	    	// TBD add the counterexample to the collection of counterexamples
@@ -474,6 +582,57 @@ public class CounterExampleSearch {
 	    //syntProgram = program;
 	    //return DCTL_MC.mc_algorithm_eq(form, model);
 	    //return true;
+	}
+	
+	/**
+	 * s1 IS INCLUDE IN s2
+	 * @param s1
+	 * @param s2
+	 * @return
+	 */
+	private boolean lInclusion(LinkedList<String> s1, LinkedList<String> s2){
+		if (s1.size()>1){
+			if (s2.size() >= s1.size()){
+				int i=0;
+				int j=0;
+				while (j<s2.size()-1){
+					if (s1.get(i).equals(s2.get(j)) && s1.get(i+1).equals(s2.get(j+1))){
+						i++; // if found we search the next element
+						j++;
+						if (i == s1.size()-1)
+							break;
+					}
+					else{
+						j++; // otherwise we continue searching
+					}
+				}
+				return (i == s1.size()-1);
+			}
+			else{
+				return false;
+			}
+		}
+		else{
+			return true;
+		}
+	}
+	
+	/**
+	 * s2 IS INCLUDED IN s1
+	 * @param s1
+	 * @param s2
+	 * @return
+	 */
+	private boolean rInclusion(LinkedList<String> s1, LinkedList<String> s2){
+		return lInclusion(s2,s1);
+	}
+	
+	private boolean someInclusion(LinkedList<String> s1, LinkedList<String> s2){
+		return lInclusion(s1, s2) || rInclusion(s1, s2);
+	}
+	
+	private boolean disjoint(LinkedList<String> s1, LinkedList<String> s2){
+		return !someInclusion(s1,s2);
 	}
 	
 }

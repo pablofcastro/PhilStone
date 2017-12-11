@@ -41,7 +41,8 @@ public class CounterExample {
 				Iterator<String> it = currentMap.keySet().iterator();
 				while (it.hasNext()){
 					String currentProcess = it.next();
-					runs.get(currentProcess).addLast(cex.get(i).get(currentProcess));
+					if (!runs.get(currentProcess).getLast().equals(cex.get(i).get(currentProcess))) // avoid repeated elements
+						runs.get(currentProcess).addLast(cex.get(i).get(currentProcess));
 				}
 			}
 		}
@@ -68,6 +69,16 @@ public class CounterExample {
 			}
 		}
 		return true;
+	}
+	
+	public String toString(){
+		String result = "";
+		Iterator<String> it = runs.keySet().iterator();
+		while (it.hasNext()){
+			String current = it.next();
+			result += "["+current +" : "+ runs.get(current) + "]";
+		}
+		return result;
 	}
 
 }

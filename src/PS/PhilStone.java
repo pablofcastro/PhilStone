@@ -34,24 +34,79 @@ import formula.FormulaElement;
  */
 public class PhilStone {
 	private static String syntProgram = ""; // the final program will be saved to this attribute
+	private static boolean showInfo = false; // true when we want to show info useful for debugging
+	private static boolean writePdf = false; // if true a pdf showing each process will be generated
 	private static int i=0;
 	private static LinkedList<String> instancesList; // the list of instances 
+	private static String path = "";
+	private static String specName = "";
+	private static boolean lexSearch = false;
+	private static boolean cexSearch = true; // by default we use cexSearch
+	private static int scope = 0;
 	
 	public static void main(String[] args) {
-		if (args.length < 3){ // we check if the inputs has the correct format
+		
+		/*if (args.length < 3){ // we check if the inputs has the correct format
 			System.out.println("Proper Usage is: java PhilStone -o <OutputPath> filename");
 	        System.exit(0);
 		}
 		if (!args[0].equals("-o")){
 			System.out.println("Proper Usage is: java PhilStone -o <OutputPath> filename");
 	        System.exit(0);
+		}*/
+		if (args.length == 0){
+			System.out.println("Proper Usage is: java PhilStone [options] filename");
+	        System.exit(0);
+		}
+		if (args.length > 0){
+			specName = args[args.length-1];
+			for (int i=0; i<args.length-1;i++){
+				if (args[i].equals("-pdf")){
+					writePdf=true;
+					continue;
+				}
+				if (args[i].equals("-info")){
+					showInfo=true;
+					continue;
+				}
+				if (args[i].equals("-lexSearch")){
+					lexSearch = true;
+					cexSearch = false;	
+					continue;
+				}
+				if (args[i].startsWith("-scope=")){					
+					try{
+						scope = Integer.parseInt(args[i].replace("-scope=",""));
+						continue;
+					}
+					catch (NumberFormatException e){
+						System.out.println("Wrong int parmater after opetion -scope");
+						System.exit(0);
+					}
+				}
+				else{
+					System.out.println("Proper Usage is: java PhilStone [options] filename");
+					System.out.println("Option: -info (shows debugging info)");
+					System.out.println("Option: -pdf (saves pdf)");
+			        System.exit(0);
+				}
+				
+			}
 		}
 		
+		if (System.getenv("PhilStone")==null){
+			System.out.println("The Environment Variable PhilStone is not set. It must be set to the current root path of the tool.");
+	        System.exit(0);
+		}
+		
+		
 		// If the args are OK we proceed
-		String outputPath = args[1];
+		String outputPath = System.getenv("PhilStone")+"/output/";
+		String templateDir =  System.getenv("PhilStone")+"/templates/";
+		String pdfDir = System.getenv("PhilStone")+"/pdf/";
 		SpecAux result = null;
 		try{ // we parse the specification
-			FileReader specFile = new FileReader(args[2]);
+			FileReader specFile = new FileReader(specName);
 			parser p = new parser(new Scanner(specFile));
 			result = (SpecAux) p.parse().value;
 
@@ -67,26 +122,39 @@ public class PhilStone {
 		else{		
 			
 			// we write the specification to the corresponding path
-			String templateDir = "/Users/Pablo/University/my-papers/drafts/Alloy.Synt/Tool/local/templates/";	// change for a $ variable	
+			//String templateDir = "/Users/Pablo/University/my-papers/drafts/Alloy.Synt/Tool/local/templates/";	// change for a $ variable	
 			System.out.println("The specification is OK");
 			Spec mySpec = result.getSpec();
-			LinkedList<String> processes = mySpec.getProcessesNames();
+			//LinkedList<String> processes = mySpec.getProcessesNames();
 			
 			// a lexicographic search
 			//startLexSearch(mySpec, outputPath, templateDir);
-			CounterExampleSearch cs = new CounterExampleSearch(mySpec, outputPath, templateDir);
-			cs.startSearch();
-			//if (cs.getSyntProgram()!="")
-			//	System.out.println(cs.getSyntProgram());
-			//else
-			//	System.out.println("program not found.");
+			if (cexSearch){
+				CounterExampleSearch cs = new CounterExampleSearch(mySpec, outputPath, templateDir, showInfo, writePdf, scope);
+				cs.startSearch();
+				//if (cs.getSyntProgram().equals(""))
+				//if (cs.getSyntProgram()!="" && showInfo){
+				//	System.out.println(cs.getSyntProgram());
+				//}
+				//else
+				//	System.out.println("program not found.");
+			}
+			if (lexSearch){
+				LexSearch ls = new LexSearch(mySpec, outputPath, templateDir, showInfo, writePdf, scope);
+				ls.startLexSearch();
+				if (ls.getSyntProgram()!="")
+					System.out.println(ls.getSyntProgram());
+				else
+					System.out.println("program not found.");
+			}
 		}
 	}
+	
 	
 	/**
 	 * It uses a lexicographic search for synthesizing a program satisfying the specification
 	 * @return	A string with the synthesized program
-	 */
+	 *//*
 	public static String startLexSearch(Spec mySpec, String outputPath, String templateDir){
 		System.out.println("Using Exhaustive Search for Synthesis...");
 		String result = "";
@@ -167,6 +235,9 @@ public class PhilStone {
 		boolean found = lexSearch(insLaxModels, laxModels, changed, 0, mySpec, 14, outputPath);
 		if (found){
 			System.out.println("Program Synthesized, saved to output folder.."); 
+			for (int k=0; k<instancesList.size();k++){
+				insLaxModels.get(instancesList.get(k)).toDot(outputPath+instancesList.get(k)+".dot");
+			}
 			
 			// the program is written to the output folder
 			try{
@@ -183,7 +254,7 @@ public class PhilStone {
 		// STEP 3: We start inspecting the submodels of the laxest models for each process
 		//searchSubmodel(laxModels, laxModels.keySet().iterator(), outputPath);
 		return result;
-	}
+	}*/
 	
 	/**
 	 * It implements a backtracking search over the different instances
@@ -191,7 +262,7 @@ public class PhilStone {
 	 * @param processMap	it maps each PROCESS to its candidate
 	 * @param changed		a mapping to indicate which LTS was modified
 	 * @return	true if a method can be synthesized
-	 */
+	 *//*
 	private static boolean lexSearch(HashMap<String, LTS> map, HashMap<String, LTS> processMap, HashMap<String, Boolean> changed, int it, Spec mySpec, int scope, String outputPath){
 		//String currentInstance = it.next(); // we assume the iterator is not empty!
 		String currentInstance = instancesList.get(it);
@@ -295,10 +366,10 @@ public class PhilStone {
 		return false; // if we reach here we return false
 	}
 	
-	/**
+	*//**
 	 * 
 	 * @return
-	 */
+	 *//*
 	public static boolean startSearchByLevels(Spec mySpec, String outputPath, String templateDir, int scope){
 		System.out.println("Using Search By Levels for Synthesis...");
 				
@@ -460,14 +531,14 @@ public class PhilStone {
 		}	
 	}
 	
-	/**
+	*//**
 	 * A private method to model check a collection of instances and a set of global vars
 	 * @param processIns	a hash mapping each instance to its process description
 	 * @param processes		the processes lax models
 	 * @param globalVars	the global vars of the specification
 	 * @param changed		a hashmap that indicates which parameter has changed
 	 * @return	t
-	 */
+	 *//*
 	private static boolean modelCheck(HashMap<String, LTS> processesIns,HashMap<String,LTS> processes, HashMap<String, Boolean> changed, Spec mySpec){
 			
 		// WE CONSTRUCT THE PROGRAM
@@ -615,7 +686,7 @@ public class PhilStone {
 	    //syntProgram = program;
 	    //return DCTL_MC.mc_algorithm_eq(form, model);
 	    //return true;
-	}
+	}*/
 	
 
 }

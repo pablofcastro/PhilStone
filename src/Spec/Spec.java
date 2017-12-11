@@ -73,6 +73,10 @@ public class Spec {
 		return this.name;
 	}
 	
+	public ProcessSpec getProcessSpec(String instance){
+		return instances.get(instance);
+	}
+	
 	/**
 	 * 
 	 * @return	the name of the process associated to an instance
@@ -172,11 +176,11 @@ public class Spec {
 	 * @return	the metamodel of the given process, returns the empty string in the case of 
 	 * 			inexistent Process
 	 */
-	public String metamodelToString(String process, String templateDir){
+	public String metamodelToString(String process, String templateDir, int scope){
 
 		for (int i=0; i<processes.size(); i++){
 			if (processes.get(i).getName().equals(process)){
-				return processes.get(i).metamodelToString(templateDir);
+				return processes.get(i).metamodelToString(templateDir, scope);
 			}
 		}
 		return "";
@@ -187,9 +191,9 @@ public class Spec {
 	 * @param file	
 	 * @param templateDir
 	 */
-	public void generateMetamodels(FileWriter file, String templateDir){
+	public void generateMetamodels(FileWriter file, String templateDir, int scope){
 		for (int i=0; i<this.processes.size(); i++){
-			processes.get(i).generateMetamodel(file, templateDir);
+			processes.get(i).generateMetamodel(file, templateDir, scope);
 		}
 	}
 	

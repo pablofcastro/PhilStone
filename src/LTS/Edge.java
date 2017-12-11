@@ -92,6 +92,7 @@ public class Edge {
 		this.name = name;
 	}
 	
+	
 	/**
 	 * It writes a Dot representation of the edge
 	 * @param writer	the output where the description will be written

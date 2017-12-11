@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 public class IntConstant extends TemporalFormula {
 	//private String name;
 	private int value; 
@@ -37,6 +39,16 @@ public class IntConstant extends TemporalFormula {
     public String toAlloy(String metaName, String state){
     	Integer i = new Integer(value);
 		return i.toString();
+    }
+    
+    public String getAuxPred(String modelName){
+		String result = "";
+		return result;
+	}
+    
+    public LinkedList<String> generatePreds(String modelName){
+    	LinkedList<String> result = new LinkedList<String>();
+    	return result;
     }
 
 }

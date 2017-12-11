@@ -27,7 +27,7 @@ public class TestParser {
 			System.out.println("The specification is OK");
 			Spec mySpec = result.getSpec();
 			//Process p = mySpec.generateMetamodels
-			mySpec.generateMetamodels(null, "/Users/Pablo/University/my-papers/drafts/Alloy.Synt/Tool/local/templates/");
+			//mySpec.generateMetamodels(null, "/Users/Pablo/University/my-papers/drafts/Alloy.Synt/Tool/local/templates/");
 			//System.out.println(mySpec.toString());
 		}
 		

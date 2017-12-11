@@ -1,4 +1,5 @@
 package FormulaSpec;
+import java.util.*;
 
 public class BoolConstant extends TemporalFormula {
 	//private String name;
@@ -38,8 +39,19 @@ public class BoolConstant extends TemporalFormula {
     
     public String toAlloy(String metaName, String state){
     	if (value)
-    		return "true";
+    		return " true ";
     	else
-    		return "false";
+    		return " false ";
     }
+    
+    public String getAuxPred(String modelName){
+		String result = "";
+		return result;
+	}
+    
+    public LinkedList<String> generatePreds(String modelName){
+    	LinkedList<String> result = new LinkedList<String>();
+    	return result;
+    }
+    
 }

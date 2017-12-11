@@ -157,7 +157,7 @@ public class ProcessSpec {
 		return result;	
 	}
 	
-	public String metamodelToString(String templateDir){
+	public String metamodelToString(String templateDir, int scope){
 		List<String> localBoolProps = new ArrayList<String>();
 		for (int i = 0; i < localVars.size(); i++){
 			if (localVars.get(i).getType() == Type.BOOL)
@@ -174,10 +174,21 @@ public class ProcessSpec {
 				envActions.add(actions.get(i));
 		}
 		
+		//List<String> invariants = new ArrayList<String>();
+		//for (int i=0; i<this.invs.size(); i++){
+		//	invariants.add(invs.get(i).toAlloy(name+"Meta", "s"));
+		//}
 		List<String> invariants = new ArrayList<String>();
+		List<String> auxVars = new ArrayList<String>(); // the auxiliar vars needed for translating CTL to Alloy
+		List<String> auxAxioms = new ArrayList<String>(); // the auxiliar axioms needed for translating CTL to Alloy
+		List<String> auxPreds = new ArrayList<String>(); // the auxiliar axioms needed for translating CTL to Alloy
 		for (int i=0; i<this.invs.size(); i++){
 			invariants.add(invs.get(i).toAlloy(name+"Meta", "s"));
-		}
+			auxVars.addAll(invs.get(i).generateAuxProps(name+"Meta"));
+			auxAxioms.addAll(invs.get(i).generateAxioms());
+			auxPreds.addAll(invs.get(i).generatePreds(name+"Meta"));
+		}		
+		
 
 		List<Action> actions = new ArrayList<Action>();
 		actions.addAll(localActions);
@@ -238,22 +249,56 @@ public class ProcessSpec {
 		st.add("localActions", localActions);
 		st.add("envActions", envActions);
 		st.add("actions", actions);
+		st.add("auxVars", auxVars);
+		st.add("auxAxioms", auxAxioms);
+		st.add("auxPreds", auxPreds);
 		st.add("invariants", invariants);
 		st.add("init", this.init.toAlloy(this.name+"Meta", "s"));
+		st.add("scope", scope);
 		
 		
 		String result = st.render();
 		return result;
 	}
 	
+	public LinkedList<String> getInvsAsStrings(String name){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.invs.size(); i++){
+			result.add(invs.get(i).toAlloy(name, "s"));
+		}
+		return result;
+	}
+	
+	public LinkedList<String> getAuxVars(String name){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.invs.size(); i++){
+			result.addAll(this.invs.get(i).generateAuxProps(name));
+		}
+		return result;
+	}
+	
+	public LinkedList<String> getAuxAxioms(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.invs.size(); i++){
+			result.addAll(this.invs.get(i).generateAxioms());
+		}
+		return result;
+	}
+	
+	public LinkedList<String> getAuxPreds(String name){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.invs.size(); i++){
+			result.addAll(this.invs.get(i).generatePreds(name));
+		}
+		return result;
+	}
 	
 	/**
 	 * It generates the metamodel of the process  in alloy
 	 * DEPRECATED it will be replace for he methods above
 	 * @param file	where the metamodel will be written
 	 */
-	public void generateMetamodel(FileWriter file, String templateDir){
-		
+	public void generateMetamodel(FileWriter file, String templateDir, int scope){
 		// we set the propositions
 		
 		//List<String> sharedBoolProps = new ArrayList<String>();
@@ -280,10 +325,16 @@ public class ProcessSpec {
 		}
 		
 		List<String> invariants = new ArrayList<String>();
+		List<String> auxVars = new ArrayList<String>(); // the auxiliar vars needed for translating CTL to Alloy
+		List<String> auxAxioms = new ArrayList<String>(); // the auxiliar axioms needed for translating CTL to Alloy
+		List<String> auxPreds = new ArrayList<String>(); // the auxiliar axioms needed for translating CTL to Alloy
 		for (int i=0; i<this.invs.size(); i++){
 			invariants.add(invs.get(i).toAlloy(name+"Meta", "s"));
-		}
-
+			auxVars.addAll(invs.get(i).generateAuxProps(name+"Meta"));
+			auxAxioms.addAll(invs.get(i).generateAxioms());
+			auxPreds.addAll(invs.get(i).generatePreds(name+"Meta"));
+			
+		}		
 		List<Action> actions = new ArrayList<Action>();
 		actions.addAll(localActions);
 		actions.addAll(envActions);
@@ -300,8 +351,12 @@ public class ProcessSpec {
 		st.add("localActions", localActions);
 		st.add("envActions", envActions);
 		st.add("actions", actions);
+		st.add("auxVars", auxVars);
+		st.add("auxAxioms", auxAxioms);
+		st.add("auxPred", auxPreds);
 		st.add("invariants", invariants);
 		st.add("init", this.init.toAlloy(this.name+"Meta", "s"));
+		st.add("scope", scope);
 		//List<String> values = new ArrayList<String>();
 		//values.add("one");
 		//values.add("two");

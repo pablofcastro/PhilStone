@@ -169,6 +169,7 @@ public class ExprAux {
 		case AG:	return new AG((Formula) this.op1.getExpr(table));
 		case EG:	return new EG((Formula) this.op1.getExpr(table));
 		case EF:	return new EF((Formula) this.op1.getExpr(table));
+		case AF: 	return new AF((Formula) this.op1.getExpr(table));
 		case MINUS: return new NegExpression((AritExpression) this.op1.getExpr(table));
 		case MULT:  return new MultExpression((AritExpression) this.op1.getExpr(table), (AritExpression) this.op1.getExpr(table));
 		case DIV:	return new DivExpression((AritExpression) this.op1.getExpr(table), (AritExpression) this.op1.getExpr(table));
