@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 public class Av implements ElemFormula{
 	private Var lock;
 	
@@ -32,6 +34,16 @@ public class Av implements ElemFormula{
     	return result;
     }
     
+    public Formula removeVarOwnedBy(LinkedList<String> instances){
+    	if (instances.contains(lock.getOwner()))
+    		return new BoolConstant(true);
+    	else
+    		return this;
+	}
+    
+    public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return lock.containsVarOwnedBy(instances);
+	}
 
 
 }

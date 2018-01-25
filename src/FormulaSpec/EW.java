@@ -48,4 +48,12 @@ public class EW extends TemporalFormula {
 			result.addAll(((TemporalFormula)this.getExpr2()).generatePreds(modelName));
 		return result;
 	}
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances) || this.getExpr2().containsVarOwnedBy(instances);
+	}
+	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new EW(this.getExpr1().removeVarOwnedBy(instances), this.getExpr2().removeVarOwnedBy(instances));
+	}
 }

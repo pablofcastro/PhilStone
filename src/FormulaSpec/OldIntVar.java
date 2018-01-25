@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 /**
  * 
  * @author Pablo
@@ -34,6 +36,17 @@ public class OldIntVar implements IntegerExpression, Var {
 		return Type.INT;
 	}
 	
+	public String getOwner(){
+	    String result = name;
+	    for (int i=0; i<name.length(); i++){
+	    	if (result.charAt(i) == '.'){
+	    		result = result.substring(0, i);
+	    		break;
+	    	}
+	    }
+	    return result;	
+	}
+	
 	public String toAlloy(String metaName, String state){
 		return name;
 	}
@@ -46,14 +59,18 @@ public class OldIntVar implements IntegerExpression, Var {
 		return "old "+ this.name;
 	}
 	
-	 public String getUnqualifiedName(){
-	    	String result = name;
-	    	for (int i=0; i<name.length(); i++){
-	    		if (result.charAt(i) == '.'){
-	    			result = result.substring(i+1);
-	    			break;
-	    		}
+	public String getUnqualifiedName(){
+	    String result = name;
+	    for (int i=0; i<name.length(); i++){
+	    	if (result.charAt(i) == '.'){
+	    		result = result.substring(i+1);
+	    		break;
 	    	}
-	    	return result;	
 	    }
+	    return result;	
+	}
+	 
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return instances.contains(this.getOwner());
+	}
 }

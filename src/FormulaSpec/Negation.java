@@ -37,4 +37,12 @@ public class Negation extends TemporalFormula {
 			result.addAll(((TemporalFormula)this.getExpr1()).generatePreds(modelName));
     	return result;
     }
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances);
+	}
+	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new Negation(this.getExpr1().removeVarOwnedBy(instances));
+	}
 }

@@ -35,6 +35,7 @@ public class Spec {
 		locks.add(l);
 	}
 	
+	
 	public void addInv(TemporalFormula f){
 		this.invs.add(f);
 	}
@@ -68,6 +69,13 @@ public class Spec {
 			this.actualPars.put(name, new LinkedList<Var>());
 		this.actualPars.get(name).add(v);
 	}
+	
+	public void addInstanceAllActualPars(String name, LinkedList<Var> vars){
+		if (this.actualPars.get(name) == null)
+			this.actualPars.put(name, new LinkedList<Var>());
+		this.actualPars.get(name).addAll(vars);
+	}
+	
 	
 	public String getName(){
 		return this.name;
@@ -214,6 +222,40 @@ public class Spec {
 			result += "    property: " +  invs.get(i).toString() + "\n";
 		}
 		result += "}";
+		return result;
+	}
+	
+	/**
+	 * Restrict a specification to a subset of the instances
+	 * @param instances
+	 * @return	the restricted specification
+	 */
+	public Spec restrictTo(LinkedList<String> instances){
+		Spec result = new Spec(this.name);
+		LinkedList<String> toRemove = new LinkedList<String>();
+		Iterator<String> it = this.instances.keySet().iterator();
+		while (it.hasNext()){
+			String current = it.next();
+			if (!instances.contains(current))
+				toRemove.add(current);
+		}
+		result.addAllGlobalVar(this.globalVars);
+		// for now the locks are inserted as global variables, this must be fixed at some point
+		
+		for (int i=0; i<instances.size(); i++){
+			result.addInstance(instances.get(i), this.instances.get(instances.get(i)));
+			result.addProcess(this.instances.get(instances.get(i)));
+		}
+		
+		for (int i=0; i<invs.size(); i++){
+			result.addInv((TemporalFormula) invs.get(i).removeVarOwnedBy(toRemove));
+		}
+		
+		Iterator<String> it1 = actualPars.keySet().iterator();
+		while (it1.hasNext()){
+			String current = it1.next();
+			result.addInstanceAllActualPars(current, actualPars.get(current));
+		}
 		return result;
 	}
 

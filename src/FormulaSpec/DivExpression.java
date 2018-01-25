@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 public class DivExpression extends AritExpression {
 
 	public DivExpression(AritExpression e1, AritExpression e2){
@@ -24,5 +26,9 @@ public class DivExpression extends AritExpression {
 	
 	public String toString(){
 		return this.getExpr1().toString() + "\\" + this.getExpr2().toString(); 
+	}
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances) || this.getExpr2().containsVarOwnedBy(instances);
 	}
 }

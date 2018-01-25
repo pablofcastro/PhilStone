@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 public class UntypedVar implements Expression {
 	String name;
 	
@@ -20,4 +22,18 @@ public class UntypedVar implements Expression {
 		return name;
 	}
 
+	public String getOwner(){
+    	String result = name;
+    	for (int i=0; i<name.length(); i++){
+    		if (result.charAt(i) == '.'){
+    			result = result.substring(0, i);
+    			break;
+    		}
+    	}
+    	return result;	
+    }
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return instances.contains(this.getOwner());
+	}
 }

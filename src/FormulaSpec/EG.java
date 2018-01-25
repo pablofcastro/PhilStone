@@ -22,7 +22,7 @@ public class EG extends TemporalFormula {
 	}
 	
 	public String toString(){
-		return "EG["+ this.getExpr1().toString() + "]";
+		return "A("+ this.getExpr1().toString() + "W false)";
 	}
 	
 	
@@ -51,5 +51,13 @@ public class EG extends TemporalFormula {
 		if (this.getExpr1() instanceof TemporalFormula)
 			result.addAll(((TemporalFormula)this.getExpr1()).generatePreds(modelName));
 		return result;
+	}
+	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new EG(this.getExpr1().removeVarOwnedBy(instances));
+	}
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances);
 	}
 }

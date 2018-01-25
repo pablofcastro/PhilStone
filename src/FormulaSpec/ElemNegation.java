@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 /**
  * A elementary negation is the negation of a elementary formula
  * @author Pablo
@@ -30,4 +32,11 @@ public class ElemNegation implements ElemFormula{
 		return "! ("+ f.toString()+")";
 	}
 	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new ElemNegation((ElemFormula) f.removeVarOwnedBy(instances));
+	}
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return f.containsVarOwnedBy(instances);
+	}
 }

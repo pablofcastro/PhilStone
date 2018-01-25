@@ -154,8 +154,9 @@ public class CounterExampleSearch {
 			// we store the laxest model for each instance, at the beginning they coincide with those of the processes
 			for (int j=0; j<instancesList.size();j++){
 				if (instances.get(instancesList.get(j)).equals(currentProcess))
-					mapInsModels.put(instancesList.get(j), lts); // if the instance has as type the current process then the lts is set
-					lts.toDot(outputPath+"lax"+instancesList.get(j)+".dot");
+					mapInsModels.put(instancesList.get(j), lts); // if the instance has as type the current process 
+					if (this.printPDF)
+						lts.toDot(outputPath+"lax"+instancesList.get(j)+".dot");
 			}
 			
 		}
@@ -210,13 +211,15 @@ public class CounterExampleSearch {
 				// we use a collection of actual counterexamples, the idea is to add new counterexample found during hte execution of the algorithm
 				LinkedList<LinkedList<String>> actualCexs = new LinkedList<LinkedList<String>>();
 				this.disjointCexFound.put(currentIns, new Boolean(false));
-				int j = 0;
+				
 				while (cexNumber < this.cexForInstance.get(this.instancesList.get(insNumber)).size() & !this.disjointCexFound.get(currentIns)){
+				//while (cexNumber < this.cexForInstance.get(this.instancesList.get(insNumber)).size()){	
 					if (cexNumber > -1){
 						actualCexs.add(this.cexForInstance.get(currentIns).get(cexNumber)); // we add the current cex
 					}
 					// WE GET A POSSIBLE PROGRAM AND MODEL CHECK IT
 					try{
+						int j = 0;
 						cexRefined = false;
 						A4Reporter rep = new A4Reporter();
 						Module world = null;
@@ -230,10 +233,18 @@ public class CounterExampleSearch {
 						world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"Instances.als");
 						Command cmd = world.getAllCommands().get(0);
 						A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
-						while (sol.satisfiable() & !disjointCexFound.get(currentIns) & !cexRefined){ //add refined
+						while (sol.satisfiable()  &  !disjointCexFound.get(currentIns) & !cexRefined){ //add refined & !disjointCexFound.get(currentIns)
+							if (cexRefined){
+								actualCexs.add(this.cexForInstance.get(currentIns).get(cexNumber));
+								mapInsModels.get(currentIns).getAlloyInstancesSpec(writer,scope, actualCexs);
+								world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"Instances.als");
+								cmd = world.getAllCommands().get(0);
+								sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
+								cexRefined = false;
+							}								
 							sol.writeXML(outputPath+"temp.xml");
 							lts.fromAlloyXML(outputPath+"temp.xml");
-							lts.toDot(outputPath+currentIns+j+".dot");
+							lts.toDot(outputPath+currentIns+".dot");
 							if (showInfo)
 								System.out.println("Instance "+ currentIns + ", Iteration Number:"+j);
 							j++;
@@ -292,7 +303,7 @@ public class CounterExampleSearch {
 					actualCexs.add(this.cexForInstance.get(currentIns).get(cexNumber)); // we add the current cexs	
 					int p = 0;
 					// while we can get more counterexamples using the current counterexamples we try to find a program
-					while (cexNumber < this.cexForInstance.get(currentIns).size()){//actualCexs.size() < this.cexActualRun.get(currentIns).size()){
+					//while (cexNumber < this.cexForInstance.get(currentIns).size()){//actualCexs.size() < this.cexActualRun.get(currentIns).size()){
 						
 						// WE GET A POSSIBLE PROGRAM AND MODEL CHECK IT
 						try{
@@ -308,12 +319,12 @@ public class CounterExampleSearch {
 							world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"Instances.als");
 							Command cmd = world.getAllCommands().get(0);
 							A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
-							while (sol.satisfiable()){
+							while (sol.satisfiable()){  // !disjointCexFound.get(currentIns)??
 								if (showInfo)
 									System.out.println("Instance "+ currentIns + ", Iteration Number:"+p);
 								sol.writeXML(outputPath+"temp.xml");
 								lts.fromAlloyXML(outputPath+"temp.xml");
-								//lts.toDot(outputPath+"instance"+i+".dot");
+								lts.toDot(outputPath+"instance"+p+".dot");
 								//System.out.println("Instance Number:"+i);
 								p++;
 								mapInsModels.put(currentIns, lts);
@@ -339,7 +350,7 @@ public class CounterExampleSearch {
 							System.out.println("Input-Output Error trying to write Alloy files.");
 							e.printStackTrace();//System.out.println(e);
 						}
-					}
+					//}
 					// if we did not find anything the current cex, we reset the bag  of counter example and try with the next one
 					actualCexs.clear();
 					this.cexActualRun.get(currentIns).clear();
@@ -428,6 +439,11 @@ public class CounterExampleSearch {
 			}
 		}
 	}
+	
+	public LTS getAssociatedLTS(String ins){
+		return this.mapInsModels.get(ins);
+	}
+	
 	
 	/**
 	 * A private method to model check a collection of instances and a set of global vars
@@ -558,8 +574,8 @@ public class CounterExampleSearch {
 	    FormulaElement form = formulaParser.parseFromString(formString);
 	    //model.buildModel();
 	   
-	    if (showInfo)
-	    	System.out.println(program);
+	    //if (showInfo)
+	    //	System.out.println(program);
 	    // we model check the specification together with the formula
 	    if (DCTL_MC.mc_algorithm_eq(form, model)){
 	    	syntProgram = program; // if true we save the program
@@ -582,6 +598,27 @@ public class CounterExampleSearch {
 	    //syntProgram = program;
 	    //return DCTL_MC.mc_algorithm_eq(form, model);
 	    //return true;
+	}
+	
+	/**
+	 * @param ins
+	 * @return whether a given instance was changed or not
+	 */
+	public boolean changed(String ins){
+		if (changed.containsKey(ins)){
+			return changed.get(ins);
+		}
+		else{
+			return false;
+		}
+	}
+	
+	public LTS getLTSForInstance(String ins){
+		return this.mapInsModels.get(ins);
+	}
+	
+	public LTS getLTSForProcess(String process){
+		return this.mapProcessModels.get(process);
 	}
 	
 	/**

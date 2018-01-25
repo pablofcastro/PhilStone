@@ -54,4 +54,11 @@ public class BoolConstant extends TemporalFormula {
     	return result;
     }
     
+    public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return this;
+	}
+    
+    public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return false;
+	}
 }

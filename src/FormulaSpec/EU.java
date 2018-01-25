@@ -49,5 +49,13 @@ public class EU extends TemporalFormula {
 		return result;
 	}
 	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances) || this.getExpr2().containsVarOwnedBy(instances);
+	}
+	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new EU(this.getExpr1().removeVarOwnedBy(instances), this.getExpr2().removeVarOwnedBy(instances));
+	}
+	
 	
 }

@@ -39,5 +39,12 @@ public class EX extends TemporalFormula {
 		return result;
 	}
 	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances);
+	}
+	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new EX(this.getExpr1().removeVarOwnedBy(instances));
+	}
 	
 }

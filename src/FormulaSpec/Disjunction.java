@@ -41,5 +41,13 @@ public class Disjunction extends TemporalFormula {
 			result.addAll(((TemporalFormula)this.getExpr2()).generatePreds(modelName));
     	return result;
     }
+	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new Disjunction(this.getExpr1().removeVarOwnedBy(instances), this.getExpr2().removeVarOwnedBy(instances));
+	}
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances) || this.getExpr2().containsVarOwnedBy(instances);
+	}
 
 }

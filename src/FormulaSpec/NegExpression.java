@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 public class NegExpression extends AritExpression {
 	public NegExpression(AritExpression e1){
         super(e1,null);		
@@ -18,4 +20,7 @@ public class NegExpression extends AritExpression {
 		return result;
 	}
 	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances);
+	}
 }

@@ -47,6 +47,14 @@ public class AF extends TemporalFormula{
 		return result;
 	}
 	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new AF(this.getExpr1().removeVarOwnedBy(instances));
+	}
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances);
+	}
+	
 	public String getAuxSucc(String modelName){
 		return auxForm.getAuxSucc(modelName);
 	}

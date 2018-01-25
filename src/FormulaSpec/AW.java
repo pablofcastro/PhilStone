@@ -26,7 +26,7 @@ public class AW extends TemporalFormula {
 	}
 	
 	public String toString(){
-		return "A["+ this.getExpr1().toString() + "W"+ this.getExpr2().toString() +"]";
+		return "A("+ this.getExpr1().toString() + "W"+ this.getExpr2().toString() +")";
 	}
 	
 	public String getAuxPred(String modelName){
@@ -50,6 +50,11 @@ public class AW extends TemporalFormula {
 		return auxForm.getAuxSucc(modelName);
 	}
 	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new AW(this.getExpr1().removeVarOwnedBy(instances), this.getExpr2().removeVarOwnedBy(instances));
+	}
 	
-	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances) || this.getExpr2().containsVarOwnedBy(instances);
+	}
 }

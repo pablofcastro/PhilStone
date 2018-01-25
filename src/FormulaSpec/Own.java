@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 /**
  * This class implements the basic behavior of a Own proposition used for synchronization
  * @author Pablo
@@ -46,5 +48,16 @@ public class Own implements ElemFormula {
     	String result = "Own_"+lock.getUnqualifiedName()+"["+metaName+","+state+"]";
     	return result;
     }
+    
+    public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return lock.containsVarOwnedBy(instances);
+	}
 
+    
+    public Formula removeVarOwnedBy(LinkedList<String> instances){
+		if (instances.contains(lock.getOwner()))
+			return new BoolConstant(true);
+		else
+			return this;
+	}
 }

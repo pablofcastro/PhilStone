@@ -38,5 +38,13 @@ public class EF extends TemporalFormula{
 			result.addAll(((TemporalFormula)this.getExpr1()).generatePreds(modelName));
 		return result;
 	}
+	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new EF(this.getExpr1().removeVarOwnedBy(instances));
+	}
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances);
+	}
 
 }

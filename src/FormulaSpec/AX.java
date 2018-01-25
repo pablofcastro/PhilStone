@@ -39,4 +39,12 @@ public class AX extends TemporalFormula {
 		}
 		return result;
 	}
+	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new AX(this.getExpr1().removeVarOwnedBy(instances));
+	}
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances);
+	}
 }

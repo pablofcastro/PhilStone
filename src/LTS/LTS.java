@@ -306,7 +306,7 @@ public class LTS {
 			writer.println("");
 			
 			// the propositions
-			//writer.print(space + "val = ");
+			writer.print(space + "val = ");
 			writer.print(space);
 			for (int i=0; i<listNodes.size();i++){	
 				LinkedList<String> propList = nodes.get(listNodes.get(i)).getProperties();	
@@ -317,7 +317,7 @@ public class LTS {
 						writer.print(" + "+listNodes.get(i)+"->"+propList.get(j));
 				}
 			}
-			writer.print(" in val");
+			//writer.print(" in val");
 			writer.println("");
 			
 			// the succs relation
@@ -367,36 +367,43 @@ public class LTS {
 			//}
 			//System.out.println("------------------------------");
 			
-			//System.out.println("size o counter examples:"+counterexamples.size());
+			System.out.println("counter examples:"+counterexamples);
 			for (int i=0; i<counterexamples.size();i++){
 				LinkedList<String> actualCex = counterexamples.get(i);
 				boolean firstTimeOr = true;
 				
 				for (int j=0; j<actualCex.size()-1;j++){
 					if (!actualCex.get(j).equals(actualCex.get(j+1))){	
-						if (firstTimeOr){
-							firstTimeOr = false;
-						}
-						else{
-							writer.print(" or ");
-						}
-						boolean firstTimeAnd = true;
 						LinkedList<Edge> egs = this.getEdges(actualCex.get(j),actualCex.get(j+1));
-						for (int h=0; h<egs.size(); h++){
-								
-							if (firstTimeAnd){
-								writer.print("(not ("+egs.get(h).getTarget().getName()+" in succs["+egs.get(h).getOrigin().getName()+"]))");
-								firstTimeAnd = false;
+						System.out.println(actualCex.get(j));
+						System.out.println(actualCex.get(j+1));
+						System.out.println(this.getEdges(actualCex.get(j),actualCex.get(j+1)));
+						if (egs.size() > 0){
+							if (firstTimeOr){
+								firstTimeOr = false;
 							}
 							else{
-								writer.print("and (not ("+egs.get(h).getTarget().getName()+" in succs["+egs.get(h).getOrigin().getName()+"]))");	
+								writer.print(" or ");
+							}
+							boolean firstTimeAnd = true;
+						//LinkedList<Edge> egs = this.getEdges(actualCex.get(j),actualCex.get(j+1));
+							for (int h=0; h<egs.size(); h++){
+								
+								if (firstTimeAnd){
+									writer.print("(not ("+egs.get(h).getTarget().getName()+" in succs["+egs.get(h).getOrigin().getName()+"]))");
+									firstTimeAnd = false;
+								}
+								else{
+									writer.print("and (not ("+egs.get(h).getTarget().getName()+" in succs["+egs.get(h).getOrigin().getName()+"]))");	
+								}
 							}
 						}
 					}
 				}
 				writer.print("\n");	
 			}
-			
+		
+		
 			// we write down the counterexamples
 			//for (int i=0; i<counterexamples.size();i++){
 			//	LinkedList<String> actualCex = counterexamples.get(i);
@@ -519,10 +526,11 @@ public class LTS {
 		result += "state : " + "state"+stateProcess+";\n";
 		// we compute the equivalence classes
 		//if (this.eqClasses == null)
-			this.computeEqClasses();
+		this.computeEqClasses();
 	
 		// the get equivalence class of the initial node
 		Node init = this.eqClasses.find(this.nodes.get(initialNode)); 
+		
 		
 		// we set the initial condition
 		result += "Initial : state == "+init.getName();

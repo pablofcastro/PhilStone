@@ -1,4 +1,5 @@
 package FormulaSpec;
+import java.util.*;
 
 public interface Expression{
 	
@@ -10,5 +11,6 @@ public interface Expression{
 	 */
 	public String toAlloy(String metaName, String state);
 	public boolean usesVar(String name);
+	public boolean containsVarOwnedBy(LinkedList<String> instances);
     //public String toString();
 }

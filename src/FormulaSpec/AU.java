@@ -3,7 +3,7 @@ package FormulaSpec;
 import java.util.LinkedList;
 
 public class AU extends TemporalFormula {
-	private AF auxForm1; // we use this for the interpreting this
+	private AF auxForm1; // we use this for the semantics
 	private AW auxForm2;
 	
 	public AU(Formula e1, Formula e2){
@@ -67,5 +67,12 @@ public class AU extends TemporalFormula {
 		return result;
 	}
 	
+	public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return new AU(this.getExpr1().removeVarOwnedBy(instances), this.getExpr2().removeVarOwnedBy(instances));
+	}
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return this.getExpr1().containsVarOwnedBy(instances) || this.getExpr2().containsVarOwnedBy(instances);
+	}
 	
 }

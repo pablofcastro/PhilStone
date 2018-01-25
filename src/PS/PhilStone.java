@@ -40,8 +40,11 @@ public class PhilStone {
 	private static LinkedList<String> instancesList; // the list of instances 
 	private static String path = "";
 	private static String specName = "";
+	private static String smallSpec = ""; // this is used for genSearching, it saves the path of the spec with small processes
 	private static boolean lexSearch = false;
 	private static boolean cexSearch = true; // by default we use cexSearch
+	private static boolean genSearch = false;
+	private static boolean herSearch = false;
 	private static int scope = 0;
 	
 	public static void main(String[] args) {
@@ -72,6 +75,23 @@ public class PhilStone {
 				if (args[i].equals("-lexSearch")){
 					lexSearch = true;
 					cexSearch = false;	
+					herSearch = false;
+					genSearch= false;
+					continue;
+				}
+				if (args[i].startsWith("-genSearch=")){
+					lexSearch = false;
+					cexSearch = false;	
+					herSearch = false;
+					genSearch= true;
+					smallSpec = args[i].replace("-genSearch=","");
+					continue;
+				}
+				if (args[i].equals("-herSearch")){
+					lexSearch = false;
+					cexSearch = false;	
+					genSearch = false;
+					herSearch = true;
 					continue;
 				}
 				if (args[i].startsWith("-scope=")){					
@@ -80,7 +100,7 @@ public class PhilStone {
 						continue;
 					}
 					catch (NumberFormatException e){
-						System.out.println("Wrong int parmater after opetion -scope");
+						System.out.println("Wrong int parmater after option -scope");
 						System.exit(0);
 					}
 				}
@@ -112,32 +132,34 @@ public class PhilStone {
 
 		}
 		catch(Exception e){
-			System.out.println("Parsing error");
+			System.out.println("Error while parsing the Spec File");
             e.printStackTrace(System.out);		
 		}
+		SpecAux smalls = null;
+		if (genSearch){
+			try{ // we parse the specification
+				FileReader specFile = new FileReader(smallSpec);
+				parser p = new parser(new Scanner(specFile));
+				smalls = (SpecAux) p.parse().value;
+			}
+			catch(Exception e){
+				System.out.println("Error while parsing the Small Specification");
+	            e.printStackTrace(System.out);		
+			}
+		}
+		
 		if (!result.typeCheck()){ // we type check the specification
 			System.out.println("The specification has errors");
 			System.out.println(result.getErrors());
 		}
 		else{		
 			
-			// we write the specification to the corresponding path
-			//String templateDir = "/Users/Pablo/University/my-papers/drafts/Alloy.Synt/Tool/local/templates/";	// change for a $ variable	
 			System.out.println("The specification is OK");
 			Spec mySpec = result.getSpec();
-			//LinkedList<String> processes = mySpec.getProcessesNames();
 			
-			// a lexicographic search
-			//startLexSearch(mySpec, outputPath, templateDir);
 			if (cexSearch){
 				CounterExampleSearch cs = new CounterExampleSearch(mySpec, outputPath, templateDir, showInfo, writePdf, scope);
 				cs.startSearch();
-				//if (cs.getSyntProgram().equals(""))
-				//if (cs.getSyntProgram()!="" && showInfo){
-				//	System.out.println(cs.getSyntProgram());
-				//}
-				//else
-				//	System.out.println("program not found.");
 			}
 			if (lexSearch){
 				LexSearch ls = new LexSearch(mySpec, outputPath, templateDir, showInfo, writePdf, scope);
@@ -147,6 +169,30 @@ public class PhilStone {
 				else
 					System.out.println("program not found.");
 			}
+			if (genSearch){
+				if (!smalls.typeCheck()){
+					System.out.println("The specification with less instances contains type errors");
+					System.out.println(smalls.getErrors());
+				}
+				else{
+					Spec mySmallSpec = smalls.getSpec();
+					GenSearch gs = new GenSearch(mySpec, mySmallSpec, outputPath, templateDir, showInfo, writePdf, scope);
+					gs.startGenSearch();
+					if (gs.getSyntProgram()!="")
+						System.out.println(gs.getSyntProgram());
+					else
+						System.out.println("program not found.");
+				}
+			}
+			if (herSearch){
+				HerSearch gs = new HerSearch(mySpec, outputPath, templateDir, showInfo, writePdf, scope);
+				gs.startSearch();
+				if (gs.getSyntProgram()!="")
+					System.out.println(gs.getSyntProgram());
+				else
+					System.out.println("program not found.");
+			}
+			
 		}
 	}
 	

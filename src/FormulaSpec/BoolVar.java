@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 public class BoolVar implements ElemFormula, Var {
 	
 	private String name;
@@ -57,4 +59,15 @@ public class BoolVar implements ElemFormula, Var {
     	}
     	return result;	
     }
+    
+    public Formula removeVarOwnedBy(LinkedList<String> instances){
+		if (instances.contains(this.getOwner()))
+			return new BoolConstant(true);
+		else
+			return this;
+	}
+    
+    public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return instances.contains(this.getOwner());
+	}
 }

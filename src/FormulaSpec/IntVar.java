@@ -1,5 +1,7 @@
 package FormulaSpec;
 
+import java.util.LinkedList;
+
 public class IntVar implements IntegerExpression, Var{
 	private String name;
 	private int value;
@@ -34,6 +36,17 @@ public class IntVar implements IntegerExpression, Var{
 		return Type.INT;
 	}
 	
+	public String getOwner(){
+	    String result = name;
+	    for (int i=0; i<name.length(); i++){
+	    	if (result.charAt(i) == '.'){
+	    		result = result.substring(0, i);
+	    		break;
+	    	}
+	    }
+	    return result;	
+	}
+	
 	public String toAlloy(String metaName, String state){
 		return name;
 	}
@@ -55,4 +68,10 @@ public class IntVar implements IntegerExpression, Var{
     	}
     	return result;	
     }
+	
+	
+	
+	public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return instances.contains(this.getOwner());
+	}
 }

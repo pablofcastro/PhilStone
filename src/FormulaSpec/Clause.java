@@ -95,4 +95,29 @@ public class Clause implements Formula {
 		}
 		return result;	
 	}
+	
+	 public Formula removeVarOwnedBy(LinkedList<String> instances){
+			Clause result = new Clause();
+			for (int i=0; i<this.getPosElem().size(); i++){
+				result.addPosElem((ElemFormula) this.getPosElem().get(i).removeVarOwnedBy(instances));
+			}
+			for (int i=0; i<this.getNegElem().size(); i++){
+				result.addNegElem((ElemFormula) this.getNegElem().get(i).removeVarOwnedBy(instances));
+			}
+			return result;
+	}
+	 
+	 public boolean containsVarOwnedBy(LinkedList<String> instances){
+		for (int i=0; i<this.getPosElem().size(); i++){
+			if (this.getPosElem().get(i).containsVarOwnedBy(instances))
+				return true;
+		}
+		for (int i=0; i<this.getNegElem().size(); i++){
+			if (this.getNegElem().get(i).containsVarOwnedBy(instances))
+				return true;
+		}
+		return false;	
+	}
+	
+	
 }

@@ -50,5 +50,13 @@ public class IntConstant extends TemporalFormula {
     	LinkedList<String> result = new LinkedList<String>();
     	return result;
     }
+    
+    public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return false;
+	}
+    
+    public Formula removeVarOwnedBy(LinkedList<String> instances){
+		return this;
+	}
 
 }
