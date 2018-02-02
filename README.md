@@ -1,2 +1,37 @@
 # PhilStone
 A simple tool for the synthesis of concurrent programs using Alloy
+
+- Compiling the Tool
+
+You can compile the code with the ant tool, just running 'ant' The .class will be generated and saved in folder bin/
+
+- Running the Tool
+
+1- You must add the jar/ folder to your $CLASSPATH, and set the $PhilStone to the actual folder,
+2- Just execute:
+
+   java bin/PS/PhilStone [OPTIONS] [SPEC FILES]
+
+where: [OPTIONS] are the following:
+
+'-scope=k' tries to synthesize the program using a scope of k elements
+'-pdf' if a program is synthesized it produces a pdf with the state/transition system for the processes, saved as a .dot in output/  folder
+'-genSearch' it tries to use solutions of the problem with less instances 
+'-lexSearch' it uses the standard algorithm without counterexamples
+
+- Examples of use:
+
+(cd bin/)
+
+- java PS/PhilStone -scope=6 ../src/tests/mutex/mutex2.spec
+
+it synthesizes a program for mutex with a scope of 6 using counterexamples, if the scope is low the algorithm wont be able to synthesize a program,
+
+- java PS/PhilStone -genSearch=../src/tests/phils/phil.spec -scope=14 ../src/tests/phils/phils/phil5.spec
+
+It synthesizes code for 5 philosophers using a smaller instance of the problem (2 philosophers).
+  
+
+
+ 
+
