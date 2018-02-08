@@ -1,21 +1,40 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- WARNING: Eclipse auto-generated file.
-              Any modifications will be overwritten.
-              To include a user specific buildfile here, simply create one in the same
-              directory with the processing instruction <?eclipse.ant.import?>
-              as the first entry and export the buildfile again. --><project basedir="." default="build" name="PhilStone">
+<project basedir="." default="build" name="PhilStone">
     <property environment="env"/>
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.8"/>
     <property name="source" value="1.8"/>
+    <property name="cup"      location="src"      />
+    <property name="jflex"    location="src"    />
+    <property name="jar.class.path" value="lib/*.jar"/>
     <path id="PhilStone.classpath">
         <pathelement location="bin"/>
         <pathelement location="jar/ST-4.0.8.jar"/>
         <pathelement location="jar/JFlex.jar"/>
         <pathelement location="jar/java-cup-11a.jar"/>
+        <pathelement location="jar/java-cup-11a-runtime.jar"/>
         <pathelement location="jar/alloy4.jar"/>
         <pathelement location="jar/dCTL_checker.jar"/>
     </path>
+    <taskdef  name="jflex" classname="JFlex.anttask.JFlexTask"   classpath="jar/JFlex.jar"   />              
+    <taskdef  name="cup"   classname="java_cup.anttask.CUPTask"  classpath="jar/java-cup-11a.jar" />
+    <target name="help">
+        <echo>
+        PhilStone build options: 
+                build             -- builds PhilStone from source
+                jar               -- creates PhilStone.jar from source
+                generate          -- generate jflex and cup lexer and parser from specs
+        </echo>
+    </target>
+
+    <target name="generate">
+        <jflex  file="src/Parser/Scanner.jflex" destdir="src" />
+        <cup srcfile="src/Parser/parserSpec.cup"
+             destdir="src"
+             interface="true"
+             force="true"
+        />
+    </target>
     <target name="init">
         <mkdir dir="bin"/>
         <copy includeemptydirs="false" todir="bin">
@@ -27,15 +46,19 @@
     <target name="clean">
         <delete dir="bin"/>
     </target>
-    <target depends="clean" name="cleanall"/>
-    <target depends="build-subprojects,build-project" name="build"/>
-    <target name="build-subprojects"/>
-    <target depends="init" name="build-project">
+    <target depends="init, generate" name="build">
         <echo message="${ant.project.name}: ${ant.file}"/>
-        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
-            <src path="src"/>
-            <classpath refid="PhilStone.classpath"/>
-        </javac>
+         <javac srcdir="src" destdir="bin" classpath="jar/java-cup-11a.jar"> <classpath refid="PhilStone.classpath" />  </javac>
     </target>
-    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target name="jar">
+    	<mkdir dir="bin/jar"/>
+        	<jar destfile="bin/jar/PhilStone.jar" basedir="bin" >
+            	<manifest>
+              		<attribute name="Main-Class" value="PS.PhilStone"/>
+                    <attribute name="Class-Path" value="lib/*.jar"/>
+              	</manifest>
+                <zipgroupfileset includes="*.jar" dir="jar"/>
+          	</jar>
+  	</target>   
+
 </project>
