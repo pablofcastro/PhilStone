@@ -34,7 +34,10 @@ it synthesizes a program for mutex with a scope of 6 using counterexamples, if t
 - java PS/PhilStone -genSearch=../src/tests/phils/phil.spec -scope=14 ../src/tests/phils/phils/phil5.spec
 
 It synthesizes code for 5 philosophers using a smaller instance of the problem (2 philosophers).
-  
+
+- Generating JAR file:
+
+ The .jar file can be generated executing 'ant jar', you can find the file in bin/jar, the tool also can be executed using the jar.  
 
 
  
