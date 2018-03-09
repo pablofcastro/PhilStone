@@ -367,7 +367,7 @@ public class LTS {
 			//}
 			//System.out.println("------------------------------");
 			
-			System.out.println("counter examples:"+counterexamples);
+			//System.out.println("counter examples:"+counterexamples);
 			for (int i=0; i<counterexamples.size();i++){
 				LinkedList<String> actualCex = counterexamples.get(i);
 				boolean firstTimeOr = true;
@@ -375,9 +375,9 @@ public class LTS {
 				for (int j=0; j<actualCex.size()-1;j++){
 					if (!actualCex.get(j).equals(actualCex.get(j+1))){	
 						LinkedList<Edge> egs = this.getEdges(actualCex.get(j),actualCex.get(j+1));
-						System.out.println(actualCex.get(j));
-						System.out.println(actualCex.get(j+1));
-						System.out.println(this.getEdges(actualCex.get(j),actualCex.get(j+1)));
+						//System.out.println(actualCex.get(j));
+						//System.out.println(actualCex.get(j+1));
+						//System.out.println(this.getEdges(actualCex.get(j),actualCex.get(j+1)));
 						if (egs.size() > 0){
 							if (firstTimeOr){
 								firstTimeOr = false;
