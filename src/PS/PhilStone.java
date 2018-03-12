@@ -121,9 +121,9 @@ public class PhilStone {
 		
 		
 		// If the args are OK we proceed
-		String outputPath = System.getenv("PhilStone")+"/output/";
-		String templateDir =  System.getenv("PhilStone")+"/templates/";
-		String pdfDir = System.getenv("PhilStone")+"/pdf/";
+		String outputPath = System.getenv("PhilStone")+"output/";
+		String templateDir =  System.getenv("PhilStone")+"templates/";
+		String pdfDir = System.getenv("PhilStone")+"pdf/";
 		SpecAux result = null;
 		try{ // we parse the specification
 			FileReader specFile = new FileReader(specName);

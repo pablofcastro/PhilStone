@@ -196,6 +196,13 @@ public class ProcessSpec {
 		
 		STGroup group = new STGroupDir(templateDir);
 		ST st = group.getInstanceOf("metamodel");
+		if (st == null){ // linux uses uppercases for the metamodel!
+			// in this case we try with uppercase
+			st = group.getInstanceOf("Metamodel");
+			if (st == null)
+				throw new RuntimeException("Template Folder Not Found");
+				
+		}
 		
 		st.add("name", this.name);
 		st.add("boolProps", localBoolProps);
