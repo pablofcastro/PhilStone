@@ -1,6 +1,6 @@
 // this file describes the alloy metamodel for processes
 // Author: Pablo Castro
-metamodel(name,boolProps,sharedBoolProps, locks, localActions,envActions,actions, auxVars, auxAxioms, auxPreds, invariants, init, scope)  ::=
+Metamodel(name,boolProps,sharedBoolProps, locks, localActions,envActions,actions, auxVars, auxAxioms, auxPreds, invariants, init, scope)  ::=
 <<
 open util/relation
 
