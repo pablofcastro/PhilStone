@@ -71,7 +71,7 @@ public class Clause implements Formula {
 			if (neg.get(i).usesVar(name))
 				return true;	
 		}
-		for (int i=0; i<this.neg.size(); i++){
+		for (int i=0; i<this.pos.size(); i++){
 			if (pos.get(i).usesVar(name))
 				return true;
 			
