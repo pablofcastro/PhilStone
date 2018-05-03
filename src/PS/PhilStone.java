@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 
 import mc.*;
 
@@ -115,15 +116,16 @@ public class PhilStone {
 		}
 		
 		if (System.getenv("PhilStone")==null){
-			System.out.println("The Environment Variable PhilStone is not set. It must be set to the current root path of the tool.");
-	        System.exit(0);
+			setEnv("PhilStone", "./");
+//			System.out.println("The Environment Variable PhilStone is not set. It must be set to the current root path of the tool.");
+//	        System.exit(0);
 		}
 		
 		
 		// If the args are OK we proceed
-		String outputPath = System.getenv("PhilStone")+"output/";
-		String templateDir =  System.getenv("PhilStone")+"templates/";
-		String pdfDir = System.getenv("PhilStone")+"pdf/";
+		String outputPath = System.getenv("PhilStone")+"/output/";
+		String templateDir =  System.getenv("PhilStone")+"/templates/";
+		String pdfDir = System.getenv("PhilStone")+"/pdf/";
 		SpecAux result = null;
 		try{ // we parse the specification
 			FileReader specFile = new FileReader(specName);
@@ -133,7 +135,8 @@ public class PhilStone {
 		}
 		catch(Exception e){
 			System.out.println("Error while parsing the Spec File");
-            e.printStackTrace(System.out);		
+//            e.printStackTrace(System.out);
+            System.exit(0);
 		}
 		SpecAux smalls = null;
 		if (genSearch){
@@ -734,5 +737,18 @@ public class PhilStone {
 	    //return true;
 	}*/
 	
+	
+	public static void setEnv(String key, String value) {
+	    try {
+	        Map<String, String> env = System.getenv();
+	        Class<?> cl = env.getClass();
+	        Field field = cl.getDeclaredField("m");
+	        field.setAccessible(true);
+	        Map<String, String> writableEnv = (Map<String, String>) field.get(env);
+	        writableEnv.put(key, value);
+	    } catch (Exception e) {
+	        throw new IllegalStateException("Failed to set environment variable", e);
+	    }
+	}
 
 }
