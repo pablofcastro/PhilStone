@@ -62,12 +62,12 @@ all s:<name>Meta.nodes,  s':<name>Meta.ACT<a.name>[s] |<a.singletonFrameCompleme
 
 <if(a.frameComplement)>
 all s:<name>Meta.nodes | all s':<name>Meta.ACT<a.name>[s] | <a.frameComplement: {fr | (Prop_<fr>[<name>Meta,s] iff Prop_<fr>[<name>Meta, s'])}; separator=" and " >
-<endif>
 <if(a.lockFrameComplement)>
- and 
+and
 <a.lockFrameComplement: {fr | (Av_<fr>[<name>Meta,s] iff Av_<fr>[<name>Meta, s'])}; separator=" and " > 
 and
 <a.lockFrameComplement: {fr | (Own_<fr>[<name>Meta,s] iff Own_<fr>[<name>Meta, s'])}; separator=" and " >
+<endif>
 <endif>
 \}
 }; separator="\n">
