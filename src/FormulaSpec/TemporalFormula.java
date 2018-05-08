@@ -79,7 +79,7 @@ public abstract class TemporalFormula implements Formula {
     	if ((this instanceof AF) || (this instanceof AU) || (this instanceof AW) || (this instanceof EG))
     		return "all s:nodes | Prop_Form"+this.getId()+" in val[s] iff Form"+this.getId()+"[this,s] ";
     	else
-    		return "";
+    		return null;
     }
     
     /**
@@ -89,7 +89,8 @@ public abstract class TemporalFormula implements Formula {
     public LinkedList<String> generateAxioms(){
     	LinkedList<String> result = new LinkedList<String>();
     	//result += this.getAxiom();
-    	result.add(this.getAxiom());
+    	if(this.getAxiom()!=null)
+    		result.add(this.getAxiom());
     	if (this instanceof AF){
 			result.add(((AF) this).getAuxForm().getAxiom()); // we only need one axiom for this subformulas are shared with the main formula
 		}
