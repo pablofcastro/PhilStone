@@ -32,8 +32,20 @@ process p{
 main(){
  p1:p;
  p2:p;
+ p3:p;
+ p4:p;
+ p5:p;
+ p6:p;
+ p7:p;
+ p8:p;
  run p1();
  run p2();
+ run p3();
+ run p4();
+ run p5();
+ run p6();
+ run p7();
+ run p8();
 }
 
-property: AG[!p1.cs || !p2.cs];
+property: AG[(!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs) || (!p2.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs && !p8.cs) || (!p1.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs && !p8.cs) || (!p1.cs && !p2.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs && !p8.cs) || (!p1.cs && !p2.cs && !p3.cs && !p5.cs && !p6.cs && !p7.cs && !p8.cs) || (!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p6.cs && !p7.cs && !p8.cs) || (!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p5.cs && !p7.cs && !p8.cs) || (!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs && !p8.cs)  ];

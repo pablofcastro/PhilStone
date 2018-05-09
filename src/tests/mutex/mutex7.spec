@@ -46,4 +46,4 @@ main(){
  run p7();
 }
 
-property: AG[(!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs) || (!p2.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs) || (!p1.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs) || (!p1.cs && !p2.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs) || (!p1.cs && !p2.cs && !p3.cs && !p5.cs && !p6.cs && !p7.cs) || (!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p6.cs && !p7.cs) && (!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p5.cs && !p7.cs)   ];
+property: AG[(!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs) || (!p2.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs) || (!p1.cs && !p3.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs) || (!p1.cs && !p2.cs && !p4.cs && !p5.cs && !p6.cs && !p7.cs) || (!p1.cs && !p2.cs && !p3.cs && !p5.cs && !p6.cs && !p7.cs) || (!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p6.cs && !p7.cs) || (!p1.cs && !p2.cs && !p3.cs && !p4.cs && !p5.cs && !p7.cs)   ];
