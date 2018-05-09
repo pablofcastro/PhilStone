@@ -1,20 +1,20 @@
 spec readerwriter
 
-r:boolean; /*common resource*/
+r,read1,read2:boolean; /*r is the common resource*/
 
 process writer{
 	ncs, cs: boolean;
-	init: this.ncs && !own(global.r);
+	init: this.ncs && !this.cs && !own(global.r) && !own(global.read1) && !own(global.read2);
 
 	action lockR(){
-		frame: ncs, r;
+		frame: r;
 		pre: this.ncs && av(global.r);
-		post: this.ncs && own(global.r);
+		post: own(global.r);
 	}
 
 	action enterCS(){
-		frame: r, ncs, cs;
-		pre: this.ncs && own(global.r);
+		frame: ncs, cs;
+		pre: this.ncs && own(global.r) && av(global.read1) && av(global.read2);
 		post: !this.ncs && this.cs;
 	}
 
@@ -27,20 +27,20 @@ process writer{
 
 }
 
-process reader{
+process reader (lock: boolean){
 	reading:boolean;
-	init: !this.reading && !own(global.r);
+	init: !this.reading && !own(global.r) && !own(lock);
 
 	action startRead(){
-		frame: reading, r;
-		pre: !this.reading && av(global.r);
-		post: this.reading;
+		frame: reading, lock;
+		pre: !this.reading && av(global.r) && av(lock);
+		post: this.reading && own(lock);
 	}
 
 	action finishRead(){
-		frame: reading, r;
-		pre: this.reading && av(global.r);
-		post: !this.reading;
+		frame: reading, lock;
+		pre: this.reading && av(global.r) && own(lock);
+		post: !this.reading && !own(lock);
 	}
 	invariant: this.reading || !this.reading;
 }
@@ -52,9 +52,9 @@ main(){
 	r2:reader;
 	w3:writer;
 	run w1();
-	run r1();
+	run r1(read1);
 	run w2();
-	run r2();
+	run r2(read2);
 	run w3();
 }
 

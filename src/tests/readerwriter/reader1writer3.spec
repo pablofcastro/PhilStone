@@ -48,8 +48,14 @@ process reader (lock: boolean){
 main(){
 	w1:writer;
 	r1:reader;
+	w2:writer;
+	w3:writer;
 	run w1();
 	run r1(read1);
+	run w2();
+	run w3();
 }
 
-property: AG[(!r1.reading || !w1.cs)]; 
+property: AG[(!r1.reading || !w1.cs) && (!r1.reading || !w2.cs) && (!r1.reading || !w3.cs)] 
+&&
+AG[(!w1.cs || !w2.cs) && (!w3.cs || !w2.cs) && (!w1.cs || !w3.cs)]; 
