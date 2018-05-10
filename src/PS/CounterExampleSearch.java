@@ -104,6 +104,8 @@ public class CounterExampleSearch {
 		
 		// STEP 1: We generate the laxest model for each instance
 		for (int i=0; i<processes.size(); i++){
+			long startTime = System.currentTimeMillis();    
+
 			String currentProcess = processes.get(i);
 			//String currentInstance = 
 			
@@ -158,7 +160,9 @@ public class CounterExampleSearch {
 					if (this.printPDF)
 						lts.toDot(outputPath+"lax"+instancesList.get(j)+".dot");
 			}
-			
+
+			long estimatedTime = System.currentTimeMillis() - startTime;
+			System.out.println(currentProcess+" time:" + estimatedTime);
 		}
 		
 		System.out.println("Laxest Models Generated...");
@@ -170,7 +174,7 @@ public class CounterExampleSearch {
 		
 		// an iterator for the laxest models
 		//Iterator<String> itModels = insLaxModels.keySet().iterator();
-		boolean found = counterExampleSearch(0, 14);
+		boolean found = counterExampleSearch(0, scope);
 		if (found){
 			System.out.println("Program Synthesized, saved to output folder.."); 
 			
