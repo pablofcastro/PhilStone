@@ -10,7 +10,7 @@ process airplane{
 	action tryLand(){
 		frame: ia, tl;
 		pre: this.ia;
-		post: !this.ia;
+		post: !this.ia && this.tl;
 	}
 
 	action land(){
