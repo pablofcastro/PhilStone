@@ -26,14 +26,14 @@ process airplane{
 	}
 
 	action c(){
-		frame: tc,c;
+		frame: tc,c,landingLane;
 		pre: this.tc;
-		post: !this.tc && this.c;
+		post: !this.tc && this.c && !own(global.landingLane);
 	}
 
 	action tryCross(){
-		frame: c,tcr,landingLane;
-		pre: this.c;
+		frame: c,tcr,landingLane,takeOffLane;
+		pre: this.c && av(global.landingLane) && av(global.takeOffLane);
 		post: !this.c && this.tcr && own(global.landingLane) && own(global.takeOffLane);
 	}
 
@@ -63,7 +63,7 @@ process airplane{
 
 	action tryTakeOff(){
 		frame: p,tt,takeOffLane;
-		pre: this.p;
+		pre: this.p && av(global.takeOffLane);
 		post: !this.p && this.tt && own(global.takeOffLane);
 	}
 	action takeOff(){
