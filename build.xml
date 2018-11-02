@@ -6,7 +6,7 @@
     <property name="source" value="1.8"/>
     <property name="cup"      location="src"      />
     <property name="jflex"    location="src"    />
-    <property name="jar.class.path" value="lib/*.jar"/>
+    <property name="jar.class.path" value="jar/*.jar"/>
     <path id="PhilStone.classpath">
         <pathelement location="bin"/>
         <pathelement location="jar/ST-4.0.8.jar"/>
@@ -14,7 +14,7 @@
         <pathelement location="jar/java-cup-11a.jar"/>
         <pathelement location="jar/java-cup-11a-runtime.jar"/>
         <pathelement location="jar/alloy4.jar"/>
-        <pathelement location="jar/dCTL_checker.jar"/>
+        <pathelement location="jar/dCTL_checkernew.jar"/>
     </path>
     <taskdef  name="jflex" classname="JFlex.anttask.JFlexTask"   classpath="jar/JFlex.jar"   />              
     <taskdef  name="cup"   classname="java_cup.anttask.CUPTask"  classpath="jar/java-cup-11a.jar" />
@@ -49,7 +49,7 @@
     </target>
     <target depends="init, generate" name="build">
         <echo message="${ant.project.name}: ${ant.file}"/>
-         <javac srcdir="src" destdir="bin" classpath="jar/java-cup-11a.jar"> <classpath refid="PhilStone.classpath" />  </javac>
+         <javac srcdir="src" destdir="bin" debug="true" includeantruntime="true" classpath="jar/java-cup-11a.jar"> <classpath refid="PhilStone.classpath" />  </javac>
     </target>
     <target name="jar">
     	<mkdir dir="bin/jar"/>

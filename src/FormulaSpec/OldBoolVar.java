@@ -4,10 +4,24 @@ import java.util.LinkedList;
 
 public class OldBoolVar implements Formula, Var{
 	private String name;
+	private boolean isPrim;
 
 	
 	public OldBoolVar(String n){
-		name = n;
+		this.name = n;
+		this.isPrim = false;
+	}
+	
+	public void setIsPrimtType(boolean b){
+		this.isPrim = b;
+	}
+	
+	public boolean isPrimType(){
+		return this.isPrim;
+	}
+	
+	public void setIsPrim(boolean b){
+		this.isPrim = b;
 	}
 	
 	@Override	
@@ -25,7 +39,10 @@ public class OldBoolVar implements Formula, Var{
     }
     
     public Type getType(){
-    	return Type.BOOL;
+    	if (!this.isPrimType())
+			return Type.BOOL;
+		else
+			return Type.PRIMBOOL;
     }
 
     public String toAlloy(String metaName, String state){

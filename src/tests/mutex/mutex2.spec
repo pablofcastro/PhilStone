@@ -26,7 +26,7 @@ process p{
 		pre: this.try && av(global.m);
 		post: this.try && own(global.m);
 	}	
-	invariant: AG[!(this.ncs && this.try)&&!(this.try&&this.cs)&&!(this.ncs&&this.cs)];
+	invariant: AG[!(this.ncs && this.try)&&!(this.try&&this.cs)];
 }
 
 main(){

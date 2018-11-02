@@ -5,10 +5,12 @@ import java.util.LinkedList;
 public class IntVar implements IntegerExpression, Var{
 	private String name;
 	private int value;
+	private boolean isPrim;
 	
 	public IntVar(String name, int value){
 		this.name = name;
         this.value = value;
+        this.isPrim = false;
 	}
 	
 	public IntVar(String name){
@@ -16,6 +18,14 @@ public class IntVar implements IntegerExpression, Var{
         this.value = 0;
 	}
 
+	public void setIsPrim(boolean v){
+		this.isPrim = v;
+	}
+	
+	public boolean isPrimType(){
+		return isPrim;
+	}
+	
 	public void accept(IntegerVisitor v){
 		v.visit(this);
 	}
@@ -33,7 +43,10 @@ public class IntVar implements IntegerExpression, Var{
 	}
 
 	public Type getType(){
-		return Type.INT;
+		if (!this.isPrimType())
+			return Type.INT;
+		else
+			return Type.PRIMINT;
 	}
 	
 	public String getOwner(){
@@ -48,7 +61,9 @@ public class IntVar implements IntegerExpression, Var{
 	}
 	
 	public String toAlloy(String metaName, String state){
-		return name;
+		// we use function expressions to capture ints in Alloy
+		String result = "Val_"+this.getUnqualifiedName()+"["+metaName+","+state+"]:Int";
+    	return result;
 	}
 	
 	public String toString(){

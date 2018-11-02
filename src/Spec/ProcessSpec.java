@@ -21,6 +21,7 @@ public class ProcessSpec {
 	LinkedList<String> instances; // the instances of the specification
 	Spec mySpec;
 	Formula init;
+	int intSize; // the size of the ints
 	
 	/**
 	 * Basic Class Constructor
@@ -33,6 +34,20 @@ public class ProcessSpec {
 		this.pars = new LinkedList<Var>();
 		this.actions = new LinkedList<Action>();
 		this.invs = new LinkedList<TemporalFormula>();
+	}
+	
+	/**
+	 * Basic Class Constructor with intSize
+	 * @param name
+	 */
+	public ProcessSpec(String name, int intSize) {
+		this.name = name;
+		this.sharedVars = new LinkedList<Var>();
+		this.localVars = new LinkedList<Var>();
+		this.pars = new LinkedList<Var>();
+		this.actions = new LinkedList<Action>();
+		this.invs = new LinkedList<TemporalFormula>();
+		this.intSize = intSize;
 	}
 
 	/**
@@ -88,6 +103,8 @@ public class ProcessSpec {
 		localVars.add(v);
 	}
 	
+	
+	
 	public void addPar(Var v){
 		this.pars.add(v);
 	}
@@ -108,9 +125,23 @@ public class ProcessSpec {
 		this.mySpec = mySpec;
 	}
 	
+	
+	
 	public LinkedList<String> getSharedVarsNames(){
 		return this.mySpec.getGlobalVarsNames();
 	}
+	
+	
+	
+	public LinkedList<String> getSharedVarsNamesByType(Type t){
+		return this.mySpec.getGlobalVarsNamesByType(t);
+	}
+	
+	
+	public LinkedList<String> getSharedNonPrimVarsNamesByType(Type t){
+		return this.mySpec.getGlobalNonPrimVarsNamesByType(t);
+	}
+	
 	
 	public LinkedList<String> getLocalVarsNames(){
 		LinkedList<String> result = new LinkedList<String>();
@@ -120,15 +151,35 @@ public class ProcessSpec {
 		return result;
 	}
 	
+	public LinkedList<String> getLocalVarsNamesByType(Type t){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.localVars.size(); i++){
+			if (this.localVars.get(i).getType()==t)
+				result.add(this.localVars.get(i).getName());
+		}
+		return result; 
+	}
+	
 	public LinkedList<String> getBoolParNames(){
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<this.pars.size();i++){
-			if (this.pars.get(i).getType() == Type.BOOL){
+			if (this.pars.get(i).getType() == Type.BOOL && !this.pars.get(i).isPrimType()){
 				result.add(this.pars.get(i).getName());
 			}
 		}
 		return result;	
 	}
+	
+	public LinkedList<String> getBoolPrimParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.PRIMBOOL){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
 	
 	/**
 	 * A method to check whether a process mention a global var o nor
@@ -150,7 +201,17 @@ public class ProcessSpec {
 	public LinkedList<String> getIntParNames(){
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<this.pars.size();i++){
-			if (this.pars.get(i).getType() == Type.INT){
+			if (this.pars.get(i).getType() == Type.INT && !this.pars.get(i).isPrimType()){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
+	public LinkedList<String> getIntPrimParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.INT && this.pars.get(i).isPrimType()){
 				result.add(this.pars.get(i).getName());
 			}
 		}
@@ -158,10 +219,19 @@ public class ProcessSpec {
 	}
 	
 	public String metamodelToString(String templateDir, int scope){
+		
+		// we save the local bool propositions
 		List<String> localBoolProps = new ArrayList<String>();
 		for (int i = 0; i < localVars.size(); i++){
 			if (localVars.get(i).getType() == Type.BOOL)
 				localBoolProps.add(localVars.get(i).getName());
+		}
+		
+		// we save the local int vars
+		List<String> localIntVars = new ArrayList<String>();
+		for (int i = 0; i < localVars.size(); i++){
+			if (localVars.get(i).getType() == Type.INT)
+				localIntVars.add(localVars.get(i).getName());
 		}
 		
 		// we set the actions
@@ -174,11 +244,7 @@ public class ProcessSpec {
 				envActions.add(actions.get(i));
 		}
 		
-		//List<String> invariants = new ArrayList<String>();
-		//for (int i=0; i<this.invs.size(); i++){
-		//	invariants.add(invs.get(i).toAlloy(name+"Meta", "s"));
-		//}
-		List<String> invariants = new ArrayList<String>();
+		List<String> invariants = new ArrayList<String>(); // the invariants of the specification
 		List<String> auxVars = new ArrayList<String>(); // the auxiliar vars needed for translating CTL to Alloy
 		List<String> auxAxioms = new ArrayList<String>(); // the auxiliar axioms needed for translating CTL to Alloy
 		List<String> auxPreds = new ArrayList<String>(); // the auxiliar axioms needed for translating CTL to Alloy
@@ -189,7 +255,6 @@ public class ProcessSpec {
 			auxPreds.addAll(invs.get(i).generatePreds(name+"Meta"));
 		}		
 		
-
 		List<Action> actions = new ArrayList<Action>();
 		actions.addAll(localActions);
 		actions.addAll(envActions);
@@ -201,44 +266,114 @@ public class ProcessSpec {
 		}
 		
 		st.add("name", this.name);
-		st.add("boolProps", localBoolProps);
-		//st.add("sharedBoolProps", sharedBoolProps);
-		LinkedList<String> globalVars = new LinkedList<String>();
-		//globalVars.addAll(mySpec.getGlobalVarsNames());
+		st.add("boolProps", localBoolProps); // we add local boolean variables
+		st.add("intVars", localIntVars); // we add the local int variables
 		
-		
-		// we add just the global variables used in this process
+		LinkedList<String> usedBooleanGlobalVars = new LinkedList<String>(); // a list for the boolean non-primitive global vars	
+																			
+		// we add just the boolean global variables used in this process
 		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
-			if (this.usesSharedVar(mySpec.getGlobalVarsNames().get(i))){
-				globalVars.add(mySpec.getGlobalVarsNames().get(i));
+			String currentVar = mySpec.getGlobalVarsNames().get(i);
+			if (this.usesSharedVar(currentVar) && !mySpec.isPrimVar(currentVar) && mySpec.getGlobalVarsTypes().get(currentVar) == "BOOL"){
+				usedBooleanGlobalVars.add(mySpec.getGlobalVarsNames().get(i));
 			}
 		}
 		
-		// define usedglobalvars
+		LinkedList<String> usedIntGlobalVars = new LinkedList<String>(); // a list for the integer global vars	
+		// we add the int global vars used in this process
+		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
+			String currentVar = mySpec.getGlobalVarsNames().get(i);
+			if (this.usesSharedVar(currentVar) && !mySpec.isPrimVar(currentVar)  && mySpec.getGlobalVarsTypes().get(currentVar) == "INT"){
+				usedIntGlobalVars.add(mySpec.getGlobalVarsNames().get(i));
+			}
+		}
+		
+		// parameters are considered global vars
+		usedBooleanGlobalVars.addAll(this.getBoolParNames());
+		usedIntGlobalVars.addAll(this.getIntParNames());
+		
+		// define UsedGlobalVars
 		LinkedList<String> usedGlobalVars = new LinkedList<String>();
 		for (int i=0; i<this.mySpec.getGlobalVarsNames().size();i++){
-			if (this.usesSharedVar(this.mySpec.getGlobalVarsNames().get(i)))
-				usedGlobalVars.add(this.mySpec.getGlobalVarsNames().get(i));		
+			if (this.usesSharedVar(this.mySpec.getGlobalVarsNames().get(i)) && !mySpec.isPrimVar(this.mySpec.getGlobalVarsNames().get(i))){
+				usedGlobalVars.add(this.mySpec.getGlobalVarsNames().get(i));
+			}
 		}
-		usedGlobalVars.addAll(this.getBoolParNames());
+		// and the parameters are added 
+		usedGlobalVars.addAll(this.getBoolParNames()); // we add the parameters that are not prim types
+		usedGlobalVars.addAll(this.getIntParNames()); // 
+		
+		
+		// define UsedGlobalVars with primitive types
+		LinkedList<String> usedPrimGlobalVars = new LinkedList<String>();
+		for (int i=0; i<this.mySpec.getGlobalVarsNames().size();i++){
+			if (this.usesSharedVar(this.mySpec.getGlobalVarsNames().get(i)) && mySpec.isPrimVar(this.mySpec.getGlobalVarsNames().get(i))){
+				usedPrimGlobalVars.add(this.mySpec.getGlobalVarsNames().get(i));
+			}
+		}
+		// and the parameters are added 
+		usedGlobalVars.addAll(this.getBoolPrimParNames()); // we add the parameters that are not prim types
+		usedGlobalVars.addAll(this.getIntPrimParNames()); // 
+		
+		
+		// we set the volatile or primitive boolean and int used in the specification
+		LinkedList<String> usedPrimBoolVars = new LinkedList<String>();
+		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
+			String currentVar = mySpec.getGlobalVarsNames().get(i);
+			if (this.usesSharedVar(currentVar) && mySpec.isPrimVar(currentVar) && mySpec.getGlobalVarsTypes().get(currentVar) == "PRIMBOOL"){
+				usedPrimBoolVars.add(mySpec.getGlobalVarsNames().get(i));
+			}
+		}
+		
+		usedPrimBoolVars.addAll(this.getBoolPrimParNames());
+	
+		//we set the volatile or primitive int vars
+		LinkedList<String> usedPrimIntVars = new LinkedList<String>(); // a list for the integer global vars	
+		
+		// we add the int global vars used in this process
+		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
+			String currentVar = mySpec.getGlobalVarsNames().get(i);
+			if (this.usesSharedVar(currentVar) && mySpec.isPrimVar(currentVar)  && mySpec.getGlobalVarsTypes().get(currentVar) == "INT"){
+				usedPrimIntVars.add(mySpec.getGlobalVarsNames().get(i));
+			}
+		}
+		// and the int primitive parameters
+		usedPrimBoolVars.addAll(this.getIntPrimParNames());
 		
 		// we set the important global vars for the locks
 		for (int i=0; i<this.mySpec.getLocks().size();i++){
-			this.mySpec.getLocks().get(i).setUsedGlobalVars(usedGlobalVars);
+			Lock currentLock = this.mySpec.getLocks().get(i);
+			currentLock.addAllUsedGlobalVars(usedGlobalVars);
+			currentLock.addAllUsedGlobalVars(usedPrimGlobalVars);	
+			currentLock.addAllUsedBooleanGlobalVars(usedPrimBoolVars);
+			currentLock.addAllUsedBooleanGlobalVars(usedBooleanGlobalVars);
+			currentLock.addAllUsedIntGlobalVars(usedIntGlobalVars);
+			currentLock.addAllUsedIntGlobalVars(usedPrimIntVars);
+			currentLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
+			
+			//currentLock.setUsedGlobalVars(usedGlobalVars);
+			//currentLock.setUsedBooleanGlobalVars(usedBooleanGlobalVars);
+			//currentLock.setUsedIntGlobalVars(usedIntGlobalVars);
 			//System.out.println(this.mySpec.getLocks().get(i).getOtherGlobalVars());
 		}
 		
 		LinkedList<Lock> usedLocks= new LinkedList<Lock>();
 		for (int i=0;i<this.mySpec.getLocks().size();i++){
-			if (usedGlobalVars.contains(this.mySpec.getLocks().get(i).getVarName()))
+			if (usedGlobalVars.contains(this.mySpec.getLocks().get(i).getVarName())) //TBD: ADD SIMPLE LOCKS HERE
 				usedLocks.add(this.mySpec.getLocks().get(i));
 		}
-		// parameters are considered global vars
-		globalVars.addAll(this.getBoolParNames());
+	
 		
-		// parameters are also considered locks 
+		// Non-primitive Boolean parameters are also considered locks 
 		for (int i=0; i<this.getBoolParNames().size();i++){
 			Lock parLock = new Lock(this.getBoolParNames().get(i), this.mySpec);
+			parLock.setUsedGlobalVars(usedGlobalVars);
+			usedLocks.add(parLock);
+		}
+		
+		// Non-primitive int parameters are also considered locks 
+		for (int i=0; i<this.getIntParNames().size();i++){
+			Lock parLock = new Lock(this.getIntParNames().get(i), this.mySpec);
 			parLock.setUsedGlobalVars(usedGlobalVars);
 			usedLocks.add(parLock);
 		}
@@ -247,8 +382,29 @@ public class ProcessSpec {
 			usedLocks.get(i).getOtherGlobalVars();
 		}
 		
-		st.add("sharedBoolProps", globalVars); // we take the parameters as a global variables
+		// we calculate the sets of integers used by the program
+		// for now, we only consider positive integers, 
+		LinkedList<String> intSet = new LinkedList<String>();
+		for (int i=0; i<this.intSize; i++){
+			intSet.add(String.valueOf(i));
+			i++;
+		}
+		
+		st.add("sharedBoolProps", usedBooleanGlobalVars); // we take the parameters as a global variables
+		st.add("sharedIntVars", usedIntGlobalVars);
+		st.add("sharedPrimBoolProps", usedPrimBoolVars); // the primitive/volatile shared bool vars
+		System.out.println(usedPrimBoolVars);
+		st.add("sharedPrimIntVars", usedPrimIntVars); // the primitive/volatile shared int vars
 		st.add("locks", usedLocks); //for now the global vars are locks
+		
+		// we create a collection for all the shared variables
+		LinkedList<String> allSharedVars = new LinkedList<String>();
+		allSharedVars.addAll(usedBooleanGlobalVars);
+		allSharedVars.addAll(usedIntGlobalVars);
+		allSharedVars.addAll(usedPrimBoolVars);
+		allSharedVars.addAll(usedPrimIntVars);
+		st.add("allSharedVars", allSharedVars);
+		
 		st.add("localActions", localActions);
 		st.add("envActions", envActions);
 		st.add("actions", actions);
@@ -258,6 +414,9 @@ public class ProcessSpec {
 		st.add("invariants", invariants);
 		st.add("init", this.init.toAlloy(this.name+"Meta", "s"));
 		st.add("scope", scope);
+		st.add("intSet", intSet); // the set of integers considered by the synthesis algorithm, this is important for 
+								  // specifying the behavior of the environment, .e.g., to state that the environment can
+								  // set any possible integer to a shared int variable.
 		
 		
 		String result = st.render();
@@ -303,7 +462,6 @@ public class ProcessSpec {
 	 */
 	public void generateMetamodel(FileWriter file, String templateDir, int scope){
 		// we set the propositions
-		
 		//List<String> sharedBoolProps = new ArrayList<String>();
 		//for (int i = 0; i < sharedVars.size(); i++){
 		//		if (sharedVars.get(i).getType() == Type.BOOL)

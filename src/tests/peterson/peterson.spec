@@ -1,69 +1,69 @@
 spec peterson
-
-try0,try1:boolean;
-turn:boolean;
-
-process proc0 {
-	cs:boolean;
-	init: !this.cs && !own(global.try0);
-
-	action locktry0(){
-		frame: try0;
-		pre: !this.cs && !own(global.try0);
-		post: own(global.try0);
-	}
-	action unlocktry0(){
-		frame: try0,cs;
-		pre: this.cs && own(global.try0);
-		post: !this.cs && !own(global.try0);
-	}
-	action turnOn(){
-		frame: turn;
-		pre: !this.cs && own(global.try0);
-		post: global.turn;
-	}
-	action enterCS(){
-		frame: cs;
-		pre: (av(global.try1) && !this.cs) || (!global.turn && !this.cs);
-		post: this.cs;
-	}
-	invariant: this.cs || !this.cs;
-}
-
+turn, try1, try2: boolean;
 process proc1{
-	cs:boolean;
-	init: !this.cs && !own(global.try1);
+    cs:boolean;
+	init: !this.cs  && av(global.turn) && !global.turn && !global.try1 &&  own(global.try1) && !global.try2 && !own(global.try2);
 
-	action locktry1(){
-		frame: try1;
-		pre: !this.cs && !own(global.try1);
-		post: own(global.try1);
-	}
-	action unlocktry1(){
-		frame: try1,cs;
-		pre: this.cs && own(global.try1);
-		post: !this.cs && !own(global.try1);
-	}
-	action turnOn(){
+	
+    action lockturn(){
 		frame: turn;
-		pre: !this.cs && own(global.try1);
-		post: !global.turn;
+		pre: !this.cs && av(global.turn) && !global.try1;
+		post: own(global.turn);
+	}
+	action setTryTurn(){
+		frame: turn, try1;
+		pre: (!this.cs) && own(global.turn) && !global.try1 && own(global.try1);
+		post: global.turn && global.try1 && av(global.turn);
 	}
 	action enterCS(){
 		frame: cs;
-		pre: (av(global.try0) && !this.cs) || (global.turn && !this.cs);
+		pre: (global.try1 && !this.cs && !global.turn) || (!global.try2 && !this.cs && global.try1);
 		post: this.cs;
 	}
-	invariant: this.cs || !this.cs;
+    action leaveCS(){
+        frame: cs,  try1;
+        pre: this.cs && own(global.try1);
+        post: !this.cs &&  !global.try1;    
+    }
+   
+	invariant: EF[this.cs] && AG[!this.cs || EF[!this.cs]] && AG[own(global.try1)];
 }
+
+
+process proc2{
+    cs:boolean;
+	init: !this.cs &&  av(global.turn) && !global.turn && !global.try2 && own(global.try2) && !global.try1 && !own(global.try1);
+
+    action lockturn(){
+		frame: turn;
+		pre: !this.cs && av(global.turn) && !global.try2;
+		post: own(global.turn);
+	}
+	action setTryTurn(){
+		frame: turn, try2;
+		pre: (!this.cs) && own(global.turn)  && !global.try2 && own(global.try2);
+		post: !global.turn && global.try2 && av(global.turn);
+	}
+	action enterCS(){
+		frame: cs;
+		pre: (global.try2 && !this.cs && global.turn) || (!global.try1 && !this.cs && global.try2);
+		post: this.cs;
+	}
+    action leaveCS(){
+        frame: cs,  try2;
+        pre: this.cs && own(global.try2);
+        post: !this.cs &&  !global.try2;    
+    }
+   
+	invariant: EF[this.cs] && AG[!this.cs || EF[!this.cs]] && AG[own(global.try2)];
+}
+
 
 main(){
-	p0:proc0;
 	p1:proc1;
-	run p0();
+    p2:proc2;
 	run p1();
+    run p2();
 }
 
-property: AG[!p0.cs || !p1.cs] && 
-		  AG[av(global.try0) || AF[p0.cs]] &&
-		  AG[av(global.try1) || AF[p1.cs]];
+property: AG[!p1.cs || !p2.cs] && AG[!global.try1 || AF[p1.cs]] && AG[!global.try2 || AF[p2.cs]];

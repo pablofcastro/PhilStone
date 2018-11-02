@@ -12,12 +12,16 @@ import FormulaSpec.*;
 public class Spec {
 	String name; // the name of the specification
 	private LinkedList<ProcessSpec> processes; // the processes
-	private LinkedList<Var> globalVars; // the global vars
-	private LinkedList<Lock> locks;
+	private LinkedList<Var> globalVars; // the global vars, this list does not contain the primVars
+	private LinkedList<Lock> locks;	// the locks in the specification
 	private LinkedList<TemporalFormula> invs; // the invariants
 	private HashMap<String, ProcessSpec> instances; // the instances in the specification
-	private HashMap<String, LinkedList<Var>> actualPars; // the actual parameters of ech instance
+	private HashMap<String, LinkedList<Var>> actualPars; // the actual parameters of each instance
 	
+	/**
+	 * A Basic Constructor for Spec
+	 * @param name	takes the name of the specification
+	 */
 	public Spec(String name){
 		this.name = name;
 		this.processes = new LinkedList<ProcessSpec>();
@@ -28,14 +32,31 @@ public class Spec {
 		this.actualPars = new HashMap<String, LinkedList<Var>>();
 	}
 	
+	/**
+	 * Adds the global var to the collection of global vars of the specification
+	 * @param v
+	 */
 	public void addGlobalVar(Var v){
 		this.globalVars.add(v);
-		// for now all the global vars are locks
+		
+		// all the global vars are locks except the primitive ones 
 		Lock l = new Lock(v.getName(), this);
 		locks.add(l);
 	}
 	
 	
+	/**
+	 * Adds the lock to the collection of locks of the specification
+	 * @param l
+	 */
+	public void addLock(Lock l){
+		locks.add(l);
+	}
+	
+	/**
+	 * Adds the invariant to the spec
+	 * @param f
+	 */
 	public void addInv(TemporalFormula f){
 		this.invs.add(f);
 	}
@@ -100,6 +121,7 @@ public class Spec {
 	}
 
 	public LinkedList<String> getGlobalVarsNames(){
+		
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i = 0; i<globalVars.size(); i++){
 			result.add(globalVars.get(i).getName());
@@ -107,13 +129,47 @@ public class Spec {
 		return result;
 	}
 	
+	public LinkedList<String> getGlobalVarsNamesByType(Type t){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i = 0; i<globalVars.size(); i++){
+			if (globalVars.get(i).getType() == t)
+				result.add(globalVars.get(i).getName());
+		}
+		
+		return result;
+	}
+	
+	public LinkedList<String> getGlobalNonPrimVarsNamesByType(Type t){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i = 0; i<globalVars.size(); i++){
+			if (globalVars.get(i).getType() == t && !globalVars.get(i).isPrimType())
+				result.add(globalVars.get(i).getName());
+		}		
+		return result;
+	}
+	
+	
 	public Var getGlobalVarByName(String name){
 		for (int i=0; i<this.globalVars.size();i++){
 			if (this.globalVars.get(i).getUnqualifiedName().equals(name)){
 				return this.globalVars.get(i);
 			}
 		}
+		
 		throw new RuntimeException("Global Variable Not Found");
+	}
+	
+	/**
+	 * It says if a var is of a primitive type
+	 * @param name	the name of the var
+	 * @return	whether it is primitive or not
+	 */
+	public boolean isPrimVar(String name){
+		for (int i=0; i<this.globalVars.size();i++){
+			if (this.globalVars.get(i).getUnqualifiedName().equals(name))
+				return this.globalVars.get(i).isPrimType();
+		}
+		return false; // if no such a variable we return false
 	}
 	
 	public HashMap<String, String> getGlobalVarsTypes(){
@@ -123,6 +179,13 @@ public class Spec {
 				result.put(globalVars.get(i).getName(), "BOOL");
 			if (globalVars.get(i).getType() == Type.INT)
 				result.put(globalVars.get(i).getName(), "INT");
+			if (globalVars.get(i).getType() == Type.LOCK)
+				result.put(globalVars.get(i).getName(), "LOCK");
+			if (globalVars.get(i).getType() == Type.PRIMBOOL)
+				result.put(globalVars.get(i).getName(), "PRIMBOOL");
+			if (globalVars.get(i).getType() == Type.PRIMINT)
+				result.put(globalVars.get(i).getName(), "PRIMINT");
+			
 		}
 		return result;
 	}
@@ -180,6 +243,19 @@ public class Spec {
 		return result;
 	}
 	
+	/**
+	 * 
+	 * @param name
+	 * @return the type of a given global var, it returns ERROR if the variable is not in the spec
+	 */
+	public Type getGlobalVarType(String name){
+		for (int i=0; i<this.globalVars.size(); i++){
+			if (this.globalVars.get(i).getName().equals(name))
+				return this.globalVars.get(i).getType();
+		}
+		return Type.ERROR;
+	}
+	
 	/** 
 	 * @return	the metamodel of the given process, returns the empty string in the case of 
 	 * 			inexistent Process
@@ -195,7 +271,7 @@ public class Spec {
 	}
 	
 	/**
-	 * Writes down all the metamodels into a gieven file, this method will be replaced for metamodelTo..
+	 * Writes down all the metamodels into a given file, this method will be replaced for metamodelTo..
 	 * @param file	
 	 * @param templateDir
 	 */

@@ -10,10 +10,20 @@ import java.util.LinkedList;
 public class OldIntVar implements IntegerExpression, Var {
 	private String name;
 	private int value;
+	private boolean isPrim;
 	
 	public OldIntVar(String name, int value){
 		this.name = name;
         this.value = value;
+        this.isPrim = false;
+	}
+	
+	public void setIsPrim(boolean b){
+		this.isPrim = b;
+	}
+	
+	public boolean isPrimType(){
+		return this.isPrim;
 	}
 	
 	public void accept(IntegerVisitor v){
@@ -33,7 +43,10 @@ public class OldIntVar implements IntegerExpression, Var {
 	}
 	
 	public Type getType(){
-		return Type.INT;
+		if (!this.isPrimType())
+			return Type.INT;
+		else
+			return Type.PRIMINT;
 	}
 	
 	public String getOwner(){

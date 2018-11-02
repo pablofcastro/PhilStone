@@ -32,12 +32,23 @@ public class IntPar implements IntegerExpression, Var{
 		return myVar;
 	}
 	
+	public boolean isPrimType(){
+		return this.myVar.isPrimType();
+	}
+	
+	public void setIsPrim(boolean b){
+		this.myVar.setIsPrim(b);
+	}
+	
 	public String toAlloy(String metaName, String state){
 		return myVar.toAlloy(metaName, state);
 	}
 	
 	public Type getType(){
-		return Type.INT;
+		if (!this.myVar.isPrimType())
+			return Type.INT;
+		else
+			return Type.PRIMINT;
 	}
 	
 	public String getOwner(){

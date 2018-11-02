@@ -31,12 +31,23 @@ public class BoolPar implements Formula, Var{
 		return myVar;
 	}
 	
+	public boolean isPrimType(){
+		return this.myVar.isPrimType();
+	}
+	
+	public void setIsPrim(boolean b){
+		this.myVar.setIsPrim(b);
+	}
+	
 	public String toAlloy(String metaName, String state){
 		return myVar.toAlloy(metaName, state);
 	}
 	
 	public Type getType(){
-		return Type.BOOL;
+		if (!myVar.isPrimType())
+			return Type.BOOL;
+		else
+			return Type.PRIMBOOL;
 	}
 	
 	public void accept(FormulaVisitor visitor){

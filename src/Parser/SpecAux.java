@@ -1,20 +1,25 @@
 package Parser;
 import java.util.*;
 
+import Utils.*;
 import FormulaSpec.*;
 import Spec.*;
 /**
- * This is an auxiliar class used for parsing
+ * This is an auxiliar class used for parsing the final specification will be generated from it
  * @author Pablo
  *
  */
-public class SpecAux {
+public class SpecAux{
 
 	private String name;
 	private HashMap<String,ProcessAux> instances; //the instances of the specification as declared in the spec
 	private HashMap<String, LinkedList<String>> instanceActualPars; //the actual parameters of each instance 
 	private LinkedList<ProcessAux> processes; //the list of processes declared
-	private HashMap<String,Type> sharedVars; // the list of the shared var declared
+	private HashMap<String,Type> sharedVars; // the list of the shared vars declared in the specification
+	private LinkedList<String> sharedPrimIntVars; // the list of volatile ints in the specs
+												  // these names are also in sharedVars as Ints but we need
+												  // to discriminate them
+	private LinkedList<String> sharedPrimBoolVars; // similarly to above but for booleans
 	private LinkedList<ExprAux> invs; // the list of the invariants
 	private String errors; // a string used for keeping track of type errors
 	private boolean instancesOK;
@@ -30,6 +35,8 @@ public class SpecAux {
 		this.invs = new LinkedList<ExprAux>();
 		this.errors = "";
 		this.instancesOK = true;
+		this.sharedPrimBoolVars = new LinkedList<String>();
+		this.sharedPrimIntVars = new LinkedList<String>();
 		//this.duplicatedInstances = false;
 	}
 	
@@ -95,7 +102,18 @@ public class SpecAux {
 	}
 	
 	public void addSharedVar(String name, Type type){
-		this.sharedVars.put(name, type);
+		// we deal with volatile vars first
+		if (type == Type.PRIMBOOL){
+			this.sharedVars.put(name, Type.BOOL); // a corresponding boolean var is added
+			this.sharedPrimBoolVars.add(name); // we indicate that it is a prim type
+		}
+		if (type == Type.PRIMINT){ // similarly as above for int
+			this.sharedVars.put(name, Type.INT);
+			this.sharedPrimIntVars.add(name);
+		}
+		if (type == Type.INT || type == Type.BOOL || type== Type.LOCK){ // otherwise it is a standard bool or standard int 
+			this.sharedVars.put(name, type);
+		}
 	}
 	
 	public void addAllSharedVars(HashMap<String, Type> v){
@@ -103,7 +121,18 @@ public class SpecAux {
 		Iterator<String> it = keys.iterator();
 		while (it.hasNext()){
 			String current = it.next();
-			sharedVars.put(current, v.get(current));
+			Type currentType = v.get(current); 
+			if (currentType == Type.PRIMBOOL){
+				this.sharedVars.put(current, Type.BOOL); // primitive boolean are also consideras as boolean for type checking purposes
+				this.sharedPrimBoolVars.add(current);
+			}
+			if (currentType == Type.PRIMINT){	// and similarly for PRIMINT
+				this.sharedVars.put(current, Type.INT);
+				this.sharedPrimIntVars.add(current);
+			}
+			if (currentType == Type.INT || currentType == Type.BOOL || currentType == Type.LOCK){
+				sharedVars.put(current, currentType);
+			}
 		}
 	}
 	
@@ -111,12 +140,16 @@ public class SpecAux {
 		invs.add(e);
 	}
 	
+	public boolean isPrimTypeVar(String name){
+		return this.sharedPrimBoolVars.contains(name) || this.sharedPrimIntVars.contains(name);
+	}
+	
 	public String getErrors(){
 		return this.errors;
 	}
 	
 	/**
-	 * @return	true iff the spec is grammatically correct
+	 * @return	true iff the spec is correctly typed
 	 */
 	public boolean typeCheck(){
 		
@@ -138,6 +171,13 @@ public class SpecAux {
 				String current = it2.next();
 				table.put(current, localt.get(current));			
 			}	
+			
+			// we add the parameters of each process to the table
+			LinkedList<Pair<String, Type>> pars = processes.get(i).getPars();
+			for (int k=0; i<pars.size(); i++){
+				Pair<String, Type> currentPar = pars.get(k);
+				table.put(currentPar.getFirst(), currentPar.getSecond());
+			}
 		}
 		boolean checkOk = true; // to signal if everything is OK
 		for (int i=0;i<processes.size();i++){
@@ -167,10 +207,14 @@ public class SpecAux {
 	
 	/**
 	 * 
-	 * @return	the spec from the expression
+	 * @return	returns the spec
 	 */
 	public Spec getSpec(){
-		HashMap<String, Type> table = new HashMap<String, Type>(); // symbol table
+		
+		// we create a symbol table for storing the expression and their types
+		HashMap<String, Type> table = new HashMap<String, Type>(); // the symbol table
+		
+		// we add the shared vars
 		Set<String> keys = this.sharedVars.keySet();
 		Iterator<String> it = keys.iterator();
 		while (it.hasNext()){
@@ -210,13 +254,26 @@ public class SpecAux {
 		Iterator<String> it1 = vars.iterator();
 		while (it1.hasNext()){
 			String current = it1.next();
+			// we add the boolean shared vars
 			if (this.sharedVars.get(current) == Type.BOOL){
 				BoolVar v = new BoolVar(current);
+				if (this.isPrimTypeVar(current))
+					v.setIsPrim(true);
 				result.addGlobalVar(v);
 			}
+			
+			// we add the int shared vars 
 			if (this.sharedVars.get(current) == Type.INT){
 				IntVar v = new IntVar(current);
+				if (this.isPrimTypeVar(current))
+					v.setIsPrim(true);
 				result.addGlobalVar(v);
+			}
+			
+			// we the locks
+			if (this.sharedVars.get(current) == Type.LOCK){
+				Lock l = new Lock(current, result, true);
+				result.addLock(l);
 			}
 		}
 		
@@ -251,6 +308,8 @@ public class SpecAux {
 	 * @return True when the variable is a lock (global variable)
 	 */
 	public boolean isLock(String name){
+		// for now all the shared variables has associated locks, 
+		// if primitive types are added then we should modify this
 		return this.sharedVars.containsKey(name);
 	}
 	

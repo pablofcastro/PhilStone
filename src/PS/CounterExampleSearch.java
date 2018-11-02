@@ -4,6 +4,8 @@ import java.io.PrintWriter;
 import java.util.*;
 
 import FormulaSpec.Formula;
+import FormulaSpec.Type;
+import JFlex.Out;
 import LTS.*;
 import Spec.*;
 import edu.mit.csail.sdg.alloy4.A4Reporter;
@@ -155,10 +157,11 @@ public class CounterExampleSearch {
 			
 			// we store the laxest model for each instance, at the beginning they coincide with those of the processes
 			for (int j=0; j<instancesList.size();j++){
-				if (instances.get(instancesList.get(j)).equals(currentProcess))
+				if (instances.get(instancesList.get(j)).equals(currentProcess)){
 					mapInsModels.put(instancesList.get(j), lts); // if the instance has as type the current process 
 					if (this.printPDF)
 						lts.toDot(outputPath+"lax"+instancesList.get(j)+".dot");
+				}
 			}
 
 			long estimatedTime = System.currentTimeMillis() - startTime;
@@ -180,7 +183,7 @@ public class CounterExampleSearch {
 			
 			if (this.printPDF){  // we print the dots			
 				for (int i=0; i<this.instancesList.size(); i++)
-					this.mapInsModels.get(instancesList.get(i)).toDot(outputPath+instancesList.get(i)+".dot");
+					this.mapInsModels.get(instancesList.get(i)).toDot(outputPath+instancesList.get(i)+"final.dot");
 			}
 			// the program is written to the output folder
 			try{
@@ -355,7 +358,7 @@ public class CounterExampleSearch {
 							e.printStackTrace();//System.out.println(e);
 						}
 					//}
-					// if we did not find anything the current cex, we reset the bag  of counter example and try with the next one
+					// if we did not find anything the current cex, we reset the bag  of counter examples and try with the next one
 					actualCexs.clear();
 					this.cexActualRun.get(currentIns).clear();
 				}
@@ -492,6 +495,7 @@ public class CounterExampleSearch {
 			program += "};\n";
 		}
 		
+		
 		// now for those 
 		// now the global vars
 		Iterator<String> it2 = globalVars.keySet().iterator();
@@ -501,8 +505,13 @@ public class CounterExampleSearch {
 			//if (it2.hasNext())
 			//	program += currentVar+" : "+ globalVars.get(currentVar)+",";
 			//else
-				//program += "Global "+currentVar+" : "+ globalVars.get(currentVar)+";\n"; // this has to be added when we have monitors
-				program += "Global "+"Av_"+currentVar+" : BOOL;\n"; // for each global var we have a lock
+				//program += "Global "+currentVar+" : "+ globalVars.get(currentVar)+";\n"; // this has to be added when we have monitors			
+				if (!mySpec.isPrimVar(currentVar))
+					program += "Global "+"Av_"+currentVar+" : BOOL;\n"; // for each global var we have a lock
+				if (globalVars.get(currentVar).equals("BOOL") || globalVars.get(currentVar).equals("PRIMBOOL"))
+					program += "Global "+ "Prop_"+currentVar+" : BOOL;\n"; // and the corresponding current var
+				// TO DO: ADD INTEGERS
+				// we need to distinguish between locks, ints and bools
 		}
 		program += "\n";
 		
@@ -513,9 +522,13 @@ public class CounterExampleSearch {
 			HashMap<String, String> pars = new HashMap<String, String>();
 			String currentProcess = it3.next();
 			if (mapProcessModels.containsKey(currentProcess)){
-				LinkedList<String> processPars = mySpec.getProcessByName(currentProcess).getBoolParNames();
-				for (int i=0; i<processPars.size();i++){
-					pars.put(processPars.get(i), "BOOL");
+				LinkedList<String> processBoolPars = mySpec.getProcessByName(currentProcess).getBoolParNames();
+				for (int i=0; i<processBoolPars.size();i++){
+					pars.put(processBoolPars.get(i), "BOOL");
+				}
+				LinkedList<String> processPrimBoolPars = mySpec.getProcessByName(currentProcess).getBoolPrimParNames();
+				for (int i=0; i<processPrimBoolPars.size();i++){
+					pars.put(processPrimBoolPars.get(i), "PRIMBOOL");
 				}
 				program += mapProcessModels.get(currentProcess).toMCProcess(pars, currentProcess, currentProcess); // no parameters by now
 				
@@ -551,13 +564,22 @@ public class CounterExampleSearch {
 			//program  += "run " + currentInstance +"();\n"; // change this for process with parameters
 			program += "run " + currentInstance + "(";
 			LinkedList<String> parameters = mySpec.getActualPars(currentInstance);
-			for (int i=0; i<parameters.size();i++){
-				if (i==0)
+			for (int i=parameters.size()-1; i>=0;i--){
+				if (i==parameters.size()-1){
 					//program+=parameters.get(i) + ", Av_"+parameters.get(i); // this must be changed for monitors
-					program+=" Av_"+parameters.get(i);
-				else
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.BOOL)
+						program+= "Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.PRIMBOOL)
+						program+= "Prop_"+parameters.get(i)+", ";
+				}
+				else{
 					//program+=","+parameters.get(i)+ ", Av_"+parameters.get(i);
-					program+=", Av_"+parameters.get(i);
+					//program+=", Av_"+parameters.get(i);
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.BOOL)
+						program+= ","+"Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.PRIMBOOL)
+						program+= ","+"Prop_"+parameters.get(i);
+				}
 			}
 			program += ");";
 		}
@@ -577,15 +599,20 @@ public class CounterExampleSearch {
 		FormulaParser formulaParser = new FormulaParser(pparser.getSymbolsTable(), model);
 	    FormulaElement form = formulaParser.parseFromString(formString);
 	    //model.buildModel();
-	   
-	    //if (showInfo)
-	    //	System.out.println(program);
+	    System.out.println(formString);
+	    
+	    
+	    if (showInfo){
+	    	System.out.println(program);
+	    	//System.out.println(form);
+	    }
+	    DCTL_MC.printMess();
 	    // we model check the specification together with the formula
 	    if (DCTL_MC.mc_algorithm_eq(form, model)){
 	    	syntProgram = program; // if true we save the program
 	    	return true;
 	    }
-	    else{ // if the model checking is not sucessful we search for counterexamples
+	    else{ // if the model checking is not successful we search for counterexamples
 	    	FormulaElement negForm = new formula.Negation("!", form);
 	    	CounterExample c = new CounterExample();
 	    	if (showInfo)

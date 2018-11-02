@@ -156,8 +156,8 @@ public class ExprAux {
 		case OWN: 	return new Own((Var) op1.getExpr(table));
 		case ICONS: return new IntConstant(this.ival);
 		case BCONS: return new BoolConstant(this.bval);
-		case EX:	return new EX((TemporalFormula) this.op1.getExpr(table));
-		case AX:	return new AX((TemporalFormula) this.op1.getExpr(table));
+		case EX:	return new EX((Formula) this.op1.getExpr(table));
+		case AX:	return new AX((Formula) this.op1.getExpr(table));
 		case NOT:	return new Negation((Formula) this.op1.getExpr(table));
 		case OR:	return new Disjunction((Formula) this.op1.getExpr(table), (Formula) this.op2.getExpr(table));
 		case IMP:	return new Implication((Formula) this.op1.getExpr(table), (Formula) this.op2.getExpr(table));
@@ -382,8 +382,9 @@ public class ExprAux {
 		if (op1 != null && op2 != null){
 			return (op1.isClause(table, mySpec, context) && (operator == Operator.AND) && op2.isClause(table, mySpec, context));			
 		}
-		else
+		else{
 			return false;
+		}
 	}
 	
 	public boolean isElementary(HashMap<String, Type> table, SpecAux mySpec, String context){
@@ -391,7 +392,10 @@ public class ExprAux {
 			return false;
 		}
 		if (operator == Operator.VAR){
-			return (mySpec.getTypeVar(this.unqualifiedName, context) == Type.BOOL);	
+			if (this.getOwner().equals("global"))
+				return  (mySpec.getTypeVar(this.unqualifiedName, "global") == Type.BOOL);
+			else
+				return (mySpec.getTypeVar(this.unqualifiedName, context) == Type.BOOL);	
 		}
 		if (operator == Operator.BCONS || operator == Operator.AV || operator == Operator.OWN)
 			return true;

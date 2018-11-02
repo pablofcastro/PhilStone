@@ -143,6 +143,10 @@ public class Action {
 		this.frame.add(v);
 	}
 	
+	/**
+	 * 
+	 * @return	The variables in the frame of the action
+	 */
 	public LinkedList<String> getFrame(){
 		LinkedList<String> result = new LinkedList<String>();
 		for (int  i=0; i<this.frame.size(); i++){
@@ -151,6 +155,10 @@ public class Action {
 		return result;
 	}
 	
+	/**
+	 * 
+	 * @return	the collection of the LOCAL vars names that are not in the action frame
+	 */
 	private LinkedList<String> getAllFrameComplement(){
 		LinkedList<String> vars  = new LinkedList<String>();
 		LinkedList<String> frameNames = this.getFrame();
@@ -166,6 +174,104 @@ public class Action {
 		return result;
 	}
 	
+	/**
+	 * These methods are used for generating the Alloy Template, to improve the Alloy code 
+	 * we need one per type
+	 * @return	the collection of local BOOLEAN vars that are not in the action frame
+	 */
+	private LinkedList<String> getAllBooleanFrameComplement(){
+		LinkedList<String> localVars  = process.getLocalVarsNamesByType(Type.BOOL); // the local vars
+		LinkedList<String> sharedVars  = process.getSharedVarsNamesByType(Type.BOOL); // the shared vars 
+		LinkedList<String> frameNames = this.getFrame();
+		//vars.addAll(process.getLocalVarsNamesByType(Type.BOOL)); // adds the local vars
+		//vars.addAll(process.getSharedVarsNamesByType(Type.BOOL)); // adds the shared vars
+		LinkedList<String> result = new LinkedList<String>(); // the list with the result
+		
+		// we deal with the local vars
+		for (int i=0; i<localVars.size(); i++){
+			String current = localVars.get(i);
+			if (!frameNames.contains(current)){
+				result.add(current);
+			}
+		}
+		
+		// we deal with the shared vars
+		for (int i=0; i<sharedVars.size(); i++){
+			String current = sharedVars.get(i);
+			if (!frameNames.contains(current) && process.usesSharedVar(current)){ // we need to check if the shared var is used
+				result.add(current);
+			}
+		}
+		
+		// and the parameters:
+		for (int i=0; i<process.getBoolParNames().size(); i++){
+			if (!frameNames.contains(process.getBoolParNames().get(i)))
+				result.add(process.getBoolParNames().get(i));
+		}
+		
+		for (int i=0; i<process.getBoolPrimParNames().size(); i++){
+			if (!frameNames.contains(process.getBoolPrimParNames().get(i)))
+				result.add(process.getBoolPrimParNames().get(i));
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * These methods are used for generating the Alloy Template, to improve the Alloy code 
+	 * we need one per type...
+	 * @return	the collection of local INT vars that are not in the action frame
+	 */
+	private LinkedList<String> getAllIntFrameComplement(){
+		/*LinkedList<String> vars  = new LinkedList<String>();
+		LinkedList<String> frameNames = this.getFrame();
+		vars.addAll(process.getLocalVarsNamesByType(Type.INT));
+		vars.addAll(process.getSharedVarsNamesByType(Type.INT));
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<vars.size(); i++){
+			String current = vars.get(i);
+			if (!frameNames.contains(current)){
+				result.add(current);
+			}
+		}
+		return result;*/
+		LinkedList<String> localVars  = process.getLocalVarsNamesByType(Type.INT); // the local vars
+		LinkedList<String> sharedVars  = process.getSharedVarsNamesByType(Type.INT); // the shared vars 
+		LinkedList<String> frameNames = this.getFrame();
+		//vars.addAll(process.getLocalVarsNamesByType(Type.BOOL)); // adds the local vars
+		//vars.addAll(process.getSharedVarsNamesByType(Type.BOOL)); // adds the shared vars
+		LinkedList<String> result = new LinkedList<String>(); // the list with the result
+		
+		// we deal with the local vars
+		for (int i=0; i<localVars.size(); i++){
+			String current = localVars.get(i);
+			if (!frameNames.contains(current)){
+				result.add(current);
+			}
+		}
+		
+		// we deal with the shared vars
+		for (int i=0; i<sharedVars.size(); i++){
+			String current = sharedVars.get(i);
+			if (!frameNames.contains(current) && process.usesSharedVar(current)){ // we need to check if the shared var is used
+				result.add(current);
+			}
+		}
+		
+
+		// and the parameters:
+		for (int i=0; i<process.getIntParNames().size(); i++){
+			if (!frameNames.contains(process.getIntParNames().get(i)))
+				result.add(process.getIntParNames().get(i));
+		}
+				
+		for (int i=0; i<process.getIntPrimParNames().size(); i++){
+			if (!frameNames.contains(process.getIntPrimParNames().get(i)))
+				result.add(process.getIntPrimParNames().get(i));
+		}
+		
+		return result;
+	}
 	
 	/**
 	 * This method is mainly useful for improving the efficiency of alloy searching
@@ -181,30 +287,82 @@ public class Action {
 			return new LinkedList<String>(); // else we return the empty list
 	}
 	
+	/**
+	 * Similar as above but restricted to BOOL
+	 * @return The linked list containing the complement of the frame, when it is a singleton,
+	 * 		   otherwise it returns the empty list 
+	 */
+	public LinkedList<String> getSingletonBooleanFrameComplement(){
+		LinkedList<String> result = getAllBooleanFrameComplement();
+		LinkedList<String> lockList = getLockFrameComplement();
+		if (result.size() == 1 && lockList.size()==0)
+			return result;
+		else
+			return new LinkedList<String>(); // else we return the empty list
+	}
+	
+	/**
+	 * Similar as above but restricted to INT
+	 * @return The linked list containing the complement of the frame, when it is a singleton,
+	 * 		   otherwise it returns the empty list 
+	 */
+	public LinkedList<String> getSingletonIntFrameComplement(){
+		LinkedList<String> result = getAllIntFrameComplement();
+		LinkedList<String> lockList = getLockFrameComplement();
+		if (result.size() == 1 && lockList.size()==0)
+			return result;
+		else
+			return new LinkedList<String>(); // else we return the empty list
+	}
+	
+	/**
+	 * 
+	 * @return the list of variables not mentioned in the frame, if this set has size 1 we use 
+	 *         the function getSingletonFrameComplement(), this improves the use of StringTemplate
+	 * DEPRECATED		   
+	 */
 	public LinkedList<String> getFrameComplement(){
 		LinkedList<String> result = getAllFrameComplement();
 		if (result.size() > 1 || getLockFrameComplement().size()>0)
 			return result;
 		else
 			return new LinkedList<String>(); // emptylist
-		//LinkedList<String> vars  = new LinkedList<String>();
-		//LinkedList<String> frameNames = this.getFrame();
-		//vars.addAll(process.getLocalVarsNames());
-		//LinkedList<String> result = new LinkedList<String>();
-		//for (int i=0; i<vars.size(); i++){
-		//	String current = vars.get(i);
-		//	if (!frameNames.contains(current)){
-		//		result.add(current);
-		//	}
-		//}
-		//return result;
 	}
 	
+	/**
+	 * 
+	 * @return similar as above but restricted to BOOL variables
+	 */
+	public LinkedList<String> getBooleanFrameComplement(){
+		LinkedList<String> result = getAllBooleanFrameComplement();
+		if (result.size() > 1 || getLockFrameComplement().size()>0)
+			return result;
+		else
+			return new LinkedList<String>(); // emptylist
+	}
+	
+	/**
+	 * 
+	 * @return similar as above but restricted to INT variables
+	 */
+	public LinkedList<String> getIntFrameComplement(){
+		LinkedList<String> result = getAllIntFrameComplement();
+		if (result.size() > 1 || getLockFrameComplement().size()>0)
+			return result;
+		else
+			return new LinkedList<String>(); // emptylist
+	}
+	
+	/**
+	 * 
+	 * @return	the list of variables with locks that are not mentioned in the frame
+	 */
 	public LinkedList<String> getLockFrameComplement(){
 		LinkedList<String> vars  = new LinkedList<String>();
 		LinkedList<String> frameNames = this.getFrame();
 		//vars.addAll(process.getLocalVarsNames());
-		vars.addAll(process.getSharedVarsNames());
+		vars.addAll(process.getSharedNonPrimVarsNamesByType(Type.BOOL)); // only non primitive types
+		vars.addAll(process.getSharedNonPrimVarsNamesByType(Type.INT));
 		vars.addAll(process.getBoolParNames());
 		vars.addAll(process.getIntParNames());
 		LinkedList<String> result = new LinkedList<String>();

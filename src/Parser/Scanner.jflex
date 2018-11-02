@@ -54,12 +54,15 @@ EndOfLineComment     = "// " {InputCharacter}* {LineTerminator}
 <YYINITIAL>	"spec" 				{ return symbol(sym.SPEC, new String(yytext()) ); }
 <YYINITIAL>	"int" 				{ return symbol(sym.INT, new String(yytext()) ); }
 <YYINITIAL>	"boolean" 			{ return symbol(sym.BOOL, new String(yytext()) ); }
+<YYINITIAL>	"lock" 				{ return symbol(sym.LOCK, new String(yytext()) ); }
 <YYINITIAL> "action"			{ return symbol(sym.ACTION, new String(yytext()) ); } 
 <YYINITIAL> "frame"				{ return symbol(sym.FRAME, new String(yytext()) ); }  
 <YYINITIAL> "av"				{ return symbol(sym.AV, new String(yytext()) ); }       
 <YYINITIAL> "own"				{ return symbol(sym.OWN, new String(yytext()) ); }    
 <YYINITIAL> "property"			{ return symbol(sym.PROPERTY, new String(yytext()) ); }    
-<YYINITIAL> "run"				{ return symbol(sym.RUN, new String(yytext()) ); }                                        
+<YYINITIAL> "run"				{ return symbol(sym.RUN, new String(yytext()) ); }
+<YYINITIAL> "prim_boolean"	{ return symbol(sym.PRIMBOOL, new String(yytext()) ); }           
+<YYINITIAL> "prim_int"		{ return symbol(sym.PRIMINT, new String(yytext()) ); }                               
 
 
 

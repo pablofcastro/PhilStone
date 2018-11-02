@@ -132,13 +132,17 @@ public class ActionAux {
 			if (mySpec.checkVarIsGlobal(this.frame.get(i))){
 				if (mySpec.getTypeVar(this.frame.get(i), "global") == Type.BOOL){
 					BoolVar var = new BoolVar(this.frame.get(i));
+					if (mySpec.isPrimTypeVar(this.frame.get(i)) || myProcess.isPrimPar(this.frame.get(i)))
+						var.setIsPrim(true);
 					result.addVarToFrame(var);
 				}
-				else{
+				if (mySpec.getTypeVar(this.frame.get(i), "global") == Type.INT){
 					IntVar var = new IntVar(this.frame.get(i));
+					if (mySpec.isPrimTypeVar(this.frame.get(i)) || myProcess.isPrimPar(this.frame.get(i)))
+						var.setIsPrim(true);
 					result.addVarToFrame(var);
 				}
-						
+				// DO SOMETHING WITH LOCKS!!!!
 			}
 			else{
 				if (myProcess.getLocalVarType(this.frame.get(i)) == Type.BOOL){

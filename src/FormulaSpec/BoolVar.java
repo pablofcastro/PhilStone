@@ -5,9 +5,19 @@ import java.util.LinkedList;
 public class BoolVar implements ElemFormula, Var {
 	
 	private String name;
+	private boolean isPrim;
 	
 	public BoolVar(String n){
-		name = n;
+		this.name = n;
+		this.isPrim = false; // by default the vars are not prim
+	}
+	
+	public void setIsPrim(boolean v){
+		this.isPrim = v;
+	}
+	
+	public boolean isPrimType(){
+		return this.isPrim;
 	}
 	
 	@Override	
@@ -26,10 +36,14 @@ public class BoolVar implements ElemFormula, Var {
     }
     
     public Type getType(){
-    	return Type.BOOL;
+    	if (!this.isPrimType())
+    		return Type.BOOL;
+    	else
+    		return Type.PRIMBOOL;
     }
     
     public String toAlloy(String metaName, String state){
+    	// TO DO: We should distinghuish between global and local vars
     	String result = "Prop_"+this.getUnqualifiedName()+"["+metaName+","+state+"]";
     	return result;
     }

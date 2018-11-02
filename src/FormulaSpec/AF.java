@@ -25,7 +25,7 @@ public class AF extends TemporalFormula{
 	}
 	
 	public String toString(){
-		return "A(true U "+ this.getExpr1().toString() + ")";
+		return "(A(true U "+ this.getExpr1().toString() + "))";
 	}
 	
 	public EG getAuxForm(){

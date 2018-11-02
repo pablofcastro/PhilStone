@@ -91,8 +91,10 @@ public class LTS {
 	public void addProposition(String prop){
 		if (!this.props.contains(prop)){
 			props.add(prop);
-			if (prop.contains("Av") || prop.contains("global"))
+			if (prop.contains("Av") || this.processSpec.getSharedVarsNames().contains(prop.replace("Prop_", ""))){ //|| prop.contains("Global")) // TO DO: we should differenciate between global and loca properties in the Alloy spec
 				globalProps.add(prop);
+				//globalProps.add(prop.replace("Av", "Prop")); // we add the corresponding global var
+			}
 		}
 	}
 	
@@ -117,6 +119,9 @@ public class LTS {
 		return this.eqClasses;
 	}
 	
+	public ProcessSpec getProcessSpec(){
+		return this.processSpec;
+	}
 	/**
 	 * Adds a proposition if it is not already in the LTS
 	 * @param action
@@ -225,7 +230,8 @@ public class LTS {
 	 * @param counterexamples a collection of counterexamples that allows us to refine the specification
 	 */
 	public void getAlloyInstancesSpec(PrintWriter writer, int scope, LinkedList<LinkedList<String>> counterexamples){
-			if (this.eqClasses == null)
+			
+		if (this.eqClasses == null)
 				this.computeEqClasses();
 			String space = "    ";
 			//PrintWriter writer = new PrintWriter(output, "UTF-8");
@@ -237,7 +243,7 @@ public class LTS {
 			for (int i=0; i<listNodes.size(); i++){
 				writer.println("one sig "+listNodes.get(i)+ " extends Node{}");
 			}
-			
+			System.out.println(this.props);
 			// write down the propositions
 			writer.println("abstract sig Prop{}");		
 			for (int i=0; i<props.size(); i++){
@@ -287,6 +293,10 @@ public class LTS {
 			// the actions
 			for (int i=0; i<actions.size();i++){
 				LinkedList<Edge> edgeList = this.getEdgesWithName(actions.get(i));
+				if (edgeList.size() == 0){
+					writer.println(space + "no " + actions.get(i));
+					continue;
+				}
 				if (!env.contains(actions.get(i))){
 					//if (actions.get(i).equals("ACTgetLeft") || actions.get(i).equals("ACTgetRight"))
 						writer.print(space + actions.get(i)+" in "); // NOTE: CHANGE THIS!
@@ -297,9 +307,9 @@ public class LTS {
 					writer.print(space + actions.get(i)+" = ");
 				for (int j=0; j<edgeList.size();j++){
 					if (j==0)
-						writer.print(edgeList.get(j).getOrigin().getName()+"->"+edgeList.get(j).getTarget().getName());
+						writer.print("("+edgeList.get(j).getOrigin().getName()+"->"+edgeList.get(j).getTarget().getName()+")");
 					else
-						writer.print(" + " + edgeList.get(j).getOrigin().getName()+"->"+edgeList.get(j).getTarget().getName());
+						writer.print(" + (" + edgeList.get(j).getOrigin().getName()+"->"+edgeList.get(j).getTarget().getName()+")");
 				}
 				writer.println("");
 			}
@@ -498,31 +508,50 @@ public class LTS {
 			Iterator<String> it = pars.iterator();
 			while (it.hasNext()){
 				String current = it.next();
-				if (it.hasNext())
-					//result += current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL,"; // ADD THIS WHNE NOT LOCK
-					result += "Av_"+current+":BOOL,"; // for now we only takeinto account the Av
-				else 
+				if (it.hasNext()){
+					if (parameters.get(current).equals("BOOL") || parameters.get(current).equals("INT"))
+						result += "Prop_"+current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL,"; // ADD THIS WHNE NOT LOCK
+					if (parameters.get(current).equals("PRIMBOOL"))
+						result += "Prop_"+current +":BOOL";
+					if (parameters.get(current).equals("LOCK"))
+						result += "Av_"+current+":BOOL,"; // for now we only take into account the Av
+				}
+				else{ 
+					if (parameters.get(current).equals("BOOL") || parameters.get(current).equals("INT"))
+						result += "Prop_"+current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL"; // ADD THIS WHNE NOT LOCK
+					if (parameters.get(current).equals("PRIMBOOL"))
+						result += "Prop_"+current +":BOOL";
+					if (parameters.get(current).equals("LOCK"))
+						result += "Av_"+current+":BOOL"; // for now we only take into account the Av
 					//result += current +":"+parameters.get(current) +", "+"Av_"+current+":BOOL";
-					result += "Av_"+current+":BOOL";
+					//result += "Av_"+current+":BOOL";
+				}
 			}
 			result+="){\n";
 		}
 		else{
 			result += "Process " + processName + "{\n";
 		}
+		LinkedList<String> globalVars = new LinkedList<String>();
+		for (int i=0;i<this.processSpec.getSharedVarsNames().size();i++)
+			globalVars.add("Prop_"+this.processSpec.getSharedVarsNames().get(i)); // we add Prop_ to the shared vars
 		boolean ftime = true;
+		boolean someVar = false;
 		for (int i=0; i < this.props.size(); i++){
-			if (!props.get(i).contains("Av")){
+			if (!props.get(i).contains("Av") && !globalVars.contains(props.get(i)) && !parameters.containsKey(props.get(i).replace("Prop_", ""))){ // we check that it is not a global var
 				if (ftime){
 					result += props.get(i);
 					ftime = false;
+					someVar = true;
 				}
 				else{
 					result += ", "+props.get(i);
+					someVar = true;
 				}
 			}
 		}
-		result += " : BOOL;\n"; // until now we deal only with booleans 
+		if (someVar)
+			result += " : BOOL;\n"; // until now we deal only with booleans 
 		result += "state : " + "state"+stateProcess+";\n";
 		// we compute the equivalence classes
 		//if (this.eqClasses == null)
@@ -531,7 +560,7 @@ public class LTS {
 		// the get equivalence class of the initial node
 		Node init = this.eqClasses.find(this.nodes.get(initialNode)); 
 		
-		
+		/**
 		// we set the initial condition
 		result += "Initial : state == "+init.getName();
 		//LinkedList<String> ps = init.getProperties(); // test this
@@ -543,6 +572,21 @@ public class LTS {
 				result += " && !" +this.props.get(i);
 		}
 		result += ";\n";
+		*/
+		// we set the initial condition
+		//result += "Initial : state == " + initialNode;
+		result += "Initial : state == " + init.getName();
+		//LinkedList<String> ps = init.getProperties(); // test this
+		LinkedList<String> ps = this.nodes.get(initialNode).getProperties();
+		for (int i=0; i< this.props.size(); i++){
+			if (ps.contains(this.props.get(i)))
+				result += " && " +this.props.get(i);
+			else
+				result += " && !" +this.props.get(i);
+		}
+		result += ";\n";
+		
+		
 		
 		// the normative contiion is true
 		result += "Normative : true;\n"; // no normative condition

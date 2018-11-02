@@ -12,6 +12,7 @@ public class ProcessAux {
 	private HashMap<String, Type> localVars; // the local vars
 	//private HashMap<String, Type> pars; // the parameters of the process
 	private LinkedList<Pair<String, Type>> pars; // the parameters of the process, it is a linked list since the order of apparence matters
+	private LinkedList<String> primPars; // the list of prim pars, note that we dont need this for local vars 
 	LinkedList<ActionAux> actions; // the actions of the process
 	private ExprAux init;
 	private LinkedList<ExprAux> invs; // the local invariants
@@ -24,6 +25,7 @@ public class ProcessAux {
 	public ProcessAux(int line){
 		this.name = "";
 		this.localVars = new HashMap<String,Type>();
+		this.primPars = new LinkedList<String>();
 		//this.pars = new HashMap<String, Type>();
 		this.pars = new LinkedList<Pair<String,Type>>();
 		this.invs = new LinkedList<ExprAux>();
@@ -38,6 +40,7 @@ public class ProcessAux {
 		this.localVars = new HashMap<String,Type>();
 		//this.pars = new HashMap<String, Type>();
 		this.pars = new LinkedList<Pair<String,Type>>();
+		this.primPars = new LinkedList<String>();
 		this.invs = new LinkedList<ExprAux>();
 		this.actions = new LinkedList<ActionAux>();
 		this.line = line;
@@ -65,12 +68,20 @@ public class ProcessAux {
 		return this.mySpec;
 	}
 	
+	public LinkedList<Pair<String, Type>> getPars(){
+		return this.pars;
+	}
+	
 	public boolean containsPar(String name){
 		for (int i=0; i < pars.size(); i++){
 			if (pars.get(i).getFirst().equals(name))
 				return true;
 		}
 		return false;
+	}
+	
+	public boolean isPrimPar(String name){
+		return this.primPars.contains(name);
 	}
 	
 	public void setSpec(SpecAux spec){
@@ -112,7 +123,12 @@ public class ProcessAux {
 			this.addError("Duplicated variable in Process, line: "+line);
 		}
 		else{
-			localVars.put(name, type);
+			if (type==Type.PRIMBOOL) // if it is a primitive boolean then we just add it as a boolean
+				localVars.put(name, Type.BOOL);
+			if (type==Type.PRIMINT) // similarly for int
+				localVars.put(name, Type.INT);
+			else
+				localVars.put(name, type); // otherwise we add it with the given type
 		}
 	}
 	
@@ -121,7 +137,13 @@ public class ProcessAux {
 		Iterator<String> it = keys.iterator();
 		while (it.hasNext()){
 			String current = it.next();
-			localVars.put(current, h.get(current));			
+			if (h.get(current) == Type.PRIMBOOL) // volatile bools in processes lack sense
+				localVars.put(current, h.get(Type.BOOL));
+			if (h.get(current) == Type.PRIMINT)	// volatile ints  in processes lack sense
+				localVars.put(current, h.get(Type.INT));
+			else{
+				localVars.put(current, h.get(current));	
+			}
 		}
 
 	}
@@ -132,7 +154,16 @@ public class ProcessAux {
 			this.addError("Duplicated variable in Process, line: "+line);
 		}
 		else{
-			this.pars.add(new Pair<String,Type>(name, t));
+			if (t==Type.BOOL || t==Type.INT || t==Type.LOCK)
+				this.pars.add(new Pair<String,Type>(name, t));
+			if (t==Type.PRIMBOOL){
+				this.pars.add(new Pair<String,Type>(name, Type.BOOL)); // we added as an INT 
+				this.primPars.add(name); // and we add it as a primitive type
+			}
+			if (t==Type.PRIMINT){
+				this.pars.add(new Pair<String,Type>(name, Type.INT)); // we added as an INT 
+				this.primPars.add(name); // and we add it as a primitive type
+			}		
 		}
 	}
 	
@@ -141,6 +172,7 @@ public class ProcessAux {
 			this.addParameter(l.get(i).getFirst(), l.get(i).getSecond());
 		}
 	}
+	
 	
 	public int getNumberPars(){
 		return this.pars.size();
@@ -166,12 +198,17 @@ public class ProcessAux {
 	}
 	
 	public Type getVarType(String name){
+		// we check if it is a local var
 		if (this.localVars.containsKey(name)){
 			return this.localVars.get(name);
 		}
-		else{
-			return Type.ERROR;
+		// we check if it is a parameter
+		for (int i=0; i<this.pars.size(); i++){
+			if (this.pars.get(i).getFirst().equals(name))
+				return this.pars.get(i).getSecond();
 		}
+		// otherwise we return an error
+		return Type.ERROR;
 	}
 	
 	public Type getParType(String name){
@@ -255,12 +292,21 @@ public class ProcessAux {
 		for (int i=0; i<pars.size(); i++){
 			if (pars.get(i).getSecond() == Type.BOOL){
 				BoolVar v = new BoolVar(pars.get(i).getFirst());
+				if (this.isPrimPar(pars.get(i).getFirst()))
+					v.setIsPrim(true);
 				result.addPar(v);
 			}
 			if (pars.get(i).getSecond() == Type.INT){
 				IntVar v = new IntVar(pars.get(i).getFirst());
+				if (this.isPrimPar(pars.get(i).getFirst()))
+					v.setIsPrim(true);
 				result.addPar(v);
 			}	
+			// something must be done with locks...
+			//if (pars.get(i).getSecond() == Type.LOCK){
+			//	Lock l = new Lock(pars.get(i).getFirst(), true);
+			//	result.addPar(v);
+			//}
 		}
 		
 		// we add the invariants

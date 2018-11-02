@@ -43,6 +43,7 @@ terminal AND;
 terminal LT;
 terminal INT;
 terminal BOOL;
+terminal LOCK;
 terminal INIT;
 terminal PROCESS;
 terminal USES;
@@ -73,6 +74,8 @@ terminal OWN;
 terminal PROPERTY;
 terminal DOT;
 terminal RUN;
+terminal PRIMBOOL;
+terminal integer PRIMINT;
                 
                 
 non terminal  ExprAux primary, expr, disjunction, conjunction, relation, comparison, addition, term, factor;
@@ -356,21 +359,14 @@ varDecls ::= ID:i  {:  LinkedList<String> list = new LinkedList<String>();
                                        :}
             ; 
 
-type ::=   INT    {: 
-					RESULT =Type.INT;
-					//RESULT = new String("INT"); 
-				  :}
-         | BOOL   {: 
-					RESULT = Type.BOOL;
-					//RESULT = new String("BOOL"); 
-				   :}
+type ::=   INT    {: RESULT = Type.INT; :}
+         | BOOL   {: RESULT = Type.BOOL; :}
+         | LOCK   {: RESULT = Type.LOCK; :}
+         | PRIMINT {: RESULT = Type.PRIMINT; :}
+         | PRIMBOOL {: RESULT = Type.PRIMBOOL; :}
          ;
                    
-//precond ::= PRE COLON clauses:list {: Precondition pre = new Precondition();
-//									  pre.addAllFormulas(list);
-//									  RESULT = pre;
-//    							   :}
-//		;
+
 precond ::= PRE COLON expr:f {: RESULT =  f;   :}
 	    ;
 	    

@@ -101,7 +101,7 @@ public class Node {
 	 */
 	public void addProperty(String name){
 		properties.add(name);
-		if (name.contains("Av") || name.contains("global")) // these keywords are used for global vars
+		if (name.contains("Av") || myLTS.getProcessSpec().getSharedVarsNames().contains(name.replace("Prop_", ""))) // these keywords are used for global vars
 			this.globalProperties.add(name);
 	}
 	
@@ -186,7 +186,6 @@ public class Node {
 	public String getCommand(UnionFind uf){
 		//LinkedList<String> locks = new LinkedList<String>();
 		LinkedList<String> allProps = this.myLTS.getProps();
-		
 		// change this for dealing with integers
 		String result = "state="+uf.find(this).getName()+","; // we use the representative of the equiv. class of the current node
 		for (int i=0; i<allProps.size(); i++){
@@ -221,7 +220,8 @@ public class Node {
 		String result = "";
 		for (int i=0; i<this.adj.size(); i++){
 			Edge currentEdge = this.adj.get(i);
-			if ((currentEdge.getOrigin() == currentEdge.getTarget()) ||  (uf.find(currentEdge.getOrigin()) != uf.find(currentEdge.getTarget()))){ // origin and target must be in different equivalence classes
+			//if ((currentEdge.getOrigin() == currentEdge.getTarget()) ||  (uf.find(currentEdge.getOrigin()) != uf.find(currentEdge.getTarget()))){ // origin and target must be in different equivalence classes
+			if (!currentEdge.isEnv()){
 				result += this.adj.get(i).getOrigin().getGuard(uf) + " -> " + this.adj.get(i).getTarget().getCommand(uf) + "\n";				  // or the edge must be a loop
 			}
 		}

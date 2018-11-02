@@ -23,7 +23,7 @@ public class EX extends TemporalFormula {
 	}
 	
 	public String getAuxPred(String modelName){
-		String result = "pred Form"+this.getId()+"[i:"+modelName+", s:Node]{\n some s':(i.succs)[s] | "+this.getExpr1().toAlloy(modelName,"s")+"}";
+		String result = "pred Form"+this.getId()+"[i:"+modelName+", s:Node]{\n some s':(i.succs)[s] | "+this.getExpr1().toAlloy(modelName,"s'")+"}";
 		return result;
 	}
 	
