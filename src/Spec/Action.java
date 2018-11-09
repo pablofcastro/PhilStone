@@ -187,6 +187,9 @@ public class Action {
 		//vars.addAll(process.getSharedVarsNamesByType(Type.BOOL)); // adds the shared vars
 		LinkedList<String> result = new LinkedList<String>(); // the list with the result
 		
+		// we add the primitive booleans
+		sharedVars.addAll(process.getSharedVarsNamesByType(Type.PRIMBOOL));
+		
 		// we deal with the local vars
 		for (int i=0; i<localVars.size(); i++){
 			String current = localVars.get(i);
@@ -204,15 +207,22 @@ public class Action {
 		}
 		
 		// and the parameters:
-		for (int i=0; i<process.getBoolParNames().size(); i++){
-			if (!frameNames.contains(process.getBoolParNames().get(i)))
-				result.add(process.getBoolParNames().get(i));
+		for (int i=0; i<process.getBoolParNamesWithLock().size(); i++){
+			if (!frameNames.contains(process.getBoolParNamesWithLock().get(i)))
+				result.add(process.getBoolParNamesWithLock().get(i));
+		}
+		
+		for (int i=0; i<process.getOwnedBoolParNames().size(); i++){
+			if (!frameNames.contains(process.getOwnedBoolParNames().get(i)))
+				result.add(process.getOwnedBoolParNames().get(i));
 		}
 		
 		for (int i=0; i<process.getBoolPrimParNames().size(); i++){
 			if (!frameNames.contains(process.getBoolPrimParNames().get(i)))
 				result.add(process.getBoolPrimParNames().get(i));
 		}
+		
+		
 		
 		return result;
 	}
@@ -242,6 +252,8 @@ public class Action {
 		//vars.addAll(process.getSharedVarsNamesByType(Type.BOOL)); // adds the shared vars
 		LinkedList<String> result = new LinkedList<String>(); // the list with the result
 		
+		sharedVars.addAll(process.getSharedVarsNamesByType(Type.PRIMINT)); // we add the PRIMINTS
+		
 		// we deal with the local vars
 		for (int i=0; i<localVars.size(); i++){
 			String current = localVars.get(i);
@@ -260,9 +272,14 @@ public class Action {
 		
 
 		// and the parameters:
-		for (int i=0; i<process.getIntParNames().size(); i++){
-			if (!frameNames.contains(process.getIntParNames().get(i)))
-				result.add(process.getIntParNames().get(i));
+		for (int i=0; i<process.getIntParNamesWithLock().size(); i++){
+			if (!frameNames.contains(process.getIntParNamesWithLock().get(i)))
+				result.add(process.getIntParNamesWithLock().get(i));
+		}
+		
+		for (int i=0; i<process.getOwnedIntParNames().size(); i++){
+			if (!frameNames.contains(process.getOwnedIntParNames().get(i)))
+				result.add(process.getOwnedIntParNames().get(i));
 		}
 				
 		for (int i=0; i<process.getIntPrimParNames().size(); i++){
@@ -361,10 +378,11 @@ public class Action {
 		LinkedList<String> vars  = new LinkedList<String>();
 		LinkedList<String> frameNames = this.getFrame();
 		//vars.addAll(process.getLocalVarsNames());
-		vars.addAll(process.getSharedNonPrimVarsNamesByType(Type.BOOL)); // only non primitive types
-		vars.addAll(process.getSharedNonPrimVarsNamesByType(Type.INT));
-		vars.addAll(process.getBoolParNames());
-		vars.addAll(process.getIntParNames());
+		vars.addAll(process.getSharedVarsNamesByTypeWithLock(Type.BOOL)); // only non primitive types
+		vars.addAll(process.getSharedVarsNamesByTypeWithLock(Type.INT));
+		vars.addAll(process.getBoolParNamesWithLock());
+		vars.addAll(process.getIntParNamesWithLock());
+		vars.addAll(process.getOnlyLocksNames());
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<vars.size(); i++){
 			String current = vars.get(i);

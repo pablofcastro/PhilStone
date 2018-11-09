@@ -39,9 +39,11 @@ public class Spec {
 	public void addGlobalVar(Var v){
 		this.globalVars.add(v);
 		
-		// all the global vars are locks except the primitive ones 
-		Lock l = new Lock(v.getName(), this);
-		locks.add(l);
+		// all the global vars are locks except the primitive ones
+		if (!v.isPrimType()){
+			Lock l = new Lock(v.getName(), this);
+			locks.add(l);
+		}
 	}
 	
 	
@@ -67,9 +69,13 @@ public class Spec {
 	
 	public void addAllGlobalVar(LinkedList<Var> list){
 		this.globalVars.addAll(list);
+		
+		// for each global var that it is not a primitive type we add an associated lock
 		for (int i=0; i<list.size(); i++){
-			Lock l = new Lock(list.get(i).getName(), this);
-			locks.add(l);
+			if (!list.get(i).isPrimType()){
+				Lock l = new Lock(list.get(i).getName(), this);
+				locks.add(l);
+			}
 		}
 	}
 	
@@ -135,7 +141,6 @@ public class Spec {
 			if (globalVars.get(i).getType() == t)
 				result.add(globalVars.get(i).getName());
 		}
-		
 		return result;
 	}
 	
@@ -153,6 +158,12 @@ public class Spec {
 		for (int i=0; i<this.globalVars.size();i++){
 			if (this.globalVars.get(i).getUnqualifiedName().equals(name)){
 				return this.globalVars.get(i);
+			}
+		}
+		
+		for (int i=0; i<this.locks.size();i++){
+			if (this.locks.get(i).getUnqualifiedName().equals(name)){
+				return this.locks.get(i);
 			}
 		}
 		
@@ -186,6 +197,11 @@ public class Spec {
 			if (globalVars.get(i).getType() == Type.PRIMINT)
 				result.put(globalVars.get(i).getName(), "PRIMINT");
 			
+		}
+		// and the locks that are not variables are added
+		for (int i=0; i<this.locks.size(); i++){
+			if (this.locks.get(i).isOnlyLock())
+				result.put(locks.get(i).getName(), "LOCK");
 		}
 		return result;
 	}

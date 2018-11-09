@@ -1,7 +1,8 @@
 package Spec;
 import java.util.*;
+import FormulaSpec.*;
 
-public class Lock{
+public class Lock implements Var{
 	private String varName; // the associated var name to the lock
 	private Spec mySpec;
 	private LinkedList<String> usedGlobalVarsWithLocks;
@@ -30,7 +31,7 @@ public class Lock{
 	public Lock(String varName, boolean onlyLock){
 		this.varName = varName;
 		this.mySpec = null;
-		this.onlyLock = false;
+		this.onlyLock = onlyLock;
 		this.usedGlobalVarsWithLocks = new LinkedList<String>();
 		this.usedGlobalVars = new LinkedList<String>();
 		this.usedBooleanGlobalVars = new LinkedList<String>();
@@ -54,11 +55,60 @@ public class Lock{
 		this.usedIntGlobalVars = new LinkedList<String>();
 	}
 	
+	public String getName(){
+		return this.varName;
+	}
+	
+	public Type getType(){
+		return Type.LOCK;
+	}
+	
+    public boolean isPrimType(){
+    	return false;
+    }
+	
+	
+    public String toAlloy(String metaName, String state){
+    	// Locks does not have asociated alloy code, all its behavior comes through Av and Own
+    	String result = "";
+    	return result;
+    }
+
+    public String getUnqualifiedName(){
+    	String result = this.varName;
+    	for (int i=0; i<this.varName.length(); i++){
+    		if (result.charAt(i) == '.'){
+    			result = result.substring(i+1);
+    			break;
+    		}
+    	}
+    	return result;	
+    }
+    
+    public boolean usesVar(String name){
+		return this.getUnqualifiedName().equals(name);			
+	}
+    
+    public String getOwner(){
+    	String result = this.varName;
+    	for (int i=0; i<this.varName.length(); i++){
+    		if (result.charAt(i) == '.'){
+    			result = result.substring(0, i);
+    			break;
+    		}
+    	}
+    	return result;	
+    }
+	
+    public boolean containsVarOwnedBy(LinkedList<String> instances){
+		return instances.contains(this.getOwner());
+	}
+    
 	/**
 	 * Basic getter
 	 * @return	the onlyLock boolean
 	 */
-	public boolean getOnlyLock(){
+	public boolean isOnlyLock(){
 		return this.onlyLock;
 	}
 	
@@ -68,6 +118,13 @@ public class Lock{
 	 */
 	public void setUsedGlobalVars(LinkedList<String> list){
 		this.usedGlobalVars = list;
+	}
+	
+	/**
+	 * This method does nothing for locks
+	 */
+	public void setIsPrim(boolean isPrime){
+		
 	}
 	
 	public void addAllUsedGlobalVars(LinkedList<String> list){
@@ -132,13 +189,16 @@ public class Lock{
 	public LinkedList<String> getOtherGlobalVarsWithLocks(){
 		//we calculate this using a process and the method above setUsedGlobalVars
 		LinkedList<String> result = new LinkedList<String>();
-		for (int i=0; i<usedGlobalVars.size(); i++){
+		for (int i=0; i<usedGlobalVarsWithLocks.size(); i++){
 			if (!usedGlobalVarsWithLocks.get(i).equals(varName)){
 				result.add(usedGlobalVarsWithLocks.get(i));
 			}
 		}
+		
 		return result;
 	}
+	
+	
 	
 	/**
 	 * 

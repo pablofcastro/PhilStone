@@ -142,6 +142,10 @@ public class ActionAux {
 						var.setIsPrim(true);
 					result.addVarToFrame(var);
 				}
+				if (mySpec.getTypeVar(this.frame.get(i), "global") == Type.LOCK){
+					Lock l = new Lock(this.frame.get(i), true);
+					result.addVarToFrame(l);
+				}
 				// DO SOMETHING WITH LOCKS!!!!
 			}
 			else{

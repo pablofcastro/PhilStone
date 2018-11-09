@@ -17,6 +17,9 @@ public class ProcessSpec {
 	LinkedList<Var> sharedVars; // the global vars
 	LinkedList<Var> localVars;  // the local vars of the process
 	LinkedList<Var> pars;		// the parameters of the process
+	LinkedList<String> ownedVars; // this list keeps track of those vars that are "owned" by the process, i.e.,
+								  // the process always has the lock of the variable, this allows for optimizations
+								  // these are global vars.
 	LinkedList<TemporalFormula> invs; // the invariants of the process
 	LinkedList<String> instances; // the instances of the specification
 	Spec mySpec;
@@ -34,6 +37,7 @@ public class ProcessSpec {
 		this.pars = new LinkedList<Var>();
 		this.actions = new LinkedList<Action>();
 		this.invs = new LinkedList<TemporalFormula>();
+		this.ownedVars = new LinkedList<String>();
 	}
 	
 	/**
@@ -48,6 +52,7 @@ public class ProcessSpec {
 		this.actions = new LinkedList<Action>();
 		this.invs = new LinkedList<TemporalFormula>();
 		this.intSize = intSize;
+		this.ownedVars = new LinkedList<String>();
 	}
 
 	/**
@@ -90,6 +95,9 @@ public class ProcessSpec {
 		sharedVars.add(v);
 	}
 	
+	public void addOwnedVar(String v){
+		this.ownedVars.add(v);
+	}
 	
 	public void addAllSharedVar(LinkedList<Var> list){
 		sharedVars.addAll(list);
@@ -132,14 +140,44 @@ public class ProcessSpec {
 	}
 	
 	
+	public LinkedList<String> getOnlyLocksNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<mySpec.getLocks().size(); i++){
+			if (mySpec.getLocks().get(i).isOnlyLock())
+				result.add(mySpec.getLocks().get(i).getName());
+		}
+		return result;
+	}
+	
 	
 	public LinkedList<String> getSharedVarsNamesByType(Type t){
 		return this.mySpec.getGlobalVarsNamesByType(t);
 	}
 	
+	public LinkedList<String> getOwnedSharedVarsNamesbyType(Type t){
+		LinkedList<String> sharedVars = this.mySpec.getGlobalVarsNamesByType(t);
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.ownedVars.size(); i++){
+			if (sharedVars.contains(this.ownedVars.get(i)))
+				result.add(this.ownedVars.get(i));
+		}
+		return result;
+	}
 	
-	public LinkedList<String> getSharedNonPrimVarsNamesByType(Type t){
-		return this.mySpec.getGlobalNonPrimVarsNamesByType(t);
+	
+	/**
+	 * 
+	 * @param t
+	 * @return	returns those global vars with names and type t which have an associated lock
+	 */
+	public LinkedList<String> getSharedVarsNamesByTypeWithLock(Type t){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.mySpec.getGlobalNonPrimVarsNamesByType(t).size(); i++){
+			String current = this.mySpec.getGlobalNonPrimVarsNamesByType(t).get(i); 
+			if (!this.isAnOwnedVar(current))
+				result.add(current);
+		}
+		return result;
 	}
 	
 	
@@ -160,20 +198,73 @@ public class ProcessSpec {
 		return result; 
 	}
 	
-	public LinkedList<String> getBoolParNames(){
+	
+	/**
+	 * 
+	 * @return	The names of the boolean parameters, EXCEPTING those that are in the owns clause or are of boolean primitive
+	 */
+	public LinkedList<String> getBoolParNamesWithLock(){
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<this.pars.size();i++){
-			if (this.pars.get(i).getType() == Type.BOOL && !this.pars.get(i).isPrimType()){
+			if (this.pars.get(i).getType() == Type.BOOL && !this.pars.get(i).isPrimType() && !this.isAnOwnedVar(this.pars.get(i).getName()) ){
 				result.add(this.pars.get(i).getName());
 			}
 		}
 		return result;	
 	}
 	
+	public LinkedList<String> getLockParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.LOCK){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
+	public LinkedList<Lock> getLockPars(){
+		LinkedList<Lock> result = new LinkedList<Lock>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.LOCK){
+				result.add((Lock) this.pars.get(i));
+			}
+		}
+		return result;	
+	}
+	
+	public LinkedList<String> getOwnedBoolParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.BOOL && this.isAnOwnedVar(this.pars.get(i).getName()) ){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
+	/**
+	 * 
+	 * @return all the boolean par names
+	 */
+	public LinkedList<String> getBoolParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.BOOL){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
+	/**
+	 * 
+	 * @return	The names of the primitive boolean parameters, EXCEPTING those that are in the owns clause 
+	 */
 	public LinkedList<String> getBoolPrimParNames(){
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<this.pars.size();i++){
-			if (this.pars.get(i).getType() == Type.PRIMBOOL){
+			if (this.pars.get(i).getType() == Type.PRIMBOOL && !this.isAnOwnedVar(this.pars.get(i).getName())){
 				result.add(this.pars.get(i).getName());
 			}
 		}
@@ -198,20 +289,62 @@ public class ProcessSpec {
 		return init.usesVar(var);
 	}
 	
-	public LinkedList<String> getIntParNames(){
+	public boolean isAnOwnedVar(String name){
+		for (int i=0; i< this.ownedVars.size(); i++){
+			if (this.ownedVars.get(i).equals(name))
+				return true;
+		}
+		return false;
+	}
+	
+	
+	/**
+	 * 
+	 * @return	the names of non-primitive Int parameters, excepting those that are in the owns clause
+	 */
+	public LinkedList<String> getIntParNamesWithLock(){
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<this.pars.size();i++){
-			if (this.pars.get(i).getType() == Type.INT && !this.pars.get(i).isPrimType()){
+			if (this.pars.get(i).getType() == Type.INT && !this.pars.get(i).isPrimType() && !this.isAnOwnedVar(this.pars.get(i).getName())){
 				result.add(this.pars.get(i).getName());
 			}
 		}
 		return result;	
 	}
 	
+	public LinkedList<String> getOwnedIntParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.INT && this.isAnOwnedVar(this.pars.get(i).getName())){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
+	
+	/**
+	 * 
+	 * @return all the int par names
+	 */
+	public LinkedList<String> getIntParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.INT){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
+	/**
+	 * 
+	 * @return	the names of the pimitive-one paramaeter names, excepting those that are in the owns clause
+	 */
 	public LinkedList<String> getIntPrimParNames(){
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<this.pars.size();i++){
-			if (this.pars.get(i).getType() == Type.INT && this.pars.get(i).isPrimType()){
+			if (this.pars.get(i).getType() == Type.INT && this.pars.get(i).isPrimType() && !this.isAnOwnedVar(this.pars.get(i).getName())){
 				result.add(this.pars.get(i).getName());
 			}
 		}
@@ -225,7 +358,11 @@ public class ProcessSpec {
 		for (int i = 0; i < localVars.size(); i++){
 			if (localVars.get(i).getType() == Type.BOOL)
 				localBoolProps.add(localVars.get(i).getName());
+				
 		}
+		
+		localBoolProps.addAll(this.getOwnedSharedVarsNamesbyType(Type.BOOL)); // the owned vars are considered local for efficiency reasons
+		localBoolProps.addAll(this.getOwnedSharedVarsNamesbyType(Type.PRIMBOOL));
 		
 		// we save the local int vars
 		List<String> localIntVars = new ArrayList<String>();
@@ -233,6 +370,9 @@ public class ProcessSpec {
 			if (localVars.get(i).getType() == Type.INT)
 				localIntVars.add(localVars.get(i).getName());
 		}
+		
+		localIntVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.INT));
+		localIntVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.PRIMINT));
 		
 		// we set the actions
 		List<Action> localActions = new ArrayList<Action>();
@@ -274,7 +414,7 @@ public class ProcessSpec {
 		// we add just the boolean global variables used in this process
 		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
 			String currentVar = mySpec.getGlobalVarsNames().get(i);
-			if (this.usesSharedVar(currentVar) && !mySpec.isPrimVar(currentVar) && mySpec.getGlobalVarsTypes().get(currentVar) == "BOOL"){
+			if (this.usesSharedVar(currentVar) && !mySpec.isPrimVar(currentVar) && !this.isAnOwnedVar(currentVar) && mySpec.getGlobalVarsTypes().get(currentVar) == "BOOL"){
 				usedBooleanGlobalVars.add(mySpec.getGlobalVarsNames().get(i));
 			}
 		}
@@ -283,31 +423,32 @@ public class ProcessSpec {
 		// we add the int global vars used in this process
 		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
 			String currentVar = mySpec.getGlobalVarsNames().get(i);
-			if (this.usesSharedVar(currentVar) && !mySpec.isPrimVar(currentVar)  && mySpec.getGlobalVarsTypes().get(currentVar) == "INT"){
+			if (this.usesSharedVar(currentVar) && !mySpec.isPrimVar(currentVar)  && !this.isAnOwnedVar(currentVar) && mySpec.getGlobalVarsTypes().get(currentVar) == "INT"){
 				usedIntGlobalVars.add(mySpec.getGlobalVarsNames().get(i));
 			}
 		}
 		
-		// parameters are considered global vars
-		usedBooleanGlobalVars.addAll(this.getBoolParNames());
-		usedIntGlobalVars.addAll(this.getIntParNames());
+		// parameters are considered global vars, those parameters in the owns clause are not added
+		usedBooleanGlobalVars.addAll(this.getBoolParNamesWithLock());
+		usedIntGlobalVars.addAll(this.getIntParNamesWithLock());
+		
 		
 		// define UsedGlobalVars
 		LinkedList<String> usedGlobalVars = new LinkedList<String>();
 		for (int i=0; i<this.mySpec.getGlobalVarsNames().size();i++){
-			if (this.usesSharedVar(this.mySpec.getGlobalVarsNames().get(i)) && !mySpec.isPrimVar(this.mySpec.getGlobalVarsNames().get(i))){
-				usedGlobalVars.add(this.mySpec.getGlobalVarsNames().get(i));
+			if (this.usesSharedVar(this.mySpec.getGlobalVarsNames().get(i)) && !mySpec.isPrimVar(this.mySpec.getGlobalVarsNames().get(i)) && !this.isAnOwnedVar(this.mySpec.getGlobalVarsNames().get(i)) ){
+				usedGlobalVars.add(this.mySpec.getGlobalVarsNames().get(i));  // those variables that are only locks are not here
 			}
 		}
 		// and the parameters are added 
-		usedGlobalVars.addAll(this.getBoolParNames()); // we add the parameters that are not prim types
-		usedGlobalVars.addAll(this.getIntParNames()); // 
+		usedGlobalVars.addAll(this.getBoolParNamesWithLock()); // we add the parameters that are not prim types adn not owned
+		usedGlobalVars.addAll(this.getIntParNamesWithLock()); // 
 		
 		
 		// define UsedGlobalVars with primitive types
 		LinkedList<String> usedPrimGlobalVars = new LinkedList<String>();
 		for (int i=0; i<this.mySpec.getGlobalVarsNames().size();i++){
-			if (this.usesSharedVar(this.mySpec.getGlobalVarsNames().get(i)) && mySpec.isPrimVar(this.mySpec.getGlobalVarsNames().get(i))){
+			if (this.usesSharedVar(this.mySpec.getGlobalVarsNames().get(i)) && mySpec.isPrimVar(this.mySpec.getGlobalVarsNames().get(i)) && !this.isAnOwnedVar(this.mySpec.getGlobalVarsNames().get(i)) ){
 				usedPrimGlobalVars.add(this.mySpec.getGlobalVarsNames().get(i));
 			}
 		}
@@ -320,27 +461,46 @@ public class ProcessSpec {
 		LinkedList<String> usedPrimBoolVars = new LinkedList<String>();
 		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
 			String currentVar = mySpec.getGlobalVarsNames().get(i);
-			if (this.usesSharedVar(currentVar) && mySpec.isPrimVar(currentVar) && mySpec.getGlobalVarsTypes().get(currentVar) == "PRIMBOOL"){
+			if (this.usesSharedVar(currentVar) && mySpec.isPrimVar(currentVar) && mySpec.getGlobalVarsTypes().get(currentVar).equals("PRIMBOOL") && !this.isAnOwnedVar(currentVar)){
 				usedPrimBoolVars.add(mySpec.getGlobalVarsNames().get(i));
 			}
 		}
 		
 		usedPrimBoolVars.addAll(this.getBoolPrimParNames());
-	
 		//we set the volatile or primitive int vars
 		LinkedList<String> usedPrimIntVars = new LinkedList<String>(); // a list for the integer global vars	
 		
 		// we add the int global vars used in this process
 		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
 			String currentVar = mySpec.getGlobalVarsNames().get(i);
-			if (this.usesSharedVar(currentVar) && mySpec.isPrimVar(currentVar)  && mySpec.getGlobalVarsTypes().get(currentVar) == "INT"){
+			if (this.usesSharedVar(currentVar) && mySpec.isPrimVar(currentVar)  && mySpec.getGlobalVarsTypes().get(currentVar) == "INT" && !this.isAnOwnedVar(currentVar)){
 				usedPrimIntVars.add(mySpec.getGlobalVarsNames().get(i));
 			}
 		}
 		// and the int primitive parameters
 		usedPrimBoolVars.addAll(this.getIntPrimParNames());
 		
-		// we set the important global vars for the locks
+
+		LinkedList<Lock> usedLocks= new LinkedList<Lock>();
+		LinkedList<Lock> onlyLocks = new LinkedList<Lock>(); // those locks that do not have variables associated to them 
+		LinkedList<String> onlyLocksNames = new LinkedList<String>();
+		for (int i=0;i<this.mySpec.getLocks().size();i++){			
+			//if (usedGlobalVars.contains(this.mySpec.getLocks().get(i).getVarName())) //TBD: ADD SIMPLE LOCKS HERE
+			if (this.usesSharedVar(this.mySpec.getLocks().get(i).getName())){
+				usedLocks.add(this.mySpec.getLocks().get(i)); //CHECK THIS!
+				if (this.mySpec.getLocks().get(i).isOnlyLock()){
+					onlyLocks.add(this.mySpec.getLocks().get(i));
+					onlyLocksNames.add(this.mySpec.getLocks().get(i).getName());
+				}
+			}
+		}
+		
+		usedLocks.addAll(this.getLockPars());
+		onlyLocks.addAll(this.getLockPars());
+		onlyLocksNames.addAll(this.getLockParNames());
+		//System.out.println(usedLocks); // aca hay un error
+		
+		// we set the important global vars for the locks, those variables in the owns clause are excepted
 		for (int i=0; i<this.mySpec.getLocks().size();i++){
 			Lock currentLock = this.mySpec.getLocks().get(i);
 			currentLock.addAllUsedGlobalVars(usedGlobalVars);
@@ -350,30 +510,43 @@ public class ProcessSpec {
 			currentLock.addAllUsedIntGlobalVars(usedIntGlobalVars);
 			currentLock.addAllUsedIntGlobalVars(usedPrimIntVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
-			
+			currentLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
 			//currentLock.setUsedGlobalVars(usedGlobalVars);
 			//currentLock.setUsedBooleanGlobalVars(usedBooleanGlobalVars);
 			//currentLock.setUsedIntGlobalVars(usedIntGlobalVars);
 			//System.out.println(this.mySpec.getLocks().get(i).getOtherGlobalVars());
 		}
 		
-		LinkedList<Lock> usedLocks= new LinkedList<Lock>();
-		for (int i=0;i<this.mySpec.getLocks().size();i++){
-			if (usedGlobalVars.contains(this.mySpec.getLocks().get(i).getVarName())) //TBD: ADD SIMPLE LOCKS HERE
-				usedLocks.add(this.mySpec.getLocks().get(i));
+		for (int i=0; i<this.getLockPars().size();i++){
+			Lock currentLock = this.getLockPars().get(i);
+			currentLock.addAllUsedGlobalVars(usedGlobalVars);
+			currentLock.addAllUsedGlobalVars(usedPrimGlobalVars);	
+			currentLock.addAllUsedBooleanGlobalVars(usedPrimBoolVars);
+			currentLock.addAllUsedBooleanGlobalVars(usedBooleanGlobalVars);
+			currentLock.addAllUsedIntGlobalVars(usedIntGlobalVars);
+			currentLock.addAllUsedIntGlobalVars(usedPrimIntVars);
+			currentLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
+			currentLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
 		}
-	
 		
 		// Non-primitive Boolean parameters are also considered locks 
-		for (int i=0; i<this.getBoolParNames().size();i++){
-			Lock parLock = new Lock(this.getBoolParNames().get(i), this.mySpec);
-			parLock.setUsedGlobalVars(usedGlobalVars);
+		for (int i=0; i<this.getBoolParNamesWithLock().size();i++){
+			Lock parLock = new Lock(this.getBoolParNamesWithLock().get(i), this.mySpec);
+			//parLock.setUsedGlobalVars(usedGlobalVars);
+			parLock.addAllUsedGlobalVars(usedGlobalVars);
+			parLock.addAllUsedGlobalVars(usedPrimGlobalVars);	
+			parLock.addAllUsedBooleanGlobalVars(usedPrimBoolVars);
+			parLock.addAllUsedBooleanGlobalVars(usedBooleanGlobalVars);
+			parLock.addAllUsedIntGlobalVars(usedIntGlobalVars);
+			parLock.addAllUsedIntGlobalVars(usedPrimIntVars);
+			parLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
+			parLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
 			usedLocks.add(parLock);
 		}
 		
 		// Non-primitive int parameters are also considered locks 
-		for (int i=0; i<this.getIntParNames().size();i++){
-			Lock parLock = new Lock(this.getIntParNames().get(i), this.mySpec);
+		for (int i=0; i<this.getIntParNamesWithLock().size();i++){
+			Lock parLock = new Lock(this.getIntParNamesWithLock().get(i), this.mySpec);
 			parLock.setUsedGlobalVars(usedGlobalVars);
 			usedLocks.add(parLock);
 		}
@@ -393,9 +566,9 @@ public class ProcessSpec {
 		st.add("sharedBoolProps", usedBooleanGlobalVars); // we take the parameters as a global variables
 		st.add("sharedIntVars", usedIntGlobalVars);
 		st.add("sharedPrimBoolProps", usedPrimBoolVars); // the primitive/volatile shared bool vars
-		System.out.println(usedPrimBoolVars);
 		st.add("sharedPrimIntVars", usedPrimIntVars); // the primitive/volatile shared int vars
 		st.add("locks", usedLocks); //for now the global vars are locks
+		st.add("onlyLocks", onlyLocksNames); // those locks that do not have any variables associated to them
 		
 		// we create a collection for all the shared variables
 		LinkedList<String> allSharedVars = new LinkedList<String>();
@@ -403,6 +576,7 @@ public class ProcessSpec {
 		allSharedVars.addAll(usedIntGlobalVars);
 		allSharedVars.addAll(usedPrimBoolVars);
 		allSharedVars.addAll(usedPrimIntVars);
+		allSharedVars.addAll(onlyLocksNames);
 		st.add("allSharedVars", allSharedVars);
 		
 		st.add("localActions", localActions);

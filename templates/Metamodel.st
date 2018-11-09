@@ -1,6 +1,6 @@
 // This file describes the alloy metamodel for processes
 // Author: Pablo Castro
-Metamodel(name, boolProps, sharedBoolProps, sharedPrimBoolProps, sharedPrimIntVars, intVars, intSet, sharedIntVars, containsInts, locks, localActions, envActions, actions, auxVars, auxAxioms, auxPreds, invariants, init, scope, allSharedVars)  ::=
+Metamodel(name, boolProps, sharedBoolProps, sharedPrimBoolProps, sharedPrimIntVars, intVars, intSet, sharedIntVars, containsInts, locks, onlyLocks, localActions, envActions, actions, auxVars, auxAxioms, auxPreds, invariants, init, scope, allSharedVars)  ::=
 <<
 open util/relation
 
@@ -61,6 +61,15 @@ abstract sig NumVar{}
 
 <sharedIntVars:{ s | pred Own_<s>[m:<name>Meta, n:Node]{Own_<s> in m.val[n]\}}; separator="\n">
 
+-- and variables for those locks that are not linked to any variables
+<onlyLocks:{ s | one sig Av_<s> extends Prop{\}}; separator="\n">
+
+<onlyLocks:{ s | one sig Own_<s> extends Prop{\}}; separator="\n">
+
+<onlyLocks:{ s | pred Av_<s>[m:<name>Meta, n:Node]{Av_<s> in m.val[n]\}}; separator="\n">
+
+<onlyLocks:{ s | pred Own_<s>[m:<name>Meta, n:Node]{Own_<s> in m.val[n]\}}; separator="\n">
+
 <auxVars:{ s | <s>}; separator="\n">
 
 one sig <name>Meta{
@@ -72,14 +81,17 @@ one sig <name>Meta{
 	env: nodes -> nodes,
 	<actions :{a | ACT<a.name>:nodes -> nodes,}; separator="\n">
 	<sharedBoolProps : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
+    <onlyLocks : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
     <sharedIntVars : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
     <sharedPrimBoolProps : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
     <sharedPrimIntVars : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
+    
 }
 {
 	<if(actions)>
         succs = <actions : {a | ACT<a.name>}; separator="+"> 
         <if(sharedBoolProps)> + <sharedBoolProps : {s | ACTchange_<s>}; separator="+"> <endif>
+        <if(onlyLocks)> + <onlyLocks : {s | ACTchange_<s>}; separator="+"> <endif>
         <if(sharedIntVars)> + <sharedIntVars : {s | ACTchange_<s>}; separator="+"> <endif>
         <if(sharedPrimBoolProps)> + <sharedPrimBoolProps : {s | ACTchange_<s>}; separator="+"> <endif>
         <if(sharedPrimIntVars)> + <sharedPrimIntVars : {s | ACTchange_<s>}; separator="+"> <endif>
@@ -120,6 +132,17 @@ one sig <name>Meta{
     <sharedBoolProps : {sh | fact ResAx3 { all s:<name>Meta.nodes | all s':<name>Meta.ACTchange_<sh>[s] | Av_<sh>[<name>Meta,s] iff (not Av_<sh>[<name>Meta, s']) \}} >  
 <endif>
 
+-- similar axioms for those variables that are only locks, no data associated to them
+<if(onlyLocks)>
+    <onlyLocks :  {sh | fact ResAx1 { all s:<name>Meta.nodes | Own_<sh>[<name>Meta, s] implies (not Av_<sh>[<name>Meta, s]) \} } >
+<endif>
+<if(onlyLocks)>
+    <onlyLocks : {sh | fact ResAx2 { all s:<name>Meta.nodes | (not Own_<sh>[<name>Meta,s]) iff (some <name>Meta.ACTchange_<sh>[s]) \}  }>
+<endif>
+<if(onlyLocks)>
+    <onlyLocks : {sh | fact ResAx3 { all s:<name>Meta.nodes | all s':<name>Meta.ACTchange_<sh>[s] | Av_<sh>[<name>Meta,s] iff (not Av_<sh>[<name>Meta, s']) \}} >  
+<endif>
+
 -- these axioms state that local actions cannot change shared variables which locks ore not owned by the process
 <if(sharedBoolProps)>
     <sharedBoolProps : {sh | fact ResAx4 {  all s:<name>Meta.nodes | (not Own_<sh>[<name>Meta,s]) implies (all s':<name>Meta.local[s] | (Prop_<sh>[<name>Meta,s] iff Prop_<sh>[<name>Meta,s']) ) \} }>
@@ -127,6 +150,10 @@ one sig <name>Meta{
 
 <if(sharedBoolProps)>
     <sharedBoolProps : {sh | fact ResAx4 { all s:<name>Meta.nodes | all s':(<name>Meta.env[s] - <name>Meta.ACTchange_<sh>[s]) | Av_<sh>[<name>Meta,s] iff Av_<sh>[<name>Meta, s'] \}}> 
+<endif>
+
+<if(onlyLocks)>
+    <onlyLocks : {sh | fact ResAx4 { all s:<name>Meta.nodes | all s':(<name>Meta.env[s] - <name>Meta.ACTchange_<sh>[s]) | Av_<sh>[<name>Meta,s] iff Av_<sh>[<name>Meta, s'] \}}> 
 <endif>
 
 /*
@@ -279,7 +306,7 @@ one sig <name>Meta{
 
 -- Pred with inital condition and Invariants
 pred Mod[s:<name>Meta.nodes]{ 
-    all s':(*(<name>Meta.succs)[s]) | some <name>Meta.succs[s']
+    -- all s':(*(<name>Meta.succs)[s]) | some <name>Meta.succs[s'] -- if ew want any node has a succ
     <if(invariants)> <invariants : {inv | <inv>}; separator="\n">  <endif>
     <init>
     

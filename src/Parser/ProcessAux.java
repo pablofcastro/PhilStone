@@ -13,6 +13,7 @@ public class ProcessAux {
 	//private HashMap<String, Type> pars; // the parameters of the process
 	private LinkedList<Pair<String, Type>> pars; // the parameters of the process, it is a linked list since the order of apparence matters
 	private LinkedList<String> primPars; // the list of prim pars, note that we dont need this for local vars 
+	private LinkedList<String> ownedVars; // the list of owned vars
 	LinkedList<ActionAux> actions; // the actions of the process
 	private ExprAux init;
 	private LinkedList<ExprAux> invs; // the local invariants
@@ -33,6 +34,7 @@ public class ProcessAux {
 		this.line = line;
 		this.errors = "";
 		this.duplicatedVars = false;
+		this.ownedVars = new LinkedList<String>();
 	}
 	
 	public ProcessAux(String name, int line){
@@ -46,6 +48,7 @@ public class ProcessAux {
 		this.line = line;
 		this.errors = "";
 		this.duplicatedVars = false;
+		this.ownedVars = new LinkedList<String>();
 	}
 
 	public String getName() {
@@ -173,6 +176,11 @@ public class ProcessAux {
 		}
 	}
 	
+	public void addAllOwnedVars(LinkedList<String> list){
+		for (int i=0; i<list.size(); i++){
+			this.ownedVars.add(list.get(i));
+		}
+	}
 	
 	public int getNumberPars(){
 		return this.pars.size();
@@ -233,12 +241,24 @@ public class ProcessAux {
 		boolean ok = true;
 		//boolean invsOK = true;
 		//String invError = "";
+		
+		// check the owned vars
+		for (int i=0; i<this.ownedVars.size(); i++){
+			if (!this.mySpec.checkVarIsGlobal(this.ownedVars.get(i))){
+				ok = false;
+				this.addError("Owned var: "+ this.ownedVars.get(i) + " is not a shared var" );
+			}
+		}
+		
+		//check the invariants
 		for (int i = 0; i<invs.size(); i++){
 			if (invs.get(i).getType(table, mySpec, this.name) != Type.BOOL){
 				ok = false;
 				this.addError("Type Error in Invariant, line:" + invs.get(i).getLine());
 			}	
-		}			
+		}	
+		
+		// check the actions 
 		for (int i=0; i<actions.size(); i++){
 			if (!actions.get(i).isWellFormed(table, mySpec)){
 				ok = false;
@@ -247,6 +267,7 @@ public class ProcessAux {
 		}
 		Type initType = init.getType(table, mySpec, this.name);
 		
+		// check the init condition
 		if (initType == Type.ERROR){
 			this.addError(init.getError());
 			ok = false;
@@ -302,11 +323,16 @@ public class ProcessAux {
 					v.setIsPrim(true);
 				result.addPar(v);
 			}	
-			// something must be done with locks...
-			//if (pars.get(i).getSecond() == Type.LOCK){
-			//	Lock l = new Lock(pars.get(i).getFirst(), true);
-			//	result.addPar(v);
-			//}
+			// We add the parameters that are locks
+			if (pars.get(i).getSecond() == Type.LOCK){
+				Lock l = new Lock(pars.get(i).getFirst(), true);
+				result.addPar(l);
+			}
+		}
+		
+		for (int i=0; i<this.ownedVars.size(); i++){
+			result.addOwnedVar(this.ownedVars.get(i));
+			//result.addOwnedVar(this.ownedVars.get(i)); 
 		}
 		
 		// we add the invariants

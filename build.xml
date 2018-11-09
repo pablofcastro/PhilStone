@@ -14,7 +14,7 @@
         <pathelement location="jar/java-cup-11a.jar"/>
         <pathelement location="jar/java-cup-11a-runtime.jar"/>
         <pathelement location="jar/alloy4.jar"/>
-        <pathelement location="jar/dCTL_checkernew.jar"/>
+        <pathelement location="jar/dCTL_checker.jar"/>
     </path>
     <taskdef  name="jflex" classname="JFlex.anttask.JFlexTask"   classpath="jar/JFlex.jar"   />              
     <taskdef  name="cup"   classname="java_cup.anttask.CUPTask"  classpath="jar/java-cup-11a.jar" />

@@ -5,7 +5,7 @@
 package Parser;
 
 import java_cup.runtime.*;
-import net.sf.javabdd.*;
+//import net.sf.javabdd.*;
 import java.util.*;
 import Spec.*;
 import FormulaSpec.*;
@@ -76,6 +76,7 @@ terminal DOT;
 terminal RUN;
 terminal PRIMBOOL;
 terminal integer PRIMINT;
+terminal OWNS;
                 
                 
 non terminal  ExprAux primary, expr, disjunction, conjunction, relation, comparison, addition, term, factor;
@@ -280,6 +281,27 @@ bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  acti
 																																	   proc.addAllInvs(inv);						
                                                                                                                                        RESULT = proc;   
                                                                                                                           :}
+           |  LBRACE declList:listD  SEMICOLON OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
+																																					   proc.setInit(init);	
+																																					   proc.addAllLocalVars(listD);
+																																					   //proc.setPre(pre);
+																																					   //proc.setPost(post);
+																																					   proc.addAllOwnedVars(ownsList); // the list of owned vars
+																																					   proc.addAllActions(aList);
+																																					   proc.addAllInvs(inv);						
+                                                                                                                                     			       RESULT = proc;
+                                                                                                                                      :}
+          
+             | LBRACE OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON   actionlist:aList invariantList:inv SEMICOLON RBRACE {:  ProcessAux proc = new ProcessAux(initleft);
+                                                                                                                                       proc.setInit(init);	
+                                                                                                                                       //proc.setPre(pre);
+																																	   //proc.setPost(post);
+																																	   proc.addAllOwnedVars(ownsList); // the list of owned variables
+																																	   proc.addAllActions(aList);	
+																																	   proc.addAllInvs(inv);						
+                                                                                                                                       RESULT = proc;   
+                                                                                                                          :}                                                                                                             
+                                                                                                                          
           ;                
 
 actionlist::= actiondef:a {: LinkedList<ActionAux> res = new LinkedList<ActionAux>();

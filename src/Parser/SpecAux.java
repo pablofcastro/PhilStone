@@ -111,7 +111,7 @@ public class SpecAux{
 			this.sharedVars.put(name, Type.INT);
 			this.sharedPrimIntVars.add(name);
 		}
-		if (type == Type.INT || type == Type.BOOL || type== Type.LOCK){ // otherwise it is a standard bool or standard int 
+		if (type == Type.INT || type == Type.BOOL || type== Type.LOCK){ // otherwise it is a standard bool or a standard int 
 			this.sharedVars.put(name, type);
 		}
 	}
@@ -270,7 +270,7 @@ public class SpecAux{
 				result.addGlobalVar(v);
 			}
 			
-			// we the locks
+			// we add the locks
 			if (this.sharedVars.get(current) == Type.LOCK){
 				Lock l = new Lock(current, result, true);
 				result.addLock(l);
@@ -310,7 +310,7 @@ public class SpecAux{
 	public boolean isLock(String name){
 		// for now all the shared variables has associated locks, 
 		// if primitive types are added then we should modify this
-		return this.sharedVars.containsKey(name);
+		return (this.sharedVars.containsKey(name) && !this.isPrimTypeVar(name));
 	}
 	
 	/**
