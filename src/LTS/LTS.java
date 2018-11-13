@@ -341,14 +341,18 @@ public class LTS {
 			writer.println("");
 			
 			// the env
-			writer.print(space+"env =");
-			for (int i=0;i<env.size();i++){
-				if (i==0)
-					writer.print(env.get(i));
-				else
-					writer.print("+"+env.get(i));
+			if (env.size()>0){
+				writer.print(space+"env =");
+				for (int i=0;i<env.size();i++){
+					if (i==0)
+						writer.print(env.get(i));
+					else
+						writer.print("+"+env.get(i));
+				}
+				writer.println("");
 			}
-			writer.println("");
+			else
+				writer.println("no env");
 			
 			// the local actions
 			writer.println(space+"local = succs - env");

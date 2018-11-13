@@ -383,6 +383,7 @@ public class Action {
 		vars.addAll(process.getBoolParNamesWithLock());
 		vars.addAll(process.getIntParNamesWithLock());
 		vars.addAll(process.getOnlyLocksNames());
+		vars.addAll(process.getLockParNames());
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<vars.size(); i++){
 			String current = vars.get(i);

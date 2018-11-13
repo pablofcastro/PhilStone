@@ -156,24 +156,49 @@ one sig <name>Meta{
     <onlyLocks : {sh | fact ResAx4 { all s:<name>Meta.nodes | all s':(<name>Meta.env[s] - <name>Meta.ACTchange_<sh>[s]) | Av_<sh>[<name>Meta,s] iff Av_<sh>[<name>Meta, s'] \}}> 
 <endif>
 
-/*
+
 -- the following axioms state that environment actions are unrestricted
+<if(sharedBoolProps)>
+    <sharedBoolProps : {sh | fact ResAx5 { all s:<name>Meta.nodes | ((not Own_<sh>[<name>Meta,s]) and (not Av_<sh>[<name>Meta,s])) implies (some s':(*(<name>Meta.ACTchange_<sh>)[s]) | Prop_<sh>[<name>Meta,s']) \}} >  
+    <sharedBoolProps : {sh | fact ResAx6 { all s:<name>Meta.nodes | ((not Own_<sh>[<name>Meta,s]) and (not Av_<sh>[<name>Meta,s])) implies (some s':(*(<name>Meta.ACTchange_<sh>)[s]) | not Prop_<sh>[<name>Meta,s']) \}} > 
+<endif>
+
+/*
 <if(sharedBoolProps)>
     <sharedBoolProps : {sh | fact ResAx5 { all s:<name>Meta.nodes | ((not Own_<sh>[<name>Meta,s]) and (not Av_<sh>[<name>Meta,s])) implies (some s':<name>Meta.ACTchange_<sh>[s] | Prop_<sh>[<name>Meta,s']) \}} >  
     <sharedBoolProps : {sh | fact ResAx6 { all s:<name>Meta.nodes | ((not Own_<sh>[<name>Meta,s]) and (not Av_<sh>[<name>Meta,s])) implies (some s':<name>Meta.ACTchange_<sh>[s] | not Prop_<sh>[<name>Meta,s']) \}} > 
 <endif>
 */
 
+/*
 -- new version of these axioms, using the * instead of next, it should be more efficient...
 <if(sharedBoolProps)>
     <sharedBoolProps : {sh | fact ResAx5 { all s:<name>Meta.nodes | ((not Own_<sh>[<name>Meta,s]) and (not Av_<sh>[<name>Meta,s])) implies (some s':(*(<name>Meta.env)[s]) | Prop_<sh>[<name>Meta,s']) \}} >  
     <sharedBoolProps : {sh | fact ResAx6 { all s:<name>Meta.nodes | ((not Own_<sh>[<name>Meta,s]) and (not Av_<sh>[<name>Meta,s])) implies (some s':(*(<name>Meta.env)[s]) | not Prop_<sh>[<name>Meta,s']) \}} > 
 <endif>
+*/
 
+/*
 -- similarly for volatile booleans
 <if(sharedPrimBoolProps)>
     <sharedPrimBoolProps : {sh | fact ResAx5 { all s:<name>Meta.nodes | (some s':(*(<name>Meta.env)[s]) | Prop_<sh>[<name>Meta,s']) \}} >  
     <sharedPrimBoolProps : {sh | fact ResAx6 { all s:<name>Meta.nodes | (some s':(*(<name>Meta.env)[s]) | not Prop_<sh>[<name>Meta,s']) \}} > 
+<endif>
+*/
+
+
+/*
+-- similarly for volatile booleans
+<if(sharedPrimBoolProps)>
+    <sharedPrimBoolProps : {sh | fact ResAx5 { all s:<name>Meta.nodes | (some s':(*(<name>Meta.ACTchange_<sh>)[s]) | Prop_<sh>[<name>Meta,s']) \}} >  
+    <sharedPrimBoolProps : {sh | fact ResAx6 { all s:<name>Meta.nodes | (some s':(*(<name>Meta.ACTchange_<sh>)[s]) | not Prop_<sh>[<name>Meta,s']) \}} > 
+<endif>
+
+*/
+
+<if(sharedPrimBoolProps)>
+    <sharedPrimBoolProps : {sh | fact ResAx5 { all s:<name>Meta.nodes | (some s':<name>Meta.ACTchange_<sh>[s] | Prop_<sh>[<name>Meta,s']) \}} >  
+    <sharedPrimBoolProps : {sh | fact ResAx6 { all s:<name>Meta.nodes | (some s':<name>Meta.ACTchange_<sh>[s] | not Prop_<sh>[<name>Meta,s']) \}} > 
 <endif>
 
 -- resource axioms for ints

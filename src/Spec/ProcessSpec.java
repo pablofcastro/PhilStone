@@ -6,6 +6,7 @@ import java.io.*;
 import org.stringtemplate.v4.*;
 
 import FormulaSpec.*;
+import JFlex.Out;
 
 /**
  * @author Pablo
@@ -500,6 +501,7 @@ public class ProcessSpec {
 		onlyLocksNames.addAll(this.getLockParNames());
 		//System.out.println(usedLocks); // aca hay un error
 		
+		
 		// we set the important global vars for the locks, those variables in the owns clause are excepted
 		for (int i=0; i<this.mySpec.getLocks().size();i++){
 			Lock currentLock = this.mySpec.getLocks().get(i);
@@ -511,6 +513,9 @@ public class ProcessSpec {
 			currentLock.addAllUsedIntGlobalVars(usedPrimIntVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
+			System.out.println(currentLock.getName());
+			System.out.println(usedGlobalVars);
+			System.out.println(onlyLocksNames); 
 			//currentLock.setUsedGlobalVars(usedGlobalVars);
 			//currentLock.setUsedBooleanGlobalVars(usedBooleanGlobalVars);
 			//currentLock.setUsedIntGlobalVars(usedIntGlobalVars);

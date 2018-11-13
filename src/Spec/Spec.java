@@ -265,10 +265,17 @@ public class Spec {
 	 * @return the type of a given global var, it returns ERROR if the variable is not in the spec
 	 */
 	public Type getGlobalVarType(String name){
+
 		for (int i=0; i<this.globalVars.size(); i++){
 			if (this.globalVars.get(i).getName().equals(name))
 				return this.globalVars.get(i).getType();
 		}
+		// they could be locks
+		for (int i=0; i<this.locks.size(); i++){
+			if (this.locks.get(i).getName().equals(name))
+				return Type.LOCK;
+		}
+		
 		return Type.ERROR;
 	}
 	

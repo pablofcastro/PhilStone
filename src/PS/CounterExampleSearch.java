@@ -530,6 +530,11 @@ public class CounterExampleSearch {
 				for (int i=0; i<processPrimBoolPars.size();i++){
 					pars.put(processPrimBoolPars.get(i), "PRIMBOOL");
 				}
+				
+				LinkedList<String> processLockPars = mySpec.getProcessByName(currentProcess).getLockParNames();
+				for (int i=0; i<processLockPars.size();i++){
+					pars.put(processLockPars.get(i), "LOCK");
+				}
 				program += mapProcessModels.get(currentProcess).toMCProcess(pars, currentProcess, currentProcess); // no parameters by now
 				
 			}
@@ -537,6 +542,15 @@ public class CounterExampleSearch {
 				LinkedList<String> processPars = mySpec.getProcessByName(mySpec.getInstanceTypes().get(currentProcess)).getBoolParNames();
 				for (int i=0; i<processPars.size();i++){
 					pars.put(processPars.get(i), "BOOL");
+				}
+				LinkedList<String> processPrimBoolPars = mySpec.getProcessByName(mySpec.getInstanceTypes().get(currentProcess)).getBoolPrimParNames();
+				for (int i=0; i<processPrimBoolPars.size();i++){
+					pars.put(processPrimBoolPars.get(i), "PRIMBOOL");
+				}
+				
+				LinkedList<String> processLockPars = mySpec.getProcessByName(mySpec.getInstanceTypes().get(currentProcess)).getLockParNames();
+				for (int i=0; i<processLockPars.size();i++){
+					pars.put(processLockPars.get(i), "LOCK");
 				}
 				program += mapInsModels.get(currentProcess).toMCProcess(pars, currentProcess+"Process", currentProcess);
 			}
@@ -571,6 +585,8 @@ public class CounterExampleSearch {
 						program+= "Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.PRIMBOOL)
 						program+= "Prop_"+parameters.get(i)+", ";
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.LOCK)
+						program+= "Av_"+parameters.get(i)+", ";
 				}
 				else{
 					//program+=","+parameters.get(i)+ ", Av_"+parameters.get(i);
@@ -579,6 +595,8 @@ public class CounterExampleSearch {
 						program+= ","+"Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.PRIMBOOL)
 						program+= ","+"Prop_"+parameters.get(i);
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.LOCK)
+						program+= "Av_"+parameters.get(i);
 				}
 			}
 			program += ");";
@@ -606,7 +624,7 @@ public class CounterExampleSearch {
 	    	System.out.println(program);
 	    	//System.out.println(form);
 	    }
-	    DCTL_MC.printMess();
+	    //it coDCTL_MC.printMess();
 	    // we model check the specification together with the formula
 	    if (DCTL_MC.mc_algorithm_eq(form, model)){
 	    	syntProgram = program; // if true we save the program
@@ -615,6 +633,10 @@ public class CounterExampleSearch {
 	    else{ // if the model checking is not successful we search for counterexamples
 	    	FormulaElement negForm = new formula.Negation("!", form);
 	    	CounterExample c = new CounterExample();
+	    	if (DCTL_MC.getWitnessAsMaps(negForm, model, ins).isEmpty()){ // NO SENSE A EMPTY COUNTEREXAMPLE!
+	    		syntProgram = program;
+	    		return true;
+	    	}
 	    	if (showInfo)
 	    		System.out.println("Cex from model checker: "+DCTL_MC.getWitnessAsMaps(negForm, model, ins));
 	    	c.addRuns(DCTL_MC.getWitnessAsMaps(negForm, model, ins));
