@@ -66,6 +66,16 @@ public class Lock implements Var{
     public boolean isPrimType(){
     	return false;
     }
+    
+    /**
+     * Since the usedVars variables are dependent of each process one needs to reset them for each process
+     */
+    public void resetUsedVars(){
+    	this.usedGlobalVarsWithLocks.clear();
+    	this.usedGlobalVars.clear();
+    	this.usedBooleanGlobalVars.clear();
+    	this.usedIntGlobalVars.clear();
+    }
 	
 	
     public String toAlloy(String metaName, String state){

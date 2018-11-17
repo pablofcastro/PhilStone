@@ -487,6 +487,7 @@ public class ProcessSpec {
 		LinkedList<String> onlyLocksNames = new LinkedList<String>();
 		for (int i=0;i<this.mySpec.getLocks().size();i++){			
 			//if (usedGlobalVars.contains(this.mySpec.getLocks().get(i).getVarName())) //TBD: ADD SIMPLE LOCKS HERE
+			this.mySpec.getLocks().get(i).resetUsedVars();
 			if (this.usesSharedVar(this.mySpec.getLocks().get(i).getName())){
 				usedLocks.add(this.mySpec.getLocks().get(i)); //CHECK THIS!
 				if (this.mySpec.getLocks().get(i).isOnlyLock()){
@@ -503,8 +504,8 @@ public class ProcessSpec {
 		
 		
 		// we set the important global vars for the locks, those variables in the owns clause are excepted
-		for (int i=0; i<this.mySpec.getLocks().size();i++){
-			Lock currentLock = this.mySpec.getLocks().get(i);
+		for (int i=0; i<usedLocks.size();i++){
+			Lock currentLock = usedLocks.get(i);
 			currentLock.addAllUsedGlobalVars(usedGlobalVars);
 			currentLock.addAllUsedGlobalVars(usedPrimGlobalVars);	
 			currentLock.addAllUsedBooleanGlobalVars(usedPrimBoolVars);
@@ -513,9 +514,6 @@ public class ProcessSpec {
 			currentLock.addAllUsedIntGlobalVars(usedPrimIntVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
-			System.out.println(currentLock.getName());
-			System.out.println(usedGlobalVars);
-			System.out.println(onlyLocksNames); 
 			//currentLock.setUsedGlobalVars(usedGlobalVars);
 			//currentLock.setUsedBooleanGlobalVars(usedBooleanGlobalVars);
 			//currentLock.setUsedIntGlobalVars(usedIntGlobalVars);
@@ -533,7 +531,6 @@ public class ProcessSpec {
 			currentLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
 		}
-		
 		// Non-primitive Boolean parameters are also considered locks 
 		for (int i=0; i<this.getBoolParNamesWithLock().size();i++){
 			Lock parLock = new Lock(this.getBoolParNamesWithLock().get(i), this.mySpec);

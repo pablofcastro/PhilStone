@@ -2,7 +2,7 @@ spec peterson
 turn, try1, try2: boolean;
 process proc1{
     cs:boolean;
-	init: !this.cs  && av(global.turn) && !global.turn && !global.try1 &&  own(global.try1) && !global.try2 && !own(global.try2);
+	init: !this.cs  && av(global.turn) && !global.turn && !global.try1 &&  own(global.try1) && !global.try2 && !av(global.try2);
 
 	
     action lockturn(){
@@ -32,7 +32,7 @@ process proc1{
 
 process proc2{
     cs:boolean;
-	init: !this.cs &&  av(global.turn) && !global.turn && !global.try2 && own(global.try2) && !global.try1 && !own(global.try1);
+	init: !this.cs &&  av(global.turn) && !global.turn && !global.try2 && own(global.try2) && !global.try1 && !av(global.try1);
 
     action lockturn(){
 		frame: turn;

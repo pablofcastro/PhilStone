@@ -579,7 +579,7 @@ public class CounterExampleSearch {
 			program += "run " + currentInstance + "(";
 			LinkedList<String> parameters = mySpec.getActualPars(currentInstance);
 			for (int i=parameters.size()-1; i>=0;i--){
-				if (i==parameters.size()-1){
+				if (i==parameters.size()-1 && parameters.size()>1){
 					//program+=parameters.get(i) + ", Av_"+parameters.get(i); // this must be changed for monitors
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.BOOL)
 						program+= "Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
