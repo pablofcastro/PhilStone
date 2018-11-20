@@ -1,5 +1,5 @@
 # PhilStone
-A simple tool for the synthesis of concurrent programs using Alloy
+A simple tool for the synthesis of concurrent programs using Alloy-Tool and Model Checking
 
 - Compiling the Tool
 
@@ -27,11 +27,11 @@ where: [OPTIONS] are the following:
 
 (cd bin/)
 
-- java PS/PhilStone -scope=6 ../src/tests/mutex/mutex2.spec
+- java PS/PhilStone -scope=6 ../examples/mutex2.spec
 
-it synthesizes a program for mutex with a scope of 6 using counterexamples, if the scope is low the algorithm wont be able to synthesize a program,
+it synthesizes a program for mutex with a scope of 6 using counterexamples, if the scope is small  the algorithm couldn't be able to synthesize a program,
 
-- java PS/PhilStone -genSearch=../src/tests/phils/phil.spec -scope=14 ../src/tests/phils/phils/phil5.spec
+- java PS/PhilStone -genSearch=../src/tests/phils/phil.spec -scope=14 ../examples/phils/phil5.spec
 
 It synthesizes code for 5 philosophers using a smaller instance of the problem (2 philosophers).
 
@@ -39,6 +39,6 @@ It synthesizes code for 5 philosophers using a smaller instance of the problem (
 
  The .jar file can be generated executing 'ant jar', you can find the file in bin/jar, the tool also can be executed using the jar.  
 
-
+- The examples can be found in examples/ folder
  
 

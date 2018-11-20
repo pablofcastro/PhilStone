@@ -243,7 +243,6 @@ public class LTS {
 			for (int i=0; i<listNodes.size(); i++){
 				writer.println("one sig "+listNodes.get(i)+ " extends Node{}");
 			}
-			System.out.println(this.props);
 			// write down the propositions
 			writer.println("abstract sig Prop{}");		
 			for (int i=0; i<props.size(); i++){

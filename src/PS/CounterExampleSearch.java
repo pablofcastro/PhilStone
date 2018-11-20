@@ -168,7 +168,7 @@ public class CounterExampleSearch {
 			System.out.println(currentProcess+" time:" + estimatedTime);
 		}
 		
-		System.out.println("Laxest Models Generated...");
+		System.out.println("Local Models Generated...");
 		
 		// the map containing the collection of counterexamples for each instance is initialized
 		for (int j=0; j<instancesList.size();j++){
@@ -617,7 +617,7 @@ public class CounterExampleSearch {
 		FormulaParser formulaParser = new FormulaParser(pparser.getSymbolsTable(), model);
 	    FormulaElement form = formulaParser.parseFromString(formString);
 	    //model.buildModel();
-	    System.out.println(formString);
+	    //System.out.println(formString);
 	    
 	    
 	    if (showInfo){
