@@ -23,6 +23,8 @@ where: [OPTIONS] are the following:
 
 '-lexSearch' it uses the standard algorithm without counterexamples
 
+The default algorithm uses counterexamples.
+
 - Examples of use:
 
 (cd bin/)
@@ -39,6 +41,7 @@ It synthesizes code for 5 philosophers using a smaller instance of the problem (
 
  The .jar file can be generated executing 'ant jar', you can find the file in bin/jar, the tool also can be executed using the jar.  
 
-- The examples can be found in examples/ folder
+- The examples can be found in examples/ folder, they use a pre/post condition style of specification. After running the tool, an Alloy
+specification is generated and saved in the "output" folder. This specification is in First-Order Logic.
  
 
