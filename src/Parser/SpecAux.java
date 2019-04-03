@@ -21,6 +21,7 @@ public class SpecAux{
 												  // to discriminate them
 	private LinkedList<String> sharedPrimBoolVars; // similarly to above but for booleans
 	private LinkedList<ExprAux> invs; // the list of the invariants
+	private LinkedList<ExprAux> ltlProps; // the list of ltl properties of the spec
 	private String errors; // a string used for keeping track of type errors
 	private boolean instancesOK;
 	//private boolean duplicatedInstances;
@@ -33,6 +34,7 @@ public class SpecAux{
 		this.processes = new LinkedList<ProcessAux>();
 		this.sharedVars = new HashMap<String,Type>();
 		this.invs = new LinkedList<ExprAux>();
+		this.ltlProps = new LinkedList<ExprAux>();
 		this.errors = "";
 		this.instancesOK = true;
 		this.sharedPrimBoolVars = new LinkedList<String>();
@@ -138,6 +140,10 @@ public class SpecAux{
 	
 	public void addInvariant(ExprAux e){
 		invs.add(e);
+	}
+	
+	public void addLTLProp(ExprAux e){
+		ltlProps.add(e);
 	}
 	
 	public boolean isPrimTypeVar(String name){

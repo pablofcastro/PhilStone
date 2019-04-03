@@ -103,6 +103,26 @@ public class Spec {
 		this.actualPars.get(name).addAll(vars);
 	}
 	
+	/**
+	 * 
+	 * @return	the local names of the locks, for every instance
+	 */
+	/*public HashMap<Lock,HashMap<String,String>> getLocalNameforLocks(){
+		HashMap<Lock,HashMap<String,String>> result = new HashMap<Lock,HashMap<String,String>>();
+			
+		Iterator<String> it0 = this.instances.keySet().iterator();
+		while (it0.hasNext()){
+			String current = it0.next();
+			ProcessSpec currentProcess = this.instances.get(current);
+			currentProcess.
+		}
+		return result;
+	}*/
+	
+	public HashMap<Var,HashMap<String,String>> getLocalNameforVars(){
+		HashMap<Var,HashMap<String,String>> result = new HashMap<Var,HashMap<String,String>>();
+		return result;		
+	}
 	
 	public String getName(){
 		return this.name;
@@ -258,6 +278,37 @@ public class Spec {
 		}
 		return result;
 	}
+	
+	/**
+	 * 
+	 * @param 	the instance for which we want to obtain the actual parameters
+	 * @return	Returns the ith actual parameter of the instance
+	 */
+	public Var getActualIthPar(String instance, int k){
+		if (this.actualPars.get(instance) != null){
+			Iterator<Var> it = this.actualPars.get(instance).iterator();
+			int i=0;
+			while(it.hasNext()){
+				Var v = it.next();
+				if (i == k)
+					return v;
+				i++;
+			}
+		}
+		throw new RuntimeException("Instance has no par");
+	}
+	
+	/**
+	 * 
+	 * @param instance	the instance for which we want to obtain the formal par
+	 * @param k			the number of parameter we want to obtain
+	 * @return			the	ith formal parameter of the given instance 
+	 */
+	public Var getFormalIthPar(String instance, int k){
+		ProcessSpec myProcess = this.getProcessSpec(instance);
+		return myProcess.getIthFormalPar(k);
+	}
+	
 	
 	/**
 	 * 

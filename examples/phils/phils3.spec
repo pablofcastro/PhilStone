@@ -50,4 +50,5 @@ main(){
 
 /* Temporal Spec */
 
-property: !EF[phil1.own(left) && phil2.own(left) && phil3.own(left)] && !EF[phil1.own(right) && phil2.own(right) && phil3.own(right)] && !AG[!phil2.eating] && !AG[!phil1.eating] && !AG[!phil3.eating]; 
+/*property: !EF[phil1.own(left) && phil2.own(left) && phil3.own(left)] && !EF[phil1.own(right) && phil2.own(right) && phil3.own(right)] && !AG[!phil2.eating] && !AG[!phil1.eating] && !AG[!phil3.eating]; */
+property: !EF[phil1.own(left) && phil2.own(left) && phil3.own(left)] && !EF[phil1.own(right) && phil2.own(right) && phil3.own(right)];

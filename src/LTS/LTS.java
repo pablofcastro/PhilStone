@@ -38,7 +38,7 @@ public class LTS {
 		this.localInvs = new LinkedList<String>();
 		this.env = new LinkedList<String>(); // the environmental actions of the model
 		this.globalProps = new LinkedList<String>();
-		this.name = "NoName";
+		this.name = "NoName"; // a default name if none is provided
 	}
 	
 	/**
@@ -50,7 +50,7 @@ public class LTS {
 		this.actions = new LinkedList<String>(); // the actions of the model
 		this.env = new LinkedList<String>(); // the environmental actions of the model
 		this.globalProps = new LinkedList<String>();
-		this.name = "NoName"; // change this
+		this.name = "NoName"; // a default name
 		this.processSpec = myProcess;
 		this.localInvs = new LinkedList<String>();
 		
@@ -73,6 +73,13 @@ public class LTS {
 		this.name = name;
 	}
 	
+	/**
+	 * 
+	 * @param name	the new name of the LTS
+	 */
+	public void setName(String name){
+		this.name = name;
+	}
 	/**
 	 * Adds a node to the list
 	 * @param n	the node to be added
@@ -164,6 +171,13 @@ public class LTS {
 		return result;
 	}
 	
+	/**
+	 * 
+	 * @return the initial node
+	 */
+	public String getInitialNode(){
+		return this.initialNode;
+	}
 	public LinkedList<String> getEqClassesNames(){
 		LinkedList<String> result = new LinkedList<String>();
 		Iterator<String> it = this.nodes.keySet().iterator();
@@ -219,6 +233,14 @@ public class LTS {
 			}
 		}
 		return result;
+	}
+	
+	/**
+	 * 
+	 * @return the name of the LTS
+	 */
+	public String getName(){
+		return this.name;
 	}
 	
 	
@@ -362,24 +384,6 @@ public class LTS {
 					writer.println(auxAxioms.get(i));
 			}
 			
-			
-			//System.out.println("------------------------------");
-			// just for debugging REMOVE!
-			//for (int i=0; i<counterexamples.size();i++){
-			//	LinkedList<String> actualCex = counterexamples.get(i);
-			//	boolean firstTime = true;
-			//	System.out.println("Element "+i+":");
-			//	for (int j=0; j<actualCex.size()-1;j++){
-			//		if (!actualCex.get(j).equals(actualCex.get(j+1))){
-			//			LinkedList<Edge> egs = this.getEdges(actualCex.get(j),actualCex.get(j+1));
-			//			for (int h=0; h<egs.size(); h++){
-			//				System.out.println(egs.get(h).getName());
-			//			}
-			//		}
-			//	}
-			//}
-			//System.out.println("------------------------------");
-			
 			//System.out.println("counter examples:"+counterexamples);
 			for (int i=0; i<counterexamples.size();i++){
 				LinkedList<String> actualCex = counterexamples.get(i);
@@ -454,6 +458,147 @@ public class LTS {
 			//		+ "\n all n':(*(Instance"+name+".succs))[s] | some n'':(*(Instance"+name+".succs))[n'] | some InstanceNoName.local[n'']}");
 			writer.println("run compile for "+scope + " but 1 Instance"+name);
 			writer.close();
+	}
+	
+	/**
+	 * This method is useful when performing model checking using Alloy
+	 * @return ONLY the signature of the LTS, the name of the nodes are renamed to make it possible to conjoin 
+	 * 		   different signatures.
+	 */
+	public String getAlloySign(){
+		String result = "";
+		if (this.eqClasses == null)
+			this.computeEqClasses();
+		String space = "    ";
+		//PrintWriter writer = new PrintWriter(output, "UTF-8");
+		
+		// all the names are indexed by the name of the process
+		//result = result+"abstract sig "+name+"Node{}"+"\n";
+		
+		// get the list of the nodes
+		LinkedList<String> listNodes = new LinkedList<String>(nodes.keySet());
+		
+		
+		//for (int i=0; i<listNodes.size(); i++){
+		//	result = result + "one sig "+name+listNodes.get(i)+" extends Node{}"+"\n";
+		//}
+		// write down the propositions
+		//result = result + "abstract sig"+ name+"Prop{}";		
+		//for (int i=0; i<props.size(); i++){
+		//	result = result + "one sig "+ name+props.get(i)+" extends"+ name +"Prop{}"+"\n";
+		//	result = result + "pred "+ name+props.get(i)+"[m:Instance"+name+",n:"+name+"Node]{"+name+props.get(i)+" in m.val[n]}"+"\n";
+		//}
+		
+		LinkedList<String> auxVars = new LinkedList<String>();
+		LinkedList<String> auxAxioms = new LinkedList<String>();
+		LinkedList<String> auxPreds = new LinkedList<String>();	
+		if (this.processSpec != null){
+			auxVars = this.processSpec.getAuxVars("Instance"+name);
+			auxAxioms = this.processSpec.getAuxAxioms();
+			auxPreds = this.processSpec.getAuxPreds("Instance"+name);
+			
+		}			
+		
+		for (int i=0; i<auxVars.size(); i++){
+			result = result+name+auxVars.get(i)+"\n";
+		}
+		
+		// writes down the metamodel of the signature
+		result = result + "one sig "+name+"Process extends TS{";
+		// print the actions
+		for (int i=0; i<actions.size(); i++){
+			result = result + space + actions.get(i)+": nodes -> nodes,\n";
+		}
+		//result = result + space + "local: nodes -> nodes,"+"\n";
+		//result = result + space + "env: nodes -> nodes"+"\n";
+		result = result + "}"+"\n";
+		
+		// starts the description of the model
+		result = result + "{"+"\n";
+		// the nodes
+		result = result + space + "nodes = ";
+		for (int i=0; i<listNodes.size();i++){
+			if (i == 0)
+				result =result + listNodes.get(i);
+			else
+				result = result +  "+" + listNodes.get(i);
+		}
+		result = result + "\n";
+		
+		// the actions
+		for (int i=0; i<actions.size();i++){
+			LinkedList<Edge> edgeList = this.getEdgesWithName(actions.get(i));
+			if (edgeList.size() == 0){
+				result = result + space + "no " + actions.get(i);
+				continue;
+			}
+			if (!env.contains(actions.get(i))){
+					 result = result + space + actions.get(i)+" = "; 
+			}
+			else
+				result = result + space + actions.get(i)+" = ";
+			for (int j=0; j<edgeList.size();j++){
+				if (j==0)
+					result = result + "("+edgeList.get(j).getOrigin().getName()+"->"+ edgeList.get(j).getTarget().getName()+")";
+				else
+					result = result + " + (" +  edgeList.get(j).getOrigin().getName()+"->"+edgeList.get(j).getTarget().getName()+")";
+			}
+			result = result + "\n";
+		}
+		result = result + "\n";
+		
+		// the propositions
+		result = result + space + "val = ";
+		result = result + space;
+		for (int i=0; i<listNodes.size();i++){	
+			LinkedList<String> propList = nodes.get(listNodes.get(i)).getProperties();	
+			for (int j=0; j<propList.size(); j++){
+				if (j==0 && i==0)
+					result = result +  listNodes.get(i)+"->"+propList.get(j);
+				else
+					result = result + " + "+listNodes.get(i)+"->"+propList.get(j);
+			}
+		}
+		//writer.print(" in val");
+		result = result + "\n";
+		
+		// the succs relation
+		result = result + space+"succs = ";
+		for (int i=0;i<actions.size();i++){
+			if (i==0)
+				result = result +  actions.get(i);
+			else
+				result = result + "+"+actions.get(i);
+		}
+		result = result + "\n";
+		
+		// the env
+		if (env.size()>0){
+			result = result + space+"env =";
+			for (int i=0;i<env.size();i++){
+				if (i==0)
+					result = result + env.get(i);
+				else
+					result = result + "+"+env.get(i);
+			}
+			result = result + "\n";
+		}
+		else
+			result = result + "no env" + "\n";
+		
+		// the local actions
+		result = result + space+"local = succs - env" + "\n";
+		
+		// we write the additional axioms for fresh variables for CTL formulas
+		for (int i=0; i<auxAxioms.size(); i++){
+			if (!auxAxioms.get(i).equals(""))
+				result = result + auxAxioms.get(i) + "n";
+		}
+		
+		result = result + "}" + "\n";
+		//writer.println("pred compile[s:Node]{s="+ this.initialNode+"\n all n:Instance"+name+".nodes | some Instance"+name+".local[n] }");
+		//writer.println("pred compile[s:Node]{s="+ this.initialNode+"\n 	some n':(*(Instance"+name+".succs))[s] | Prop_eating[InstanceNoName, n'] \n 	all n':(*(Instance"+name+".succs))[s] | some n'':(*(Instance"+name+".succs))[n'] | some InstanceNoName.local[n'']}");
+		return result;
 	}
 	
 	/**

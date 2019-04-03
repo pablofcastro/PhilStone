@@ -72,6 +72,7 @@ terminal FRAME;
 terminal AV;
 terminal OWN;
 terminal PROPERTY;
+terminal LTLPROPERTY;
 terminal DOT;
 terminal RUN;
 terminal PRIMBOOL;

@@ -35,6 +35,17 @@ public class Own implements ElemFormula {
     	return owner+"."+"Own_"+lock.getUnqualifiedName();
     }
     
+	public String getOwner(){
+		String owner = "";
+		int i=0;
+		while (i < lock.getName().length()){
+			if (lock.getName().charAt(i)=='.'){
+				owner = lock.getName().substring(0, i);
+			}	
+		i++;
+		}
+		return owner;
+	}
  
     public Type getType(){
     	return Type.BOOL;

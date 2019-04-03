@@ -272,6 +272,18 @@ public class ProcessSpec {
 		return result;	
 	}
 	
+	/**
+	 * 
+	 * @param i
+	 * @return	the ith formal parameter of the process
+	 */
+	public Var getIthFormalPar(int i){
+		if (i > this.pars.size()-1)
+			throw new RuntimeException("Wrong number of Formal Parameter");
+		else{
+			return this.pars.get(i);
+		}
+	}
 	
 	/**
 	 * A method to check whether a process mention a global var o nor
