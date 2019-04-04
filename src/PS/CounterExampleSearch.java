@@ -53,8 +53,12 @@ public class CounterExampleSearch {
 	boolean showInfo = false; // when true the methods will show the info of the search
 	boolean printPDF;
 	boolean cexFound = false;
-	boolean cexRefined = false; // a boolean 
+	boolean cexRefined = false;  
+	boolean alloySearch = false; // to indicate  if the search is performed using Alloy
+	int pathBound = 0; // the bound for the counterexamples in the case that BMC is used
 	int scope;
+	
+	
 	
 	/**
 	 * A basic constructor
@@ -63,6 +67,51 @@ public class CounterExampleSearch {
 	 * @param templatePath
 	 */
 	public CounterExampleSearch(Spec mySpec, String outputPath, String templatePath, boolean showInfo, boolean printPDF, int scope){
+		// we just call to the extended constructor with the corresponding parameters
+		this(mySpec,outputPath,templatePath,showInfo,printPDF,scope,false,0);
+		
+//		this.syntProgram = "";
+//		this.mySpec = mySpec;
+//		this.showInfo = showInfo;
+//		this.printPDF = printPDF;
+//		this.scope = scope;
+//		processes = mySpec.getProcessesNames();
+//		this.instances = mySpec.getInstanceTypes();
+//		instancesList = new LinkedList<String>(instances.keySet());
+//		this.changed = new HashMap<String,Boolean>();
+//		
+//		// we initialise changed with false for every instance
+//		for (int i=0; i<instancesList.size();i++){
+//			changed.put(instancesList.get(i), new Boolean(false));
+//		}
+//		this.mapInsModels = new HashMap<String, LTS>(); // insLaxModels
+//		this.mapProcessModels = new HashMap<String, LTS>(); // laxModels
+//		this.counterExamples = new LinkedList<CounterExample>();
+//		this.cexForInstance = new HashMap<String, LinkedList<LinkedList<String>>>();
+//		for (int i=0; i<instancesList.size(); i++){
+//			this.cexForInstance.put(instancesList.get(i), new LinkedList<LinkedList<String>>());
+//		}
+//		
+//		// we initialized all the elements of 
+//		this.disjointCexFound = new HashMap<String, Boolean>();
+//		for (int i=0; i<instancesList.size(); i++){
+//			this.disjointCexFound.put(instancesList.get(i), new Boolean(false));
+//		}
+//		
+//		this.cexActualRun = new HashMap<String, LinkedList<LinkedList<String>>>();
+//		this.outputPath = outputPath;
+//		this.templatePath = templatePath;
+//		this.numberIns = this.instancesList.size();
+	}
+	
+	
+	/**
+	 * An extended constructor 
+	 * @param mySpec
+	 * @param outputPath
+	 * @param templatePath
+	 */
+	public CounterExampleSearch(Spec mySpec, String outputPath, String templatePath, boolean showInfo, boolean printPDF, int scope, boolean alloySearch, int pathBound){
 		this.syntProgram = "";
 		this.mySpec = mySpec;
 		this.showInfo = showInfo;
@@ -95,6 +144,8 @@ public class CounterExampleSearch {
 		this.outputPath = outputPath;
 		this.templatePath = templatePath;
 		this.numberIns = this.instancesList.size();
+		this.alloySearch = alloySearch;
+		this.pathBound = pathBound;
 	}
 	
 	/**
@@ -103,6 +154,14 @@ public class CounterExampleSearch {
 	 */
 	public String getSyntProgram(){
 		return this.syntProgram;
+	}
+	
+	/**
+	 * A simple method to chose the synthesis method guided by alloy
+	 */
+	public void setAlloyBMC(int pathBound){
+		this.alloySearch = true;
+		this.pathBound = pathBound;
 	}
 	
 	/**
@@ -216,9 +275,11 @@ public class CounterExampleSearch {
 		}
 		
 		if (insNumber == this.numberIns - 1){ // if so we are in the base case
-			// just to check if this ok
-			this.alloyBoundedModelCheck("", new LinkedList<LinkedList<String>>(), 5, scope);
-			if (modelCheck(currentIns, new LinkedList<LinkedList<String>>())){ // if false, we add the counterexamples to the corresponding queues
+			//this.alloyBoundedModelCheck("", new LinkedList<LinkedList<String>>(), 5, scope);			
+			// if BMC on then we use Alloy else we use the model checker
+			boolean checkResult = this.alloySearch?alloyBoundedModelCheck(currentIns, new LinkedList<LinkedList<String>>(), this.pathBound, this.scope):modelCheck(currentIns, new LinkedList<LinkedList<String>>());
+			//if (modelCheck(currentIns, new LinkedList<LinkedList<String>>())){ // if false, we add the counterexamples to the corresponding queues
+			if (checkResult){
 				return true;
 			}
 			else{
@@ -327,7 +388,8 @@ public class CounterExampleSearch {
 						try{
 							A4Reporter rep = new A4Reporter();
 							Module world = null;
-							LTS lts = new LTS(mySpec.getProcessSpec(currentIns));;
+							LTS lts = new LTS(mySpec.getProcessSpec(currentIns));
+							lts.setName(currentIns);
 							LTS formerLTS = mapInsModels.get(currentIns);
 							PrintWriter writer = new PrintWriter(outputPath+"Instances.als", "UTF-8");
 							mapInsModels.get(currentIns).getAlloyInstancesSpec(writer,scope, actualCexs);		
@@ -909,8 +971,53 @@ public class CounterExampleSearch {
 		spec += "run gProp for "+modelSize + " but " + pathBound + " elem";
 				
 		// by now we just print the formula
-		System.out.println(spec);
-		//System.out.println(this.readAlloyCex(""));
+		//System.out.println(spec);
+		try{			
+			// we write the specification to a file
+		    PrintWriter writer = new PrintWriter(outputPath+"DistPath.als", "UTF-8");
+		    writer.print(spec);
+		    writer.close();
+		} catch (IOException e) {
+			System.out.println("Error trying to write the alloy specifications for the bounded model checking.");
+			System.out.println(e.getStackTrace());
+		}
+	
+		A4Reporter rep = new A4Reporter();
+		Module world = null;
+		try{
+			world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"DistPath.als");
+			A4Options opt = new A4Options();
+			opt.originalFilename = outputPath+"DistPath.als"; // the specification metamodel
+			opt.solver = A4Options.SatSolver.SAT4J;
+			Command cmd = world.getAllCommands().get(0);
+			A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
+			if  (sol.satisfiable()){ // counterexamples found
+				// we write the cex, of found
+				sol.writeXML("boundedcex.xml");
+				// we read the counterexample
+				CounterExample c = new CounterExample();
+				//System.out.println(readAlloyCex("boundedcex.xml", pathBound));
+				c.addRuns(readAlloyCex("boundedcex.xml", pathBound));
+				cexs.addLast(c.getRuns(ins)); // we add the counterexample to the collection of counterexamples of the current instance
+		    	this.processCounterExample(c); // and we process the counterexample
+				return false; // and return false
+			}
+			else{ //otherwise program found
+				syntProgram = spec; // if true we save the program
+		    	return true;
+				
+			}
+			//System.out.println(readAlloyCex("boundedcex.xml", 7));
+			
+			// we read the LTS
+			//lts.fromAlloyXML(outputfilename);
+			//System.out.println("/Users/Pablo/University/my-papers/drafts/Alloy.Synt/Tool/local/output/"+currentProcess+"Template.dot");
+			//lts.toDot("/Users/Pablo/University/my-papers/drafts/Alloy.Synt/Tool/local/output/"+currentProcess+"Template.dot");
+			
+		}catch(Exception e){
+			System.out.println("Input-Output Error trying to write Alloy files.");
+			System.out.println(e);
+		}	
 		return false;
 	}
 	
@@ -985,10 +1092,10 @@ public class CounterExampleSearch {
 	/*
 	 * A methods to read a counterexample from a Alloy  .xml file
 	 */
-	private LinkedList<HashMap<String,String>> readAlloyCex(String fileName){
+	private LinkedList<HashMap<String,String>> readAlloyCex(String fileName, int pathBound){
 		
 		// vars initialization
-		File inputFile = new File("../alloy/cex.xml"); // change this for the correct file
+		File inputFile = new File(fileName); // change this for the correct file
 		
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		// we extract a run for only one instance for now
@@ -1004,25 +1111,28 @@ public class CounterExampleSearch {
 			org.w3c.dom.Node instance = nodes.item(1);
 			Iterator<String> insIt = this.mapInsModels.keySet().iterator();
 		
-			String ins = "ins1"; // we try with this one
-			int size = 11; // the size of the run
+			
+			//System.out.println(this.instancesList);
+			//String ins = "ins1"; // we try with this one
+			//int size = 11; // the size of the run
 		
 		
 			// we initialize the hashmaps
-			for (int i=0;i<size;i++){
+			for (int i=0;i<pathBound;i++){
 				HashMap<String,String> map = new HashMap<String, String>();
 				run.add(map);
 			}
-			String[] inss = {"ins1","ins2","ins3"};
-		
-			for(int k=0;k<inss.length;k++){
-				org.w3c.dom.Node insNode = XMLAlloy.getItemFromAttr(instance, inss[k]);
+			//String[] inss = {"ins1","ins2","ins3"};
+			System.out.println(instancesList);
+			System.out.println(instancesList.size());
+			for(int k=0;k<instancesList.size();k++){
+				org.w3c.dom.Node insNode = XMLAlloy.getItemFromAttr(instance, instancesList.get(k));
 				org.w3c.dom.NodeList nexts = insNode.getChildNodes();
 				int j=0;
 				for (int i=0; i<nexts.getLength(); i++){
 					if (nexts.item(i).getNodeName().equals("tuple")){
 						//System.out.println(XMLAlloy.getIthFromTuple(nexts.item(i), 2).getAttributes().getNamedItem("label").getTextContent());
-						run.get(j).put(inss[k],XMLAlloy.removeDollarSign(XMLAlloy.getIthFromTuple(nexts.item(i), 2).getAttributes().getNamedItem("label").getTextContent()));
+						run.get(j).put(instancesList.get(k),XMLAlloy.removeDollarSign(XMLAlloy.getIthFromTuple(nexts.item(i), 2).getAttributes().getNamedItem("label").getTextContent()));
 						j++;
 					}
 				}

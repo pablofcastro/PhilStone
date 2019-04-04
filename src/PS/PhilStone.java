@@ -38,6 +38,7 @@ public class PhilStone {
 	private static boolean showInfo = false; // true when we want to show info useful for debugging
 	private static boolean writePdf = false; // if true a pdf showing each process will be generated
 	private static int i=0;
+	private static int pathBound = 0;
 	private static LinkedList<String> instancesList; // the list of instances 
 	private static String path = "";
 	private static String specName = "";
@@ -46,6 +47,7 @@ public class PhilStone {
 	private static boolean cexSearch = true; // by default we use cexSearch
 	private static boolean genSearch = false;
 	private static boolean herSearch = false;
+	private static boolean BMC = false;
 	private static int scope = 0;
 	
 	public static void main(String[] args) {
@@ -95,13 +97,28 @@ public class PhilStone {
 					herSearch = true;
 					continue;
 				}
+				if(args[i].startsWith("-BMC=")){
+					lexSearch = false;
+					cexSearch = false;	
+					genSearch = false;
+					herSearch = false;
+					BMC = true;
+					try{
+						pathBound = Integer.parseInt(args[i].replace("-BMC=",""));
+						continue;
+					}
+					catch (NumberFormatException e){
+						System.out.println("Wrong int paramater after option -BMC");
+						System.exit(0);
+					}
+				}
 				if (args[i].startsWith("-scope=")){					
 					try{
 						scope = Integer.parseInt(args[i].replace("-scope=",""));
 						continue;
 					}
 					catch (NumberFormatException e){
-						System.out.println("Wrong int parmater after option -scope");
+						System.out.println("Wrong int paramater after option -scope");
 						System.exit(0);
 					}
 				}
@@ -162,6 +179,10 @@ public class PhilStone {
 			
 			if (cexSearch){
 				CounterExampleSearch cs = new CounterExampleSearch(mySpec, outputPath, templateDir, showInfo, writePdf, scope);
+				cs.startSearch();
+			}
+			if (BMC){
+				CounterExampleSearch cs = new CounterExampleSearch(mySpec, outputPath, templateDir, showInfo, writePdf, scope, true, pathBound);
 				cs.startSearch();
 			}
 			if (lexSearch){

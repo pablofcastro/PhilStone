@@ -50,7 +50,7 @@ public class LTS {
 		this.actions = new LinkedList<String>(); // the actions of the model
 		this.env = new LinkedList<String>(); // the environmental actions of the model
 		this.globalProps = new LinkedList<String>();
-		this.name = "NoName"; // a default name
+		this.name = myProcess.getName(); // a default name
 		this.processSpec = myProcess;
 		this.localInvs = new LinkedList<String>();
 		
@@ -462,6 +462,7 @@ public class LTS {
 	
 	/**
 	 * This method is useful when performing model checking using Alloy
+	 * @param	The name to be given to the signature, passed from the counterexample java
 	 * @return ONLY the signature of the LTS, the name of the nodes are renamed to make it possible to conjoin 
 	 * 		   different signatures.
 	 */
