@@ -330,7 +330,9 @@ public class CounterExampleSearch {
 							mapInsModels.put(currentIns, lts);
 							changed.put(currentIns, new Boolean(true));
 							// if we generate a correct program then output true
-							if (modelCheck(currentIns, actualCexs)) // model check generates new counterexamples, TBD: we need to add any found instance to actualCexs
+							checkResult = this.alloySearch?alloyBoundedModelCheck(currentIns, actualCexs, this.pathBound, this.scope):modelCheck(currentIns, actualCexs);
+							//if (modelCheck(currentIns, actualCexs)) // model check generates new counterexamples, TBD: we need to add any found instance to actualCexs
+							if (checkResult)
 								return true;
 						
 							// else continue with the search, and restore the previous values
@@ -533,6 +535,8 @@ public class CounterExampleSearch {
 	 */
 	private boolean modelCheck(String ins, LinkedList<LinkedList<String>> cexs){
 			
+		
+		System.out.println("Using a Symbolic Model Checking...");
 		// WE CONSTRUCT THE PROGRAM
 		String program = "";
 		
@@ -732,6 +736,7 @@ public class CounterExampleSearch {
 	 * To be improved: use a template to generate these files
 	 */
 	private boolean alloyBoundedModelCheck(String ins, LinkedList<LinkedList<String>> cexs, int pathBound, int modelSize){
+		System.out.println("Using Alloy BMC...");
 		// We construct the spec
 		String spec = "";
 		String space = "    ";
@@ -1000,6 +1005,7 @@ public class CounterExampleSearch {
 				c.addRuns(readAlloyCex("boundedcex.xml", pathBound));
 				cexs.addLast(c.getRuns(ins)); // we add the counterexample to the collection of counterexamples of the current instance
 		    	this.processCounterExample(c); // and we process the counterexample
+		    	System.out.println(readAlloyCex("boundedcex.xml", pathBound));
 				return false; // and return false
 			}
 			else{ //otherwise program found
@@ -1007,7 +1013,7 @@ public class CounterExampleSearch {
 		    	return true;
 				
 			}
-			//System.out.println(readAlloyCex("boundedcex.xml", 7));
+			//System.out.println(readAlloyCex("boundedcex.xml", pathBound));
 			
 			// we read the LTS
 			//lts.fromAlloyXML(outputfilename);
