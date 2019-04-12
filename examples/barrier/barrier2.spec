@@ -117,4 +117,5 @@ main(){
         run p1();
         run p2();
 }
-property: AG[!(global.sa1 && global.sb2)];
+/*property: AG[!(global.sa1 && global.sb2)];*/
+property: AG[!global.sa1 || global.sb2];

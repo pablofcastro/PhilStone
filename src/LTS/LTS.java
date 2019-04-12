@@ -520,7 +520,7 @@ public class LTS {
 		result = result + space + "nodes = ";
 		for (int i=0; i<listNodes.size();i++){
 			if (i == 0)
-				result =result + listNodes.get(i);
+				result = result + listNodes.get(i);
 			else
 				result = result +  "+" + listNodes.get(i);
 		}
@@ -551,11 +551,14 @@ public class LTS {
 		// the propositions
 		result = result + space + "val = ";
 		result = result + space;
+		boolean first = true;
 		for (int i=0; i<listNodes.size();i++){	
 			LinkedList<String> propList = nodes.get(listNodes.get(i)).getProperties();	
 			for (int j=0; j<propList.size(); j++){
-				if (j==0 && i==0)
+				if (j==0 && first){
 					result = result +  listNodes.get(i)+"->"+propList.get(j);
+					first = false;
+				}
 				else
 					result = result + " + "+listNodes.get(i)+"->"+propList.get(j);
 			}

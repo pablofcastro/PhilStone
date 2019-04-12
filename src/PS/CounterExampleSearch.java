@@ -869,7 +869,17 @@ public class CounterExampleSearch {
 				}			
 			}
 		}
-		// end of the corrdination axioms for the locks
+		// end of the coordination axioms for the locks
+		
+		// coordination axioms for global vars
+		LinkedList<String> globals = mySpec.getGlobalVarsNames();
+		for (int j=0; j<globals.size(); j++){
+			for (int k=0; k<this.instancesList.size()-1;k++){
+				String leftPart = "Prop_"+globals.get(j) + "["+this.mapInsModels.get(this.instancesList.get(k)).getName()+"Process,"+this.instancesList.get(k)+"]";
+				String rightPart = "Prop_"+globals.get(j) + "["+this.mapInsModels.get(this.instancesList.get(k+1)).getName()+"Process,"+this.instancesList.get(k+1)+"]";
+				spec+= leftPart + " iff " + rightPart+"\n";
+			}
+		}
 		
 		spec += "} \n";
 		
@@ -1058,7 +1068,10 @@ public class CounterExampleSearch {
 		String result = "";
 		if (f instanceof BoolVar){
 			BoolVar theVar = (BoolVar) f;
-			result +=  ((BoolVar) f).toAlloy(mapInsModels.get(theVar.getOwner()).getName()+"Process", "s."+theVar.getOwner());
+			if (theVar.getOwner().equals("global"))
+				result += ((BoolVar) f).toAlloy(mapInsModels.get(this.instancesList.get(0)).getName()+"Process", "s."+this.instancesList.get(0));
+			else
+				result +=  ((BoolVar) f).toAlloy(mapInsModels.get(theVar.getOwner()).getName()+"Process", "s."+theVar.getOwner());
 			return result;
 		}
 		if (f instanceof Own){
