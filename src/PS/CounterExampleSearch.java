@@ -980,7 +980,7 @@ public class CounterExampleSearch {
 			spec += "first."+declaredIns.get(j)+" = "+mapInsModels.get(declaredIns.get(j)).getInitialNode()+"\n";
 		}
 		spec += "\n";
-		spec += "infinite\n";
+		spec += "finite\n";
 		spec += generateBoundedFormula(toNNF(new Negation(prop)))+"\n";
 		spec += "}\n";
 		spec += "run gProp for "+modelSize + " but " + pathBound + " elem";
@@ -1095,12 +1095,21 @@ public class CounterExampleSearch {
 			return result;
 		}
 		if (f instanceof AG){
-			//result += "infinite \n";
+			result += "infinite and ";
 			result += "(all s: first.*(this/next) | "+generateBoundedFormula(((AG) f).getExpr1())+")" ;
+			return result;
+		}
+		if (f instanceof EG){
+			result += "infinite and ";
+			result += "(all s: first.*(this/next) | "+generateBoundedFormula(((EG) f).getExpr1())+")" ;
 			return result;
 		}
 		if (f instanceof EF){
 			result += "(some s: first.*(this/next) | "+generateBoundedFormula(((EF) f).getExpr1())+")";
+			return result;
+		}
+		if (f instanceof AF){
+			result += "(some s: first.*(this/next) | "+generateBoundedFormula(((AF) f).getExpr1())+")";
 			return result;
 		}
 		
