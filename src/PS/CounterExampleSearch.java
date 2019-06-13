@@ -1,6 +1,9 @@
 package PS;
 import FormulaSpec.*;
 
+import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -9,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
+import java.lang.Runtime;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -32,6 +36,8 @@ import mc.FormulaParser;
 import mc.ProgramParser;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * This class implements the algorithm for performing search of program by counterexamples
@@ -62,6 +68,7 @@ public class CounterExampleSearch {
 	boolean alloySearch = false; // to indicate  if the search is performed using Alloy
 	boolean electrumSearch = false; // to indicate that the search is performed using Electrum
 	boolean nuXMVSearch = false; // to indicate that the search is performed using Nuxmv
+	boolean nuSMVSearch = false; // to indicate taht the search is performed using NuSMV
 	int pathBound = 0; // the bound for the counterexamples in the case that BMC is used
 	int scope;
 	
@@ -138,6 +145,7 @@ public class CounterExampleSearch {
 		this.electrumSearch =false;
 		this.nuXMVSearch = false;
 		this.alloySearch = true;
+		this.nuSMVSearch = false;
 		this.pathBound = pathBound;
 	}
 	
@@ -149,6 +157,19 @@ public class CounterExampleSearch {
 		this.electrumSearch = true;
 		this.nuXMVSearch = false;
 		this.alloySearch = false;
+		this.nuSMVSearch = false;
+		this.pathBound = pathBound;
+	}
+	
+	/**
+	 * a simple method to choose NuSMV as model checker
+	 * @param pathBound
+	 */
+	public void setNuSMVBMC(int pathBound){
+		this.electrumSearch = false;
+		this.nuXMVSearch = false;
+		this.alloySearch = false;
+		this.nuSMVSearch = true;
 		this.pathBound = pathBound;
 	}
 	
@@ -280,9 +301,10 @@ public class CounterExampleSearch {
 				checkResult = alloyBoundedModelCheck(currentIns, new LinkedList<LinkedList<String>>(), this.pathBound, this.scope);
 			if (this.electrumSearch || this.nuXMVSearch)
 				checkResult = this.electrumBoundedModelCheck(currentIns, new LinkedList<LinkedList<String>>(), this.pathBound, this.scope);
-			if (!this.alloySearch && !this.electrumSearch && !this.nuXMVSearch)
-				checkResult = modelCheck(currentIns, new LinkedList<LinkedList<String>>());
-				
+			if (this.nuSMVSearch)
+				checkResult = this.nuSMVModelCheck(currentIns, new LinkedList<LinkedList<String>>());
+			if (!this.alloySearch && !this.electrumSearch && !this.nuXMVSearch && !this.nuSMVSearch)
+				checkResult = modelCheck(currentIns, new LinkedList<LinkedList<String>>());		
 			if (checkResult){
 				return true;
 			}
@@ -339,9 +361,11 @@ public class CounterExampleSearch {
 							// we model check
 							if (this.alloySearch)
 								checkResult = alloyBoundedModelCheck(currentIns, actualCexs, this.pathBound, this.scope);
+							if (this.nuSMVSearch)
+								checkResult = nuSMVModelCheck(currentIns, actualCexs);
 							if (this.electrumSearch || this.nuXMVSearch)
 								checkResult = this.electrumBoundedModelCheck(currentIns, actualCexs, this.pathBound, this.scope);
-							if (!this.alloySearch && !this.electrumSearch && !this.nuXMVSearch)
+							if (!this.alloySearch && !this.electrumSearch && !this.nuXMVSearch && !this.nuSMVSearch)
 								checkResult = modelCheck(currentIns, actualCexs);
 								
 							if (checkResult)
@@ -743,6 +767,54 @@ public class CounterExampleSearch {
 	}
 	
 	/**
+	 *  A methods for model check the global system using NuSMV
+	 * @param ins
+	 * @param cexs
+	 * @return
+	 */
+	private boolean nuSMVModelCheck(String ins, LinkedList<LinkedList<String>> cexs){
+		boolean result = false;
+		String mcResult = "";
+		//System.out.println("Using NuSMV");
+		// we write the specification to a file
+		try{
+			FileWriter fw = new FileWriter(outputPath+"spec.smv");
+			fw.write(this.generateNuSMVSpec());
+			fw.close();
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		// we execute NuSMV
+		try{
+			String line;
+			Process nusmv = Runtime.getRuntime().exec("NuSMV "+outputPath+"spec.smv");
+			BufferedReader input =  new BufferedReader(new InputStreamReader(nusmv.getInputStream()));  
+		    while ((line = input.readLine()) != null) {  
+		    	mcResult += line+"\n";  
+			}  
+		    input.close();  
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		//System.out.println(mcResult);
+		// If a "is true" string found then the model checker didnt find a counterexample
+		result = mcResult.contains("is true");
+		//System.out.println(mcResult);
+		if (!result){ // if a counterexamples was found
+			// We create a new counterexample
+			CounterExample c = new CounterExample();
+			
+			c.addRuns(readNuSMVCex(mcResult));
+			cexs.addLast(c.getRuns(ins)); // we add the counterexample to the collection of counterexamples of the current instance
+	    	this.processCounterExample(c);
+		}
+		
+		return result;
+	}
+	
+	/**
 	 * A method to perform model checking via Alloy, the model check property is a LTL formula
 	 * and the procedure is a bounded model checking
 	 * To be improved: use a template to generate these files
@@ -1133,51 +1205,31 @@ public class CounterExampleSearch {
 			Class<?> translateAlloyToKodkod = loader.loadClass("edu.mit.csail.sdg.alloy4compiler.translator.TranslateAlloyToKodkod");
 			Method execute_command = translateAlloyToKodkod.getMethod("execute_commandFromBook", new Class[]{A4Reporter, Iterable.class, command, A4Options});
 			
+			// Electrum prints some debugging messages in the command line, we redirect the standard output
 			ByteArrayOutputStream trash = new ByteArrayOutputStream();
 			PrintStream newOut = new PrintStream(trash);
 			PrintStream oldOut = System.out;
-			System.setOut(newOut);
-		
+			System.setOut(newOut); // the output goes to the trash
+			// we invoke the execute command of electrum
 			Object sol = execute_command.invoke(null, new Object[]{rep,listSigs,cmd,opt});
-			
-			System.setOut(oldOut);
-			
+			// we restore the out stream
+			System.setOut(oldOut);	
 			System.out.println("+Electrum loaded");
-			//Module world = null;
-			//A4Reporter rep = new A4Reporter();
-			//world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"DistPath.als");
-			//A4Options opt = new A4Options();
-			//opt.originalFilename = outputPath+"DistPath.als"; // the specification metamodel
-			//opt.solver = A4Options.SatSolver.SAT4J;
-			//Command cmd = world.getAllCommands().get(0);
-
+		
 			//A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
 			Method satisfiable = a4solution.getMethod("satisfiable", new Class[]{});
 			Method getTraceLength = a4solution.getDeclaredMethod("getLastState");
 			traceLength = (Integer) getTraceLength.invoke(sol);
 			Boolean isSat = (Boolean) satisfiable.invoke(sol, new Object[]{});
 			Method writeXML = null;
-			/*Method[] ms = a4solution.getMethods();
-			for (int i=0; i<ms.length; i++){
-				System.out.println(ms[i].getName());
-				Class[] ps = ms[i].getParameterTypes();
-				for (int j=0; j< ps.length; j++)
-					System.out.println(ps[j].getName());
-				if (ms[i].getName().equals("writeXML") && (ms[i].getParameterCount()==1)){
-					writeXML = ms[i];
-					//break;
-				}			
-			}*/
 			if (isSat){
 				System.out.println("cex found");
 				writeXML = a4solution.getMethod("writeXML", new Class[]{String.class, int.class});
 				//for (int j=0; j< this.pathBound; j++)
 				for (int j=0; j< traceLength; j++)
-					writeXML.invoke(sol, new Object[]{outputPath+"electrumCEX"+j+".xml", j});
-					//System.out.println(this.readElectrumCex("electrumCEX", pathBound));
+					writeXML.invoke(sol, new Object[]{outputPath+"electrumCEX"+j+".xml", j});					
 				// we read the counterexample
 				CounterExample c = new CounterExample();
-				//c.addRuns(readElectrumCex(outputPath+"electrumCEX", pathBound));
 				c.addRuns(readElectrumCex(outputPath+"electrumCEX", traceLength));
 				cexs.addLast(c.getRuns(ins)); // we add the counterexample to the collection of counterexamples of the current instance
 		    	this.processCounterExample(c); // and we process the counterexample
@@ -1213,6 +1265,237 @@ public class CounterExampleSearch {
 		return result;
 	}
 	
+	/**
+	 * 
+	 * @return	A NuSMV Model correspoding to the Concurrent Program
+	 */
+	private String generateNuSMVSpec(){
+	
+		// WE CONSTRUCT THE PROGRAM
+		String program = "";
+		String space = "    ";
+		
+		LinkedList<String> definedProcesses = new LinkedList<String>(); // a list to save the processes that must be defined in the program
+		Iterator<String> it = mapInsModels.keySet().iterator();
+		while(it.hasNext()){
+			String currentIns = it.next();
+			if (!changed.get(currentIns) && !definedProcesses.contains(mySpec.getInstanceTypes().get(currentIns))) // if not changed and the process is not in the list
+				definedProcesses.add(mySpec.getInstanceTypes().get(currentIns));
+			if (changed.get(currentIns)) // if changed we add it
+				definedProcesses.add(currentIns);
+		}
+		
+		HashMap<String, String> globalVars = mySpec.getGlobalVarsTypes();
+		Formula prop =  mySpec.getGlobalProperty();
+		LinkedList<String> writtenProcesses = new LinkedList<String>(); // a list to keep track of the written processes until now to avoid repetitions
+		
+		// first we declare the enum types, an enum type for each process
+		//Iterator<String> it1 = processes.keySet().iterator();
+		program += "MODULE main \n\n";
+		program += "VAR\n";
+		Iterator<String> it1 = definedProcesses.iterator();
+		while (it1.hasNext()){
+			String currentProcess = it1.next();
+			LTS currentLTS = null;
+			if (this.mapProcessModels.containsKey(currentProcess)) // if it is a process defined in the program
+				currentLTS = mapProcessModels.get(currentProcess);
+			else // otherwise is an instance with its own process definition
+				currentLTS = this.mapInsModels.get(currentProcess);
+			//program += space + "state"+currentProcess +" : {";
+			//LinkedList<String> nodes = currentLTS.getEqClassesNames();
+			//for (int i=0; i<nodes.size(); i++){
+				//program += (i==0)? nodes.get(i) : ","+nodes.get(i);
+			//}
+			//program += "};\n";
+		}
+		
+		// now for those 
+		// now the global vars
+		Iterator<String> it2 = globalVars.keySet().iterator();
+		//program += "Global ";
+		while (it2.hasNext()){
+			String currentVar = it2.next();
+			//if (it2.hasNext())
+			//	program += currentVar+" : "+ globalVars.get(currentVar)+",";
+			//else
+				//program += "Global "+currentVar+" : "+ globalVars.get(currentVar)+";\n"; // this has to be added when we have monitors			
+				if (!mySpec.isPrimVar(currentVar))
+					program += space + "Av_"+currentVar+" : boolean;\n"; // for each global var we have a lock
+				if (globalVars.get(currentVar).equals("BOOL") || globalVars.get(currentVar).equals("PRIMBOOL"))
+					program += space + "Prop_"+currentVar+" : boolean;\n"; // and the corresponding current var
+				// TO DO: ADD INTEGERS
+				// we need to distinguish between locks, ints and bools
+		}
+		program += "\n";
+		
+		// we generate the instances for the processes 
+		//Iterator<String> it5 = instances.keySet().iterator();
+		Iterator<String> it5 = mapInsModels.keySet().iterator();
+		while (it5.hasNext()){
+			String currentInstance = it5.next();
+			//program +=  currentInstance+":";
+			if (changed.get(currentInstance))
+				program  += space + currentInstance +":process "+currentInstance+"Process(";
+			else
+				program  += space + currentInstance +":process "+ mySpec.getInstanceTypes().get(currentInstance)+"(";
+			LinkedList<String> parameters = mySpec.getActualPars(currentInstance);
+			// in NuSMV the global vars that are used in the process need to be passed as pars
+			// we add the used shared vars to the parameters of the methods
+			for (String gvar:mySpec.getGlobalVarsNames()){
+				if (!parameters.contains(gvar) && mySpec.getProcessSpec(currentInstance).usesSharedVar(gvar))
+					parameters.add(gvar);
+			}
+			for (int i=parameters.size()-1; i>=0;i--){
+				if (i==parameters.size()-1 && parameters.size()>1){
+						//program+=parameters.get(i) + ", Av_"+parameters.get(i); // this must be changed for monitors
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.BOOL)
+						program+= "Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.PRIMBOOL)
+						program+= "Prop_"+parameters.get(i)+", ";
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.LOCK)
+						program+= "Av_"+parameters.get(i)+", ";
+				}
+				else{
+					//program+=","+parameters.get(i)+ ", Av_"+parameters.get(i);
+					//program+=", Av_"+parameters.get(i);
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.BOOL)
+						program+= ","+"Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.PRIMBOOL)
+						program+= ","+"Prop_"+parameters.get(i);
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.LOCK)
+						program+= "Av_"+parameters.get(i);
+				}
+			}
+			program += ");\n";
+		}
+		// we set the init formula
+		program += "ASSIGN\n";
+		LinkedList<String> initialisedVars = new LinkedList<String>();
+		String lastInstance = ""; // to keep some instance
+		for (String currentInstance:mapInsModels.keySet()){
+			int k=0;
+			for (String par:mySpec.getActualPars(currentInstance)){
+				ProcessSpec currentProcess = mySpec.getProcessByName(mySpec.getInstanceTypes().get(currentInstance));
+				String fpar = currentProcess.getIthFormalPar(k).getName();
+				if (!initialisedVars.contains(par)){
+					initialisedVars.add(par);
+					if (mySpec.getGlobalVarType(par) == Type.BOOL){
+						program += space + "init(Prop_"+par+") := "+ mapInsModels.get(currentInstance).getNuXMVInitValue(fpar) + ";\n";
+						program += space +"init(Av_"+par+") := TRUE;\n"; // we assume that resources are available at the beginning					
+					}
+					if (mySpec.getGlobalVarType(par) == Type.PRIMBOOL)
+						program += space + "init(Prop_"+par+") := "+ mapInsModels.get(currentInstance).getNuXMVInitValue(fpar) + ";\n";
+					if (mySpec.getGlobalVarType(par) == Type.LOCK){
+						program += space + "init(Av_"+par+") := TRUE;\n";	
+					}
+				}
+				k++;
+			}
+			lastInstance = currentInstance;
+		}
+		// we initialise the rest of the vars
+		for (String gvar:globalVars.keySet()){
+			if (!initialisedVars.contains(gvar)){ // if not initialased
+				if (mySpec.getGlobalVarType(gvar) == Type.BOOL){
+					program += "init(Prop_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue(gvar) + ";\n";
+					program += "init(Av_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue("Av_"+gvar) + ";\n";					
+				}
+				if (mySpec.getGlobalVarType(gvar) == Type.PRIMBOOL)
+					program += "init(Prop-"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue(gvar) + ";\n";
+				if (mySpec.getGlobalVarType(gvar) == Type.LOCK)
+					program += "init(Av_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue("Av_"+gvar) + ";\n";
+			}
+		}
+		
+		// the global property is written down
+		program += "LTLSPEC\n";
+		program += space + generateNuSMVFormula(mySpec.getGlobalProperty())+"\n";
+		// the processes are written down
+		//Iterator<String> it3 = processes.keySet().iterator();
+		Iterator<String> it3 = definedProcesses.iterator();
+		
+		while (it3.hasNext()){
+			HashMap<String, String> pars = new HashMap<String, String>();
+			LinkedList<String> parList = new LinkedList<String>();
+			String currentProcess = it3.next();
+			
+			if (mapProcessModels.containsKey(currentProcess)){
+							
+				LinkedList<String> processBoolPars = mySpec.getProcessByName(currentProcess).getBoolParNames();
+				for (int i=0; i<processBoolPars.size();i++){
+					pars.put(processBoolPars.get(i), "BOOL");
+				}
+				LinkedList<String> processPrimBoolPars = mySpec.getProcessByName(currentProcess).getBoolPrimParNames();
+				for (int i=0; i<processPrimBoolPars.size();i++){
+					pars.put(processPrimBoolPars.get(i), "PRIMBOOL");
+				}
+				
+				LinkedList<String> processLockPars = mySpec.getProcessByName(currentProcess).getLockParNames();
+				for (int i=0; i<processLockPars.size();i++){
+					pars.put(processLockPars.get(i), "LOCK");
+				}
+				// we add all the parameters in the list of the parameters
+				parList.addAll(mySpec.getProcessByName(currentProcess).getParNames());
+				// we also add the global vars that are not in the params and are used by the process
+				for (String gvar:mySpec.getGlobalVarsNames()){
+					if (mySpec.getProcessByName(currentProcess).usesSharedVar(gvar) && !pars.containsKey(gvar)){
+						// we add the globalvar as a parameter
+						parList.add(gvar);
+						if (mySpec.getGlobalVarType(gvar) == Type.BOOL){
+							pars.put(gvar, "BOOL");
+						}
+						if (mySpec.getGlobalVarType(gvar) == Type.PRIMBOOL){
+							pars.put(gvar, "PRIMBOOL");
+						}
+						if (mySpec.getGlobalVarType(gvar) == Type.LOCK){
+							pars.put(gvar, "LOCK");
+						}
+					}
+				}
+					
+				program += mapProcessModels.get(currentProcess).toNuSMVProcess(pars, parList, currentProcess, currentProcess); // no parameters by now
+				
+			}
+			else{
+				parList.addAll(mySpec.getProcessByName(mySpec.getInstanceTypes().get(currentProcess)).getParNames());
+				LinkedList<String> processPars = mySpec.getProcessByName(mySpec.getInstanceTypes().get(currentProcess)).getBoolParNames();
+				for (int i=0; i<processPars.size();i++){
+					pars.put(processPars.get(i), "BOOL");
+				}
+				LinkedList<String> processPrimBoolPars = mySpec.getProcessByName(mySpec.getInstanceTypes().get(currentProcess)).getBoolPrimParNames();
+				for (int i=0; i<processPrimBoolPars.size();i++){
+					pars.put(processPrimBoolPars.get(i), "PRIMBOOL");
+				}
+				
+				LinkedList<String> processLockPars = mySpec.getProcessByName(mySpec.getInstanceTypes().get(currentProcess)).getLockParNames();
+				for (int i=0; i<processLockPars.size();i++){
+					pars.put(processLockPars.get(i), "LOCK");
+				}
+				
+				for (String gvar:mySpec.getGlobalVarsNames()){
+					if (mySpec.getProcessByName(mySpec.getInstanceTypes().get(currentProcess)).usesSharedVar(gvar) && !pars.containsKey(gvar)){
+						// we add the globalvar as a parameter
+						parList.add(gvar);
+						if (mySpec.getGlobalVarType(gvar) == Type.BOOL){
+							pars.put(gvar, "BOOL");
+						}
+						if (mySpec.getGlobalVarType(gvar) == Type.PRIMBOOL){
+							pars.put(gvar, "PRIMBOOL");
+						}
+						if (mySpec.getGlobalVarType(gvar) == Type.LOCK){
+							pars.put(gvar, "LOCK");
+						}
+					}
+				}
+				
+				
+				program += mapInsModels.get(currentProcess).toNuSMVProcess(pars, parList, currentProcess+"Process", currentProcess);
+			}
+		}
+		
+		
+		return program;
+	}
 	
 	/**
 	 * 
@@ -1468,6 +1751,72 @@ public class CounterExampleSearch {
 	}
 	
 	/**
+	 * 
+	 * @param f
+	 * @param state
+	 * @return	A String respresentation of the global formula in NuSMV spec language
+	 */
+	private String generateNuSMVFormula(Formula f){
+		String result = "";
+		// if numQUan =0  then we leave state otherwise we increment by one
+		//String quantifiedVar = "s"+numQuan;
+		if (f instanceof BoolVar){
+			BoolVar theVar = (BoolVar) f;
+			if (theVar.getOwner().equals("global"))
+				//result += ((BoolVar) f).toAlloy(mapInsModels.get(this.instancesList.get(0)).getName()+"Process", "elem."+this.instancesList.get(0));
+				result += "Prop_"+((BoolVar) f).getUnqualifiedName();
+			else
+				//result +=  ((BoolVar) f).toAlloy(mapInsModels.get(theVar.getOwner()).getName()+"Process", "s."+theVar.getOwner());
+				result +=  theVar.getOwner()+".Prop_"+theVar.getUnqualifiedName();
+			return result;
+		}
+		if (f instanceof Own){
+			Own theVar = (Own) f;
+			result += theVar.toString();
+			//result +=  ((Own) f).toAlloy(mapInsModels.get(theVar.getOwner()).getName()+"Process", "elem."+theVar.getOwner());
+			return result;
+		}
+		if (f instanceof Conjunction){
+			Conjunction theCon = (Conjunction) f;
+			result +=  "("+generateNuSMVFormula(theCon.getExpr1())+ ") & ("+generateNuSMVFormula(theCon.getExpr2())+")";
+			return result;
+		}
+		if (f instanceof Disjunction){
+			Disjunction theDis = (Disjunction) f;
+			result +=  "(" + generateNuSMVFormula(theDis.getExpr1())+ " | "+generateNuSMVFormula(theDis.getExpr2()) + ")";
+			return result;
+		}
+		if (f instanceof Negation){
+			Negation theNeg = (Negation) f;
+			result +=  "!("+generateNuSMVFormula(theNeg.getExpr1()) + ")";
+			return result;
+		}
+		if (f instanceof AG){
+			//result += "infinite and ";
+			result += "( G ("+generateNuSMVFormula(((AG) f).getExpr1())+"))";
+			//result += "(all s: first.*(this/next) | "+generateBoundedFormula(((AG) f).getExpr1())+")" ;
+			return result;
+		}
+		if (f instanceof EG){
+			result += "( G ("+generateNuSMVFormula(((EG) f).getExpr1())+"))";
+			//result += "(all s: first.*(this/next) | "+generateBoundedFormula(((EG) f).getExpr1())+")" ;
+			return result;
+		}
+		if (f instanceof EF){
+			result += "(F("+generateNuSMVFormula(((EF) f).getExpr1())+"))";
+			//result += "(some s: first.*(this/next) | "+generateBoundedFormula(((EF) f).getExpr1())+")";
+			return result;
+		}
+		if (f instanceof AF){
+			result += "(F ("+generateNuSMVFormula(((AF) f).getExpr1())+"))";
+			//result += "(some s: first.*(this/next) | "+generateBoundedFormula(((AF) f).getExpr1())+")";
+			return result;
+		}
+	
+		throw new RuntimeException("nuSMV Bounded Model Checking not defined for the given formula");
+	}
+	
+	/**
 	 * NOTE: This method only work for formula of the type AGp 
 	 * @param f			the formula for which we will generated the bounded propositional formula
 	 * @param state 	the state in which the formula will be evaluated (string representation)
@@ -1680,10 +2029,12 @@ public class CounterExampleSearch {
 		return result;
 	}
 	
+	
+	
 	/**
 	 * A Method to read a counterexample form an Electrum XML
 	 * @param fileName	the filenames where the instances are described, without hte .xml extension
-	 * @param pathBound	the pathbound,an int
+	 * @param pathBound	the pathbound, an int
 	 * @return	the counterexample
 	 */
 	private  LinkedList<HashMap<String,String>> readElectrumCex(String fileName, int pathBound){
@@ -1738,6 +2089,66 @@ public class CounterExampleSearch {
 					e.printStackTrace();
 				}		
 		}
+		return result;
+	}
+	/**
+	 * A Method to read a counterexample form a NuSMV given Counterexample
+	 * @param fileName	the filenames with the cex, it must have the complete path
+	 * @return	the counterexample
+	 */
+	private  LinkedList<HashMap<String,String>> readNuSMVCex(String content){
+		LinkedList<HashMap<String,String>> result = new LinkedList<HashMap<String, String>>();
+		try{
+			//String content = new String(Files.readAllBytes(Paths.get(fileName)), "UTF-8");
+			StringTokenizer tokens = new StringTokenizer(content, "\n");
+			// first we filter the important information
+			LinkedList<String> plainText = new LinkedList<String>();
+			int k=0;
+			while (tokens.hasMoreTokens()){
+				k++;
+				String current = tokens.nextToken();
+				if (current.contains("-> State") && k>0){
+					plainText.add("$");
+					continue;
+				}
+				if (current.contains("state")){
+					for (String ins:instancesList){
+						if (current.contains(ins+".state"))
+							plainText.add(current.trim());
+					}
+				}
+			}
+			plainText.removeFirst();// a $ is removed
+			// we set the first state
+			int i=0;	
+			for (String current:plainText){
+				if (current.equals("$"))
+					i++;
+				else{
+					for (String ins:instancesList){
+						if (current.contains(ins+".state")){
+							if (result.size() == i ){
+								HashMap<String,String> h = new HashMap<String,String>();		
+								result.add(i,h);
+							}
+							result.get(i).put(ins, current.replace(ins+".state =", "").trim());
+						}
+					} 
+				}
+			}
+			for (int j=1; j<result.size();j++){
+				for (String ins:instancesList){
+					if (!result.get(j).keySet().contains(ins))
+						result.get(j).put(ins, result.get(j-1).get(ins));
+				}
+			}
+			//System.out.println(plainText);
+			//System.out.println(result);
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		
 		return result;
 	}
 	

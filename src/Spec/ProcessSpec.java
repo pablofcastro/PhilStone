@@ -234,6 +234,14 @@ public class ProcessSpec {
 		return result;	
 	}
 	
+	public LinkedList<String> getParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (Var v:pars){
+			result.add(v.getName());
+		}
+		return result;
+	}
+	
 	public LinkedList<String> getOwnedBoolParNames(){
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<this.pars.size();i++){

@@ -50,6 +50,7 @@ public class PhilStone {
 	private static boolean BMC = false;
 	private static boolean Electrum = false;
 	private static boolean NuXMV = false;
+	private static boolean NuSMV = false;
 	private static int scope = 0;
 	
 	public static void main(String[] args) {
@@ -107,6 +108,18 @@ public class PhilStone {
 					NuXMV = true;
 					BMC = false;
 					Electrum = false;
+					NuSMV = false;
+					continue;
+				}
+				if (args[i].equals("-NuSMV")){
+					lexSearch = false;
+					cexSearch = false;	
+					genSearch = false;
+					herSearch = false;
+					NuXMV = false;
+					NuSMV = true;
+					BMC = false;
+					Electrum = false;
 					continue;
 				}
 				if(args[i].startsWith("-BMC=")){
@@ -117,6 +130,7 @@ public class PhilStone {
 					BMC = true;
 					NuXMV = false;
 					Electrum = false;
+					NuSMV = false;
 					try{
 						pathBound = Integer.parseInt(args[i].replace("-BMC=",""));
 						continue;
@@ -133,6 +147,7 @@ public class PhilStone {
 					herSearch = false;
 					BMC = false;
 					NuXMV = false;
+					NuSMV = false;
 					Electrum = true;
 					try{
 						pathBound = Integer.parseInt(args[i].replace("-Electrum=",""));
@@ -224,6 +239,11 @@ public class PhilStone {
 			if (NuXMV){
 				CounterExampleSearch cs = new CounterExampleSearch(mySpec, outputPath, templateDir, showInfo, writePdf, scope, false, pathBound);
 				cs.setNuXMVSearch(pathBound); // FIX ME:nuxmv does not need a pathbound! 
+				cs.startSearch();
+			}
+			if (NuSMV){
+				CounterExampleSearch cs = new CounterExampleSearch(mySpec, outputPath, templateDir, showInfo, writePdf, scope, false, pathBound);
+				cs.setNuSMVBMC(pathBound);
 				cs.startSearch();
 			}
 			if (lexSearch){

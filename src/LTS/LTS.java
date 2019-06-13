@@ -606,6 +606,19 @@ public class LTS {
 	}
 	
 	/**
+	 * 
+	 * @return	the initial value in NuSMV notation expressed as a string 
+	 */
+	public String getNuXMVInitValue(String var){
+		this.computeEqClasses();
+		if (this.eqClasses.find(this.nodes.get(this.initialNode)).getGlobalBooleanVarValue(var))
+			return "TRUE";
+		else
+			return "FALSE";
+	}
+	
+	
+	/**
 	 * Creates a LTS from an Alloy instance of the laxest Specification in a XML file
 	 * @param file
 	 */
@@ -740,12 +753,14 @@ public class LTS {
 		
 		
 		
-		// the normative contiion is true
+		// the normative contidion is true
 		result += "Normative : true;\n"; // no normative condition
 		
 		
 		
 		Iterator<Node> it2 = nodes.values().iterator();
+		
+		
 		
 		while (it2.hasNext()){
 			Node currentNode = it2.next();
@@ -756,6 +771,116 @@ public class LTS {
 		//	result += nodes.get(i).getBranches(this.eqClasses); // it returns the branches corresponding to this node
 		//}
 		result += "}";
+		return result;
+	}
+	
+	/**
+	 * 
+	 * @param parameters	the types for each parameter of this  process
+	 * @param parList		a list of the parameters, we need this since the order of the parameters is important
+	 * @param processName	the name that the process will have, it has to be passed from the class PhilStone
+	 * @param stateProcess	the name of the state space of the process  (an enum type)
+	 * @return	A description of the LTS for Model Checking, using the NuSMV language
+	 */
+	public String toNuSMVProcess(HashMap<String,String> parameters, LinkedList<String> parList, String processName, String stateProcess){
+		String result = "";
+		String space = "    ";
+		result += "MODULE "+processName+"(";
+		//Set<String> pars = parameters.keySet();
+		//Iterator<String> it = pars.iterator();
+		//while (it.hasNext()){
+		for (int i=0; i< parList.size(); i++){
+			String current = parList.get(i);
+			if (i< parList.size()-1){
+				if (parameters.get(current).equals("BOOL") || parameters.get(current).equals("INT"))
+					result += "Prop_"+current +", "+"Av_"+current+","; // ADD THIS WHNE NOT LOCK
+				if (parameters.get(current).equals("PRIMBOOL"))
+					result += "Prop_"+current+",";
+				if (parameters.get(current).equals("LOCK"))
+					result += "Av_"+current+","; // for now we only take into account the Av
+			}
+			else{ 
+				if (parameters.get(current).equals("BOOL") || parameters.get(current).equals("INT"))
+					result += "Prop_"+current +", "+"Av_"+current; // ADD THIS WHNE NOT LOCK
+				if (parameters.get(current).equals("PRIMBOOL"))
+					result += "Prop_"+current;
+				if (parameters.get(current).equals("LOCK"))
+					result += "Av_"+current; // for now we only take into account the Av
+				//result += current +":"+parameters.get(current) +", "+"Av_"+current+":BOOL";
+				//result += "Av_"+current+":BOOL";
+			}
+		}
+		result+=")\n";
+		
+		LinkedList<String> globalVars = new LinkedList<String>();
+		for (int i=0;i<this.processSpec.getSharedVarsNames().size();i++)
+			globalVars.add("Prop_"+this.processSpec.getSharedVarsNames().get(i)); // we add Prop_ to the shared vars
+		boolean ftime = true;
+		boolean someVar = false;
+		result += "VAR\n";
+		for (int i=0; i < this.props.size(); i++){
+			if (!props.get(i).contains("Av") && !globalVars.contains(props.get(i)) && !parameters.containsKey(props.get(i).replace("Prop_", ""))){ // we check that it is not a global var
+				result += space + props.get(i)+":boolean;\n";
+			}
+		}
+		//if (someVar)
+		//	result += " : BOOL;\n"; // until now we deal only with booleans 
+		this.computeEqClasses();
+		
+		result += space + "state : {";
+		//program += space + "state"+currentProcess +" : {";
+		LinkedList<String> states = this.getEqClassesNames();
+		for (int i=0; i<states.size(); i++){
+			result += (i==0)? states.get(i) : ","+states.get(i);
+		}
+		result +="};\n";
+		
+		// we compute the equivalence classes
+		//if (this.eqClasses == null)
+		
+		
+		// we set the initial conditions for the local vars
+		//result += "Initial : state == " + initialNode;
+		//result += "Initial : state == " + init.getName();
+		//LinkedList<String> ps = init.getProperties(); // test this
+		result += "ASSIGN\n";
+		LinkedList<String> ps = this.nodes.get(initialNode).getProperties();
+		for (int i=0; i< this.props.size(); i++){
+			if (!this.globalProps.contains(this.props.get(i)) && !parList.contains(this.props.get(i))){
+				if (ps.contains(this.props.get(i)))
+					result += space + "init("+this.props.get(i)+") := TRUE;\n";
+				else
+					result += space + "init("+this.props.get(i)+") := FALSE;\n";
+			}
+		}
+		// we set the initial value to pars
+		//for (String currentPar:pars){
+		//	if (parameters.get(currentPar).equals("BOOL") || parameters.get(currentPar).equals("LOCK"))
+		//		result += space + "init(Av_"+currentPar+") := TRUE;\n";
+		//	if (parameters.get(currentPar).equals("PRIMBOOL") || parameters.get(currentPar).equals("BOOL")){
+		//			if (ps.contains(currentPar))
+		//				result += space + "init(Prop_"+currentPar+") := TRUE;\n";
+		//			else 
+		//				result += space + "init(Prop_"+currentPar+") := FALSE;\n";
+		//	}
+		//}
+		result += space + "init(state) := "+ eqClasses.find(this.nodes.get(initialNode)).getName()+";\n";
+		
+		// CODE FOR GENERATING ALL THE TRANSITIONS
+		for(int j=0;j<props.size();j++){
+			result += space + "next("+props.get(j)+"):=case\n";
+			for(String nodeName : this.nodes.keySet()){
+				result+=nodes.get(nodeName).getNuSMVCommandForVar(this.eqClasses, props.get(j), "Bool");
+			}
+			result += space + space + "TRUE : {"+props.get(j)+"};\n";
+			result += space + "esac;\n";
+		}
+		result += "next(state):= case\n"; 
+		for(String nodeName : this.nodes.keySet()){
+			result+=nodes.get(nodeName).getNuSMVCommandForVar(this.eqClasses, "state", "State");
+		}
+		result += space + space + "TRUE :  { state };\n";
+		result += space + "esac;\n";
 		return result;
 	}
 	

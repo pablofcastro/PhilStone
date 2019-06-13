@@ -42,6 +42,14 @@ public class Node {
 		return name;
 	}
 	
+	/**
+	 * 
+	 * @param name	the boolean var's name
+	 * @return	true when the var holds in the node false otherwise
+	 */
+	public boolean getGlobalBooleanVarValue(String name){
+		return this.properties.contains(name);
+	}
 	
 	/**
 	 * Setter for name
@@ -156,6 +164,51 @@ public class Node {
 		for (int i=0; i<this.properties.size(); i++){
 			result = result+" \n "+properties.get(i);
 		}
+		return result;
+	}
+	
+	/**
+	 * 
+	 * @param uf	the union find structures representing the equivalence class of the states
+	 * @param var	the variable
+	 * @param type	the type for the var
+	 * @return		a
+	 */
+	public String getNuSMVCommandForVar(UnionFind uf, String var, String type){
+		String result = "";
+		String space = "    ";
+		
+		for (int i=0; i<this.adj.size();i++){
+			if (uf.find(this) != uf.find(this.adj.get(i).getTarget())){
+				result += space + space + "state = "+ uf.find(this).getName();
+				if (!type.equals("State")){
+					result += " & ";
+					result += "next(state) = "+uf.find(this.adj.get(i).getTarget()).getName();				
+				}
+				LinkedList<String> allGlobalProps = this.myLTS.getGlobalProps();
+				// for the guards only the global properties are important, the others are ensured by the actual state
+				for (int j=0; j<allGlobalProps.size(); j++){
+					if (this.globalProperties.contains(allGlobalProps.get(j)))
+						result += " & " + allGlobalProps.get(j);
+					else
+						result += " & !" + allGlobalProps.get(j);
+				}
+			
+				result += " : {";
+				Node target = this.adj.get(i).getTarget();
+				if (type.equals("State")){
+					result += uf.find(target).getName();
+				}
+				if (type.equals("Bool")){
+					result += target.getGlobalBooleanVarValue(var)?"TRUE":"FALSE";
+				}
+				if (type.equals("Int")){
+					// TBD
+				}
+				result += " };\n";
+			}
+		}
+		
 		return result;
 	}
 	
