@@ -20,6 +20,8 @@ public class SpecAux{
 												  // these names are also in sharedVars as Ints but we need
 												  // to discriminate them
 	private LinkedList<String> sharedPrimBoolVars; // similarly to above but for booleans
+	private LinkedList<String> sharedPrimEnumVars; // and similarly for Enums
+	private HashMap<String, LinkedList<String>> sharedEnumValues; // it contains the possible values for each enum var
 	private LinkedList<ExprAux> invs; // the list of the invariants
 	private LinkedList<ExprAux> ltlProps; // the list of ltl properties of the spec
 	private String errors; // a string used for keeping track of type errors
@@ -39,6 +41,8 @@ public class SpecAux{
 		this.instancesOK = true;
 		this.sharedPrimBoolVars = new LinkedList<String>();
 		this.sharedPrimIntVars = new LinkedList<String>();
+		this.sharedPrimEnumVars = new LinkedList<String>();
+		this.sharedEnumValues = new HashMap<String, LinkedList<String>>();
 		//this.duplicatedInstances = false;
 	}
 	
@@ -113,7 +117,11 @@ public class SpecAux{
 			this.sharedVars.put(name, Type.INT);
 			this.sharedPrimIntVars.add(name);
 		}
-		if (type == Type.INT || type == Type.BOOL || type== Type.LOCK){ // otherwise it is a standard bool or a standard int 
+		if (type == Type.ENUMPRIM){ // similarly as above for int
+			this.sharedVars.put(name, Type.ENUM);
+			this.sharedPrimEnumVars.add(name);
+		}
+		if (type == Type.INT || type == Type.BOOL || type == Type.ENUM || type== Type.LOCK){ // otherwise it is a standard bool or a standard int 
 			this.sharedVars.put(name, type);
 		}
 	}
@@ -132,12 +140,40 @@ public class SpecAux{
 				this.sharedVars.put(current, Type.INT);
 				this.sharedPrimIntVars.add(current);
 			}
-			if (currentType == Type.INT || currentType == Type.BOOL || currentType == Type.LOCK){
+			if (currentType == Type.ENUMPRIM){	// and similarly for PRIMINT
+				this.sharedVars.put(current, Type.ENUM);
+				this.sharedPrimEnumVars.add(current);
+			}
+			if (currentType == Type.INT || currentType == Type.BOOL || currentType == Type.ENUM || currentType == Type.LOCK){
 				sharedVars.put(current, currentType);
 			}
 		}
 	}
 	
+	/**
+	 * It adds the possible values of an enum var
+	 * @param varName
+	 * @param values
+	 */
+	public void addValuesToEnum(String varName, LinkedList<String> values, Type type){	
+		if (this.sharedVars.containsKey(varName))
+			throw new RuntimeException("Enum Var was already declared: "+varName);
+		else{
+			this.addSharedVar(varName, type);
+			this.sharedEnumValues.put(varName, values);
+		}
+	}
+	
+	/**	
+	 * Adds the possible values for each shared enum var
+	 * @param vals
+	 */
+	public void addAllValuesToEnum(HashMap<String, Pair<LinkedList<String>, Type>> vals){
+		for (String v:vals.keySet()){
+			this.addValuesToEnum(v, vals.get(v).getFirst(), vals.get(v).getSecond());
+		}
+	}
+
 	public void addInvariant(ExprAux e){
 		invs.add(e);
 	}
@@ -147,7 +183,28 @@ public class SpecAux{
 	}
 	
 	public boolean isPrimTypeVar(String name){
-		return this.sharedPrimBoolVars.contains(name) || this.sharedPrimIntVars.contains(name);
+		return this.sharedPrimBoolVars.contains(name) || this.sharedPrimIntVars.contains(name) || this.sharedPrimEnumVars.contains(name);
+	}
+	
+	
+	/**
+	 * 
+	 * @param name	the name to check
+	 * @return	true iff the name is a constant enum
+	 */
+	public boolean isEnumCons(String name){
+		// if is a possible value of a shared variable then true
+		for (String var:this.sharedEnumValues.keySet()){
+			if (this.sharedEnumValues.get(var).contains(name))
+				return true;
+		}
+		// if it is a value in any process then true
+		for (ProcessAux process:this.processes){
+			if (process.isEnumCons(name))
+				return true;
+		}
+		//otherwise false
+		return false;
 	}
 	
 	public String getErrors(){
@@ -193,7 +250,7 @@ public class SpecAux{
 			}
 		}
 		for (int i=0; i< this.invs.size(); i++){
-			if (invs.get(i).getType(table, this, "global") == Type.INT){
+			if (invs.get(i).getType(table, this, "global") == Type.INT || invs.get(i).getType(table, this, "global") == Type.ENUM){
 				checkOk = false;
 				this.errors = this.errors + "\n" + "Error in global property, line: "+  this.invs.get(i).getLine();
 			}
@@ -281,11 +338,19 @@ public class SpecAux{
 				Lock l = new Lock(current, result, true);
 				result.addLock(l);
 			}
+			
+			// we add the locks
+			if (this.sharedVars.get(current) == Type.ENUM){
+				EnumVar v = new EnumVar(current);
+				if (this.isPrimTypeVar(current))
+					v.setIsPrim(true);
+				result.addGlobalVar(v);
+			}
 		}
 		
 		// get the invariants
 		for (int i=0; i<this.invs.size(); i++){
-			result.addInv((TemporalFormula) invs.get(i).getExpr(table));
+			result.addInv((TemporalFormula) invs.get(i).getExpr(table, this));
 		}
 		
 		// the instances

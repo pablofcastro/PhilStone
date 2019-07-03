@@ -23,6 +23,7 @@ public class ProcessSpec {
 								  // these are global vars.
 	LinkedList<TemporalFormula> invs; // the invariants of the process
 	LinkedList<String> instances; // the instances of the specification
+	private LinkedList<EnumType> enums; // the enums defined in the specification
 	Spec mySpec;
 	Formula init;
 	int intSize; // the size of the ints
@@ -39,6 +40,7 @@ public class ProcessSpec {
 		this.actions = new LinkedList<Action>();
 		this.invs = new LinkedList<TemporalFormula>();
 		this.ownedVars = new LinkedList<String>();
+		this.enums = new LinkedList<EnumType>();
 	}
 	
 	/**
@@ -54,6 +56,7 @@ public class ProcessSpec {
 		this.invs = new LinkedList<TemporalFormula>();
 		this.intSize = intSize;
 		this.ownedVars = new LinkedList<String>();
+		this.enums = new LinkedList<EnumType>();
 	}
 
 	/**
@@ -134,6 +137,27 @@ public class ProcessSpec {
 		this.mySpec = mySpec;
 	}
 	
+	/**
+	 * Set the enum type of an enum variable
+	 * @param v		the variable to which we set the enum
+	 * @param values	 the set of values of the enum type 
+	 */
+	public void setTypeEnum(EnumVar v, LinkedList<String> values){
+		if (this.localVars.contains(v)){ // if the var is already in the collection of shared vars
+			for (EnumType e:this.enums){
+				if (e.checkEqValues(values)){
+					e.addVar(v);
+					v.setEnumType(e);
+				}
+				else{
+					EnumType etype = new EnumType();
+					etype.addValues(values);
+					etype.addVar(v);
+					this.enums.add(etype);
+				}
+			}
+		}
+	}
 	
 	
 	public LinkedList<String> getSharedVarsNames(){

@@ -1,6 +1,6 @@
 // This file describes the alloy metamodel for processes
 // Author: Pablo Castro
-Metamodel(name, boolProps, sharedBoolProps, sharedPrimBoolProps, sharedPrimIntVars, intVars, intSet, sharedIntVars, containsInts, locks, onlyLocks, localActions, envActions, actions, auxVars, auxAxioms, auxPreds, invariants, init, scope, allSharedVars)  ::=
+Metamodel(name, boolProps, sharedBoolProps, sharedPrimBoolProps, sharedPrimIntVars, intVars, intSet, sharedIntVars, containsEnums, containsInts, sharedEnumVars, sharedPrimEnumVars, EnumVars, enumTypes, locks, onlyLocks, localActions, envActions, actions, auxVars, auxAxioms, auxPreds, invariants, init, scope, allSharedVars)  ::=
 <<
 open util/relation
 
@@ -11,13 +11,18 @@ pred false {some none}
 
 abstract sig Node{}
 abstract sig Prop{}
+abstract sig Enum{}
 abstract sig NumVar{}
+abstract sig EnumVar{}
 
 -- for bool propositions
 <boolProps:{p | one sig Prop_<p> extends Prop{\}}; separator="\n">
 
 -- for int vars
 <intVars:{p | one sig NumVar_<p> extends NumVar{\}}; separator="\n">
+
+-- for enum vars
+<enumVars:{p | one sig EnumVar_<p> extends EnumVar{\}}; separator="\n">
 
 -- definition of the propositions in the model
 <sharedBoolProps:{p | one sig Prop_<p> extends Prop{\}}; separator="\n">
@@ -31,17 +36,38 @@ abstract sig NumVar{}
 -- definition of the int in the model correpsonding to volatile ints
 <sharedPrimIntVars:{p | one sig NumVar_<p> extends NumVar{\}}; separator="\n">
 
+-- definition of the int in the model
+<sharedEnumVars:{p | one sig EnumVar_<p> extends EnumVar{\}}; separator="\n">
+
+-- definition of the int in the model correpsonding to volatile ints
+<sharedPrimEnumVars:{p | one sig EnumVar_<p> extends EnumVar{\}}; separator="\n">
+
+-- definition of the enums, one enum for each possible value
+<enumTypes:{t  | one sig <t.name> extends Enum{\}}; separator="\n">
+
+-- definition of the inc fun for every enum type
+<enumTypes:{t  | fun <t.name>Inc:Enum->Enum { <t.AlloyCode>\} }; separator="\n">
+
+-- definition of the dec fun for every enum type
+<enumTypes:{t  | fun <t.name>Dec:Enum->Enum { <t.AlloyCode>\} }; separator="\n">
+
 <boolProps:{p | pred Prop_<p>[m:<name>Meta,n:Node]{Prop_<p> in m.val[n] \}}; separator="\n">
 
 <intVars:{p | fun Val_<p>[m:<name>Meta,n:Node]{m.ints[n][NumVar_<p>] \}}; separator="\n">
+
+<enumVars:{p | fun Val_<p>[m:<name>Meta,n:Node]{m.enums[n][EnumVar_<p>] \}}; separator="\n">
 
 <sharedBoolProps:{p | pred Prop_<p>[m:<name>Meta,n:Node]{Prop_<p> in m.val[n] \}}; separator="\n">
 
 <sharedIntVars:{p | fun Val_<p>[m:<name>Meta,n:Node]{m.ints[n][NumVar_<p>] \}}; separator="\n">
 
+<sharedEnumVars:{p | fun Val_<p>[m:<name>Meta,n:Node]{m.enum[n][EnumVar_<p>] \}}; separator="\n">
+
 <sharedPrimBoolProps:{p | pred Prop_<p>[m:<name>Meta,n:Node]{Prop_<p> in m.val[n] \}}; separator="\n">
 
 <sharedPrimIntVars:{p | fun Val_<p>[m:<name>Meta,n:Node]{m.ints[n][NumVar_<p>] \}}; separator="\n">
+
+<sharedPrimEnumVars:{p | fun Val_<p>[m:<name>Meta,n:Node]{m.enums[n][EnumVar_<p>] \}}; separator="\n">
 
 -- additional vars for shared non-rpimitive vars representing the locks associated to each of them
 <sharedBoolProps:{ s | one sig Av_<s> extends Prop{\}}; separator="\n">
@@ -61,6 +87,15 @@ abstract sig NumVar{}
 
 <sharedIntVars:{ s | pred Own_<s>[m:<name>Meta, n:Node]{Own_<s> in m.val[n]\}}; separator="\n">
 
+-- and for the shared non-primitive enums
+<sharedEnumVars:{ s | one sig Av_<s> extends Prop{\}}; separator="\n">
+
+<sharedEnumVars:{ s | one sig Own_<s> extends Prop{\}}; separator="\n">
+
+<sharedEnumVars:{ s | pred Av_<s>[m:<name>Meta, n:Node]{Av_<s> in m.val[n]\}}; separator="\n">
+
+<sharedEnumVars:{ s | pred Own_<s>[m:<name>Meta, n:Node]{Own_<s> in m.val[n]\}}; separator="\n">
+
 -- and variables for those locks that are not linked to any variables
 <onlyLocks:{ s | one sig Av_<s> extends Prop{\}}; separator="\n">
 
@@ -76,6 +111,7 @@ one sig <name>Meta{
 	nodes:set Node,
 	val: nodes -> Prop,
     <if(containsInts)>ints: (nodes -> NumVar) -> one Int,<endif>
+    <if(containsEnums)>enums : (nodes-> EnumVar) -> one Enum <endif>
 	succs : nodes -> nodes,
 	local: nodes -> nodes,
 	env: nodes -> nodes,
@@ -83,8 +119,10 @@ one sig <name>Meta{
 	<sharedBoolProps : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
     <onlyLocks : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
     <sharedIntVars : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
+    <sharedEnumVars : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
     <sharedPrimBoolProps : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
     <sharedPrimIntVars : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
+    <sharedPrimEnumVars : {a | ACTchange_<a>:nodes -> nodes,}; separator="\n">
     
 }
 {
@@ -93,8 +131,10 @@ one sig <name>Meta{
         <if(sharedBoolProps)> + <sharedBoolProps : {s | ACTchange_<s>}; separator="+"> <endif>
         <if(onlyLocks)> + <onlyLocks : {s | ACTchange_<s>}; separator="+"> <endif>
         <if(sharedIntVars)> + <sharedIntVars : {s | ACTchange_<s>}; separator="+"> <endif>
+        <if(sharedEnumVars)> + <sharedEnumVars : {s | ACTchange_<s>}; separator="+"> <endif>
         <if(sharedPrimBoolProps)> + <sharedPrimBoolProps : {s | ACTchange_<s>}; separator="+"> <endif>
         <if(sharedPrimIntVars)> + <sharedPrimIntVars : {s | ACTchange_<s>}; separator="+"> <endif>
+        <if(sharedPrimEnumVars)> + <sharedPrimEnumVars : {s | ACTchange_<s>}; separator="+"> <endif>
     <endif>
 	<if(localActions)>
         local = <localActions : {a | ACT<a.name>}; separator="+">
@@ -143,7 +183,7 @@ one sig <name>Meta{
     <onlyLocks : {sh | fact ResAx3 { all s:<name>Meta.nodes | all s':<name>Meta.ACTchange_<sh>[s] | Av_<sh>[<name>Meta,s] iff (not Av_<sh>[<name>Meta, s']) \}} >  
 <endif>
 
--- these axioms state that local actions cannot change shared variables which locks ore not owned by the process
+-- these axioms state that local actions cannot change shared variables which locks are not owned by the process
 <if(sharedBoolProps)>
     <sharedBoolProps : {sh | fact ResAx4 {  all s:<name>Meta.nodes | (not Own_<sh>[<name>Meta,s]) implies (all s':<name>Meta.local[s] | (Prop_<sh>[<name>Meta,s] iff Prop_<sh>[<name>Meta,s']) ) \} }>
 <endif>
@@ -230,7 +270,30 @@ one sig <name>Meta{
 <endif>
 
 
--- frame axioms for local boolean variables
+-- Resourse axioms for enums
+<if(sharedEnumVars)>
+    <sharedEnumVars :  {sh | fact ResEnumAx1 { all s:<name>Meta.nodes | Own_<sh>[<name>Meta, s] implies (not Av_<sh>[<name>Meta, s]) \} } >
+<endif>
+<if(sharedEnumVars)>
+    <sharedEnumVars : {sh | fact ResEnumAx2 { all s:<name>Meta.nodes | (not Own_<sh>[<name>Meta,s]) implies (some <name>Meta.ACTchange_<sh>[s]) \}}>
+<endif>
+<if(sharedEnumVars)>
+    <sharedEnumVars : {sh | fact ResEnumAx3 { all s:<name>Meta.nodes | all s':<name>Meta.ACTchange_<sh>[s] | Av_<sh>[<name>Meta,s] iff (not Av_<sh>[<name>Meta, s']) \}} >  
+<endif>
+<if(sharedEnumVars)>
+    <sharedEnumVars : {sh | fact ResEnumAx4 { all s:<name>Meta.nodes | all s':(<name>Meta.env[s] - <name>Meta.ACTchange_<sh>[s]) | Av_<sh>[<name>Meta,s] iff Av_<sh>[<name>Meta, s'] \}}> 
+<endif>
+
+-- and similar for volatile enums
+<if(sharedEnumVars)>
+        <sharedEnumVars : {sh | 
+                <sh.values : { v |  fact ResEnumAx<v> { all s:<name>Meta.nodes | (some s':<name>Meta.ACTchange_<sh>[s] | Val_<sh>                                                   [<name>Meta,s']=<v>) \}
+                }>
+        }>
+<endif>
+
+
+-- frame axioms for local  variables
 <if(actions)> 
     <actions :  {a | fact FrameAxioms<a.name>{ 
          <if(a.singletonIntFrameComplement)> 
@@ -238,6 +301,15 @@ one sig <name>Meta{
         <endif>
         <if(a.intFrameComplement)>
             all s:<name>Meta.nodes | all s':<name>Meta.ACT<a.name>[s] | <a.intFrameComplement: {fr | (Val_<fr>[<name>Meta,s] = Val_<fr>[<name>Meta, s'])}; separator=" and " >
+            <if(a.lockFrameComplement)>
+                and 
+            <endif>
+        <endif>
+         <if(a.singletonEnumFrameComplement)> 
+            all s:<name>Meta.nodes,  s':<name>Meta.ACT<a.name>[s] |<a.singletonEnumFrameComplement:  {fr | (Val_<fr>[<name>Meta,s] = Val_<fr>[<name>Meta, s'])}; separator=" and " > 
+        <endif>
+        <if(a.enumFrameComplement)>
+            all s:<name>Meta.nodes | all s':<name>Meta.ACT<a.name>[s] | <a.enumFrameComplement: {fr | (Val_<fr>[<name>Meta,s] = Val_<fr>[<name>Meta, s'])}; separator=" and " >
             <if(a.lockFrameComplement)>
                 and 
             <endif>
@@ -290,6 +362,10 @@ one sig <name>Meta{
         and
         <l.otherIntGlobalVars: {fr | (Val_<fr>[<name>Meta,s] = Val_<fr>[<name>Meta, s'])}; separator=" and " >
     <endif>
+    <if(l.otherEnumGlobalVars)>
+        and
+        <l.otherEnumGlobalVars: {fr | (Val_<fr>[<name>Meta,s] = Val_<fr>[<name>Meta, s'])}; separator=" and " >
+    <endif>
     \}}; separator="\n">
 <endif>
 
@@ -303,6 +379,10 @@ one sig <name>Meta{
      <if(intVars)> 
         and 
         <intVars: {v |  (Val_<v>[<name>Meta,s] = Val_<v>[<name>Meta, s'])}; separator=" and " >
+    <endif>
+    <if(enumVars)> 
+        and 
+        <enumVars: {v |  (Val_<v>[<name>Meta,s] = Val_<v>[<name>Meta, s'])}; separator=" and " >
     <endif>
     <if(sharedBoolProps)>
         and
@@ -319,6 +399,14 @@ one sig <name>Meta{
         <sharedIntVars: {fr |  (Own_<fr>[<name>Meta,s] iff Own_<fr>[<name>Meta, s'])}; separator="and" >
         and 
         <sharedIntVars: {fr | (Val_<fr>[<name>Meta,s] = Val_<fr>[<name>Meta, s'])}; separator=" and " >
+    <endif>
+     <if(sharedEnumVars)>
+        and
+        <sharedEnumVars: {fr | (Av_<fr>[<name>Meta,s] iff Av_<fr>[<name>Meta, s'])}; separator=" and " > 
+        and
+        <sharedEnumVars: {fr |  (Own_<fr>[<name>Meta,s] iff Own_<fr>[<name>Meta, s'])}; separator="and" >
+        and 
+        <sharedEnumVars: {fr | (Val_<fr>[<name>Meta,s] = Val_<fr>[<name>Meta, s'])}; separator=" and " >
     <endif>
 \}
 }

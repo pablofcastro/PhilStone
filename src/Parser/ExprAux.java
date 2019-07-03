@@ -144,37 +144,53 @@ public class ExprAux {
 		return this.unqualifiedName;
 	}
 	
-	public Expression getExpr(HashMap<String, Type> table){
+	/**
+	 * 
+	 * @param table	a table with the type of variables
+	 * @param enums	the collection of enumerables, this allows us to distiguish between enum constant and vars
+	 * @return	the expression corresponding to the syntactical tree
+	 */
+	public Expression getExpr(HashMap<String, Type> table, SpecAux mySpec){
 		switch(operator){
 		case VAR:if (table.get(this.name) == Type.INT){
 					return new IntVar(this.name);
 				 }
-				 else{
+				 if (table.get(this.name) == Type.BOOL){
 					 return new BoolVar(this.name);
 				 }
-		case AV: 	return new Av((Var) op1.getExpr(table));
-		case OWN: 	return new Own((Var) op1.getExpr(table));
+				 // treatment of enums, an enum var could be a constant or a variable, we use the given type to distinguish between them
+				 if (mySpec.isEnumCons(name)){
+					 return new EnumConstant(this.name);
+				 }
+				 if (table.get(this.name) == Type.ENUM){
+					 return new EnumVar(this.name);
+				 }
+				 throw new RuntimeException("Wrong typed var:"+this.name);
+		case AV: 	return new Av((Var) op1.getExpr(table, mySpec));
+		case OWN: 	return new Own((Var) op1.getExpr(table, mySpec));
 		case ICONS: return new IntConstant(this.ival);
 		case BCONS: return new BoolConstant(this.bval);
-		case EX:	return new EX((Formula) this.op1.getExpr(table));
-		case AX:	return new AX((Formula) this.op1.getExpr(table));
-		case NOT:	return new Negation((Formula) this.op1.getExpr(table));
-		case OR:	return new Disjunction((Formula) this.op1.getExpr(table), (Formula) this.op2.getExpr(table));
-		case IMP:	return new Implication((Formula) this.op1.getExpr(table), (Formula) this.op2.getExpr(table));
-		case AU:	return new AU((TemporalFormula) this.op1.getExpr(table), (TemporalFormula) this.op2.getExpr(table));
-		case EU:	return new EU((TemporalFormula) this.op1.getExpr(table), (TemporalFormula) this.op2.getExpr(table));
-		case AW:	return new AW((TemporalFormula) this.op1.getExpr(table), (TemporalFormula) this.op2.getExpr(table));
-		case EW:	return new EW((TemporalFormula) this.op1.getExpr(table), (TemporalFormula) this.op2.getExpr(table));
-		case AND:	return new Conjunction((Formula) this.op1.getExpr(table), (Formula) this.op2.getExpr(table));
-		case AG:	return new AG((Formula) this.op1.getExpr(table));
-		case EG:	return new EG((Formula) this.op1.getExpr(table));
-		case EF:	return new EF((Formula) this.op1.getExpr(table));
-		case AF: 	return new AF((Formula) this.op1.getExpr(table));
-		case MINUS: return new NegExpression((AritExpression) this.op1.getExpr(table));
-		case MULT:  return new MultExpression((AritExpression) this.op1.getExpr(table), (AritExpression) this.op1.getExpr(table));
-		case DIV:	return new DivExpression((AritExpression) this.op1.getExpr(table), (AritExpression) this.op1.getExpr(table));
-		case SUM:	return new SumExpression((AritExpression) this.op1.getExpr(table), (AritExpression) this.op1.getExpr(table));				
-		case EQ:	return new EqComparison((Expression) this.op1.getExpr(table), (Expression) this.op1.getExpr(table));			
+		case EX:	return new EX((Formula) this.op1.getExpr(table, mySpec));
+		case AX:	return new AX((Formula) this.op1.getExpr(table, mySpec));
+		case NOT:	return new Negation((Formula) this.op1.getExpr(table, mySpec));
+		case OR:	return new Disjunction((Formula) this.op1.getExpr(table, mySpec), (Formula) this.op2.getExpr(table,mySpec));
+		case IMP:	return new Implication((Formula) this.op1.getExpr(table, mySpec), (Formula) this.op2.getExpr(table, mySpec));
+		case AU:	return new AU((TemporalFormula) this.op1.getExpr(table, mySpec), (TemporalFormula) this.op2.getExpr(table, mySpec));
+		case EU:	return new EU((TemporalFormula) this.op1.getExpr(table, mySpec), (TemporalFormula) this.op2.getExpr(table, mySpec));
+		case AW:	return new AW((TemporalFormula) this.op1.getExpr(table, mySpec), (TemporalFormula) this.op2.getExpr(table, mySpec));
+		case EW:	return new EW((TemporalFormula) this.op1.getExpr(table, mySpec), (TemporalFormula) this.op2.getExpr(table, mySpec));
+		case AND:	return new Conjunction((Formula) this.op1.getExpr(table, mySpec), (Formula) this.op2.getExpr(table, mySpec));
+		case AG:	return new AG((Formula) this.op1.getExpr(table, mySpec));
+		case EG:	return new EG((Formula) this.op1.getExpr(table, mySpec));
+		case EF:	return new EF((Formula) this.op1.getExpr(table, mySpec));
+		case AF: 	return new AF((Formula) this.op1.getExpr(table, mySpec));
+		case MINUS: return new NegExpression((AritExpression) this.op1.getExpr(table, mySpec));
+		case DEC: 	return new DecEnum((EnumExpression) this.op1.getExpr(table, mySpec));
+		case INC: 	return new IncEnum((EnumExpression) this.op1.getExpr(table, mySpec));
+		case MULT:  return new MultExpression((AritExpression) this.op1.getExpr(table, mySpec), (AritExpression) this.op1.getExpr(table, mySpec));
+		case DIV:	return new DivExpression((AritExpression) this.op1.getExpr(table, mySpec), (AritExpression) this.op1.getExpr(table, mySpec));
+		case SUM:	return new SumExpression((AritExpression) this.op1.getExpr(table, mySpec), (AritExpression) this.op1.getExpr(table, mySpec));				
+		case EQ:	return new EqComparison((Expression) this.op1.getExpr(table, mySpec), (Expression) this.op1.getExpr(table, mySpec));			
 		default: return null;
 		}
 	}
@@ -291,6 +307,25 @@ public class ExprAux {
 								return Type.ERROR;
 							}
 						}
+			case DEC:
+			case INC:	if (op1 == null){
+							this.error = "Type Error in Enum Expression, line: " + Integer.toString(line);
+							return Type.ERROR;
+		  				}	
+						else{
+							if (op1.getType(table, mySpec, context) == Type.ENUM){
+								return Type.ENUM;
+							}
+							else{
+								if (op1.getType(table, mySpec, context) == Type.ERROR){
+									this.error = op1.getError();
+									return Type.ERROR;
+								}	
+								this.error = "Type Error in Enum Expression, line: " + Integer.toString(line); 
+								return Type.ERROR;
+							}		
+						}
+				
 			case OR:
 			case IMP:
 			case AU:
@@ -504,6 +539,8 @@ public class ExprAux {
 		case OWN:	return true;				
 		case ICONS: 
 		case BCONS: return false;
+		case DEC:
+		case INC:
 		case EX:	
 		case AX:	
 		case NOT:	return op1.containsLock();

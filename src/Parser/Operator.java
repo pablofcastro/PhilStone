@@ -30,6 +30,8 @@ public enum Operator {
 	ICONS,
 	MINUS,
 	AV,
-	OWN
+	OWN,
+	INC, // for ENUM, returns the next element
+	DEC  // for ENUM returns the previous element
 }
 

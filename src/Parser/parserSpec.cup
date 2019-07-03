@@ -42,6 +42,10 @@ terminal AND;
 //terminal GT;
 terminal LT;
 terminal INT;
+terminal ENUM;
+terminal PRIMENUM;
+terminal INC;
+terminal DEC;
 terminal BOOL;
 terminal LOCK;
 terminal INIT;
@@ -94,6 +98,9 @@ non terminal  HashMap<String,Type> globalVarList;
 non terminal  SpecAux specification;
 non terminal  HashMap<String, String> proc, processDecl;
 non terminal  Pair<HashMap<String, String>, HashMap<String,LinkedList<String>>> program, body; // a program is just the list of instances with the corresponding list of parameters
+non terminal  HashMap<String, Pair<LinkedList<String>, Type>> enumVar; // structure that maps an enum var name tu the list of its constants and its type (Enum or EnumPrim)
+non terminal  HashMap<String, Pair<LinkedList<String>, Type>> enumList; // a list of enums
+non terminal  HashMap<String, Pair<LinkedList<String>, Type>> enumDecl; // a enum declaration is a collections of var names and the set of their possible values 
 non terminal  Type type;
 non terminal  SpecAux mainSpecification;
 non terminal  ExprAux temporalFormula;
@@ -136,7 +143,32 @@ mainSpecification ::= specification:prog {: RESULT = prog; :}
 
 specification ::=  
                   
-                   SPEC ID:name globalVarList:varList SEMICOLON  processList:pList program:main PROPERTY COLON expr:gf  SEMICOLON
+                   SPEC ID:name enumList:eList SEMICOLON globalVarList:varList SEMICOLON   processList:pList program:main PROPERTY COLON expr:gf  SEMICOLON
+                                                                                 {: 
+																					// TBD: ADD ENUM ACTIONS
+																					SpecAux spec= new SpecAux(name);
+																					spec.addAllSharedVars(varList);
+																					spec.addAllProcesses(pList);																			
+																					spec.addInvariant(gf);
+																					spec.addAllValuesToEnum(eList);
+																					// we add the instances
+																					Set<String> keys = main.getFirst().keySet();
+																					Iterator<String> it = keys.iterator();
+																					while (it.hasNext()){
+																						String current = it.next();
+																						spec.addInstance(current, main.getFirst().get(current));
+																					}
+																					// we add its parameters
+																					Set<String> keysP = main.getSecond().keySet();
+																					Iterator<String> itP = keysP.iterator();
+																					while (itP.hasNext()){
+																						String currentP = itP.next();
+																						spec.addInstanceActualPars(currentP, main.getSecond().get(currentP));
+																					}
+																					RESULT = spec;
+                                                                                 :}
+				  |
+				  SPEC ID:name globalVarList:varList SEMICOLON   processList:pList program:main PROPERTY COLON expr:gf  SEMICOLON
                                                                                  {: SpecAux spec= new SpecAux(name);
 																					spec.addAllSharedVars(varList);
 																					spec.addAllProcesses(pList);
@@ -157,8 +189,15 @@ specification ::=
 																					}
 																					RESULT = spec;
                                                                                  :}
-
                                                                 
+                  |  SPEC ID:name enumList:eList SEMICOLON processList:pList program:main PROPERTY COLON temporalFormula:gf  SEMICOLON  {:  
+																													  // TBD: enum
+																													  SpecAux spec = new SpecAux(name);
+																											    	  spec.addAllProcesses(pList);
+																													  psec.addAllValuestoEnum(eList);
+																													  spec.addInvariant(gf);																	 
+																													  RESULT = spec;
+                                                     			  											   :}
                   |  SPEC ID:name processList:pList program:main PROPERTY COLON temporalFormula:gf  SEMICOLON  {:  	  SpecAux spec = new SpecAux(name);
 																											    	  spec.addAllProcesses(pList);
 																													  spec.addInvariant(gf);																	 
@@ -169,8 +208,16 @@ specification ::=
 																					spec.addAllSharedVars(varList);
 																					spec.addAllProcesses(pList);
 																					RESULT = spec;
-                                                                                 :}
-                 
+                                                                                 :} 
+                 | SPEC ID:name enumList:eList SEMICOLON  processList:pList program:main 
+                                                                                 {: // TBD: enum
+																					SpecAux spec= new SpecAux(name);
+																					//spec.addAllSharedVars(varList);
+																					spec.addAllValuesToEnum(eList);
+																					spec.addAllProcesses(pList);
+																					RESULT = spec;
+                                                                                 :} 
+                
                  |   SPEC ID:name processList:pList program:main  											   {:  	  SpecAux spec = new SpecAux(name);     
 																											    	  spec.addAllProcesses(pList);																								  																 
 																													  RESULT = spec;
@@ -210,6 +257,40 @@ globalDecl ::=  varDecls:listNames COLON type:t {:		HashMap<String, Type> vars =
 														RESULT = vars;
                                                 :}
        ;
+enumList ::= enumDecl:listE {: RESULT = listE;   :}
+			 | enumList:list SEMICOLON enumDecl:listE    {:  
+ 															for (var:listE.keySet()){
+																if (list.keySet().contains(var))
+																	parser.report_error("Repeated var declaration, line:"+listLeft, list);
+																else
+																	list.put(var, listE.get(var));
+															}
+															RESULT = list;
+													     :}
+		;
+	
+enumDecl ::= ENUM varDecls:listNames EQ LBRACE varDecls:ids RBRACE {: 
+																	  HashMap<String, Pair<LinkedList<String>,Type>> result = new HashMap<String, Pair<LinkedList<String>,Type>>();
+																	  for (var:listNames){
+																		Pair<LinkedList<String>,Type> description = new Pair<LinkedList<String>,Type>();
+																		description.setFirst(ids);
+																		description.setSecond(Type.Enum);
+																	  	result.put(var, description);
+																	  }	
+																	  RESULT = result;
+																   :}
+	    | PRIMENUM varDecls:listNames EQ LBRACE varDecls:ids RBRACE {: 
+																	  HashMap<String, Pair<LinkedList<String>,Type>> result = new HashMap<String, Pair<LinkedList<String>,Type>>();
+																	  for (var:listNames){
+																		Pair<LinkedList<String>,Type> description = new Pair<LinkedList<String>,Type>();
+																		description.setFirst(ids);
+																		description.setSecond(Type.EnumPrim);
+																	  	result.put(var, description);
+																	  }	
+																	  RESULT = result;
+																   :}
+	    
+	    ;
 
 processList  ::= process:p  {: 
                                LinkedList<ProcessAux> list = new LinkedList<ProcessAux>();
@@ -273,6 +354,25 @@ bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  acti
 																																					   proc.addAllInvs(inv);						
                                                                                                                                      			       RESULT = proc;
                                                                                                                                       :}
+          	| LBRACE enumList:listE SEMICOLON declList:listD  SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
+																																					   proc.setInit(init);	
+																																					   proc.addAllLocalVars(listD);
+																																					   proc.addAllValuesToEnum(listE);
+																																					   //proc.setPre(pre);
+																																					   //proc.setPost(post);
+																																					   proc.addAllActions(aList);
+																																					   proc.addAllInvs(inv);						
+                                                                                                                                     			       RESULT = proc;
+                                                                                                                                      :}
+             | LBRACE enumList:listE SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
+																																					   proc.setInit(init);																																						  
+																																					   proc.addAllValuesToEnum(listE);
+																																					   //proc.setPre(pre);
+																																					   //proc.setPost(post);
+																																					   proc.addAllActions(aList);
+																																					   proc.addAllInvs(inv);						
+                                                                                                                                     			       RESULT = proc;
+                                                                                                                                      :}
           
              | LBRACE initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 		   ProcessAux proc = new ProcessAux(initleft);
                                                                                                                                        proc.setInit(init);	
@@ -292,7 +392,30 @@ bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  acti
 																																					   proc.addAllInvs(inv);						
                                                                                                                                      			       RESULT = proc;
                                                                                                                                       :}
-          
+              |  LBRACE enumList:listE  SEMICOLON OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
+																																					   proc.setInit(init);	
+																																					   //proc.addAllLocalVars(listD);
+																																					   proc.addAllValuesToEnum(listE);
+																																						//proc.setPre(pre);
+																																					   //proc.setPost(post);
+																																					   proc.addAllOwnedVars(ownsList); // the list of owned vars
+																																					   proc.addAllActions(aList);
+																																					   proc.addAllInvs(inv);						
+                                                                                                                                     			       RESULT = proc;
+                                                                                                                                      :}                                                                                                                         
+            |  LBRACE enumList:listE SEMICOLON declList:listD  SEMICOLON OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
+																																					   proc.setInit(init);	
+																																					   proc.addAllLocalVars(listD);
+																																					   proc.addAllValuesToEnum(listE);
+																																						//proc.setPre(pre);
+																																					   //proc.setPost(post);
+																																					   proc.addAllOwnedVars(ownsList); // the list of owned vars
+																																					   proc.addAllActions(aList);
+																																					   proc.addAllInvs(inv);						
+                                                                                                                                     			       RESULT = proc;
+                                                                                                                                      :}
+           
+           
              | LBRACE OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON   actionlist:aList invariantList:inv SEMICOLON RBRACE {:  ProcessAux proc = new ProcessAux(initleft);
                                                                                                                                        proc.setInit(init);	
                                                                                                                                        //proc.setPre(pre);
@@ -456,6 +579,8 @@ term    ::= factor:val  {: RESULT = val; :}
                 
 factor  ::= primary:op {:   RESULT = op;  :}     
            | NEG factor:f  {: RESULT = new ExprAux(Operator.NOT, f, null, fleft); :}
+           | DEC factor:f  {: RESULT = new ExprAux(Operator.DEC, f, null, fleft);:}
+           | INC factor:f  {: RESULT = new ExprAux(Operator.INC, f, null, fleft);:}
         ;            
                         
 primary ::= INTEGER:v  {: ExprAux c = new ExprAux(v, vleft);

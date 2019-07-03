@@ -64,7 +64,11 @@ EndOfLineComment     = "// " {InputCharacter}* {LineTerminator}
 <YYINITIAL> "LTLproperty"		{ return symbol(sym.LTLPROPERTY, new String(yytext()) ); }  
 <YYINITIAL> "run"				{ return symbol(sym.RUN, new String(yytext()) ); }
 <YYINITIAL> "prim_boolean"		{ return symbol(sym.PRIMBOOL, new String(yytext()) ); }           
-<YYINITIAL> "prim_int"			{ return symbol(sym.PRIMINT, new String(yytext()) ); }                               
+<YYINITIAL> "prim_int"			{ return symbol(sym.PRIMINT, new String(yytext()) ); } 
+<YYINITIAL> "enum"				{ return symbol(sym.ENUM, new String(yytext()) ); } 
+<YYINITIAL> "primenum"			{ return symbol(sym.PRIMENUM, new String(yytext()) ); } 
+<YYINITIAL> "inc"				{ return symbol(sym.INC, new String(yytext()) ); }  
+<YYINITIAL> "dec"				{ return symbol(sym.DEC, new String(yytext()) ); }                               
 
 
 

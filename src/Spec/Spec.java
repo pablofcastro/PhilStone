@@ -17,6 +17,7 @@ public class Spec {
 	private LinkedList<TemporalFormula> invs; // the invariants
 	private HashMap<String, ProcessSpec> instances; // the instances in the specification
 	private HashMap<String, LinkedList<Var>> actualPars; // the actual parameters of each instance
+	private LinkedList<EnumType> enums; // the enums defined in the specification
 	
 	/**
 	 * A Basic Constructor for Spec
@@ -30,6 +31,7 @@ public class Spec {
 		this.invs = new LinkedList<TemporalFormula>();
 		this.instances = new HashMap<String, ProcessSpec>();
 		this.actualPars = new HashMap<String, LinkedList<Var>>();
+		this.enums = new LinkedList<EnumType>();
 	}
 	
 	/**
@@ -44,8 +46,31 @@ public class Spec {
 			Lock l = new Lock(v.getName(), this);
 			locks.add(l);
 		}
+		
+		
 	}
 	
+	
+	/**
+	 * It sets the type enum for the given var
+	 * @param v	an enum var, we set the corresponding enum type
+	 */
+	public void setTypeEnum(EnumVar v, LinkedList<String> values){
+		if (this.globalVars.contains(v)){ // if the var is already in the collection of shared vars
+			for (EnumType e:this.enums){
+				if (e.checkEqValues(values)){
+					e.addVar(v);
+					v.setEnumType(e);
+				}
+				else{
+					EnumType etype = new EnumType();
+					etype.addValues(values);
+					etype.addVar(v);
+					this.enums.add(etype);
+				}
+			}
+		}
+	}
 	
 	/**
 	 * Adds the lock to the collection of locks of the specification
@@ -210,12 +235,16 @@ public class Spec {
 				result.put(globalVars.get(i).getName(), "BOOL");
 			if (globalVars.get(i).getType() == Type.INT)
 				result.put(globalVars.get(i).getName(), "INT");
+			if (globalVars.get(i).getType() == Type.ENUM)
+				result.put(globalVars.get(i).getName(), "ENUM");
 			if (globalVars.get(i).getType() == Type.LOCK)
 				result.put(globalVars.get(i).getName(), "LOCK");
 			if (globalVars.get(i).getType() == Type.PRIMBOOL)
 				result.put(globalVars.get(i).getName(), "PRIMBOOL");
 			if (globalVars.get(i).getType() == Type.PRIMINT)
 				result.put(globalVars.get(i).getName(), "PRIMINT");
+			if (globalVars.get(i).getType() == Type.PRIMINT)
+				result.put(globalVars.get(i).getName(), "ENUMPRIM");
 			
 		}
 		// and the locks that are not variables are added
@@ -326,7 +355,6 @@ public class Spec {
 			if (this.locks.get(i).getName().equals(name))
 				return Type.LOCK;
 		}
-		
 		return Type.ERROR;
 	}
 	

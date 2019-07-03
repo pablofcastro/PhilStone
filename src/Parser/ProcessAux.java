@@ -10,6 +10,7 @@ import Spec.*;
 public class ProcessAux {
 	private String name; // the name
 	private HashMap<String, Type> localVars; // the local vars
+	private HashMap<String, LinkedList<String>> enumVars; // for the enum vars we have the list of possible values, the position of the values is important
 	//private HashMap<String, Type> pars; // the parameters of the process
 	private LinkedList<Pair<String, Type>> pars; // the parameters of the process, it is a linked list since the order of apparence matters
 	private LinkedList<String> primPars; // the list of prim pars, note that we dont need this for local vars 
@@ -26,6 +27,7 @@ public class ProcessAux {
 	public ProcessAux(int line){
 		this.name = "";
 		this.localVars = new HashMap<String,Type>();
+		this.enumVars = new HashMap<String, LinkedList<String>>();
 		this.primPars = new LinkedList<String>();
 		//this.pars = new HashMap<String, Type>();
 		this.pars = new LinkedList<Pair<String,Type>>();
@@ -40,6 +42,7 @@ public class ProcessAux {
 	public ProcessAux(String name, int line){
 		this.name = name;
 		this.localVars = new HashMap<String,Type>();
+		this.enumVars = new HashMap<String, LinkedList<String>>();
 		//this.pars = new HashMap<String, Type>();
 		this.pars = new LinkedList<Pair<String,Type>>();
 		this.primPars = new LinkedList<String>();
@@ -87,6 +90,14 @@ public class ProcessAux {
 		return this.primPars.contains(name);
 	}
 	
+	public boolean isEnumCons(String name){
+		for (String var:this.enumVars.keySet()){
+			if (this.enumVars.get(var).contains(name))
+				return true;
+		}
+		return false;
+	}
+	
 	public void setSpec(SpecAux spec){
 		this.mySpec =  spec;
 	}
@@ -130,6 +141,8 @@ public class ProcessAux {
 				localVars.put(name, Type.BOOL);
 			if (type==Type.PRIMINT) // similarly for int
 				localVars.put(name, Type.INT);
+			if (type==Type.ENUMPRIM)
+				localVars.put(name, Type.ENUM);
 			else
 				localVars.put(name, type); // otherwise we add it with the given type
 		}
@@ -144,11 +157,39 @@ public class ProcessAux {
 				localVars.put(current, h.get(Type.BOOL));
 			if (h.get(current) == Type.PRIMINT)	// volatile ints  in processes lack sense
 				localVars.put(current, h.get(Type.INT));
+			if (h.get(current) == Type.ENUMPRIM)	// volatile ints  in processes lack sense
+				localVars.put(current, h.get(Type.ENUM));
 			else{
 				localVars.put(current, h.get(current));	
 			}
 		}
 
+	}
+	
+	/**
+	 * This method set the collection of possible values to a enum var
+	 * we assume that var names are added before their enum values
+	 * @param varName	the name of the enum var
+	 * @param values	the list of its possible values
+	 */
+	public void addValuesToEnum(String varName, LinkedList<String> values, Type type){
+		
+		if (localVars.containsKey(varName))
+			throw new RuntimeException("Enum Var was declared twice: "+varName);
+		else{
+			this.addLocalVar(varName, type); // we add the var to the collection of shared variables
+			this.enumVars.put(varName, values); // we add the values corresponding to this shared var
+		}
+	}
+	
+	/**
+	 * This methods adds the values correspoding to a collection of enum vars
+	 * @param values	the collection of enum variables to which the values will be added
+	 */
+	public void addAllValuesToEnum(HashMap<String, Pair<LinkedList<String>,Type>> values){
+		for (String v:values.keySet()){
+			this.addValuesToEnum(v, values.get(v).getFirst(), values.get(v).getSecond());
+		}
 	}
 	
 	public void addParameter(String name, Type t){
@@ -157,7 +198,7 @@ public class ProcessAux {
 			this.addError("Duplicated variable in Process, line: "+line);
 		}
 		else{
-			if (t==Type.BOOL || t==Type.INT || t==Type.LOCK)
+			if (t==Type.BOOL || t==Type.INT || t==Type.LOCK || t==Type.ENUM)
 				this.pars.add(new Pair<String,Type>(name, t));
 			if (t==Type.PRIMBOOL){
 				this.pars.add(new Pair<String,Type>(name, Type.BOOL)); // we added as an INT 
@@ -165,6 +206,10 @@ public class ProcessAux {
 			}
 			if (t==Type.PRIMINT){
 				this.pars.add(new Pair<String,Type>(name, Type.INT)); // we added as an INT 
+				this.primPars.add(name); // and we add it as a primitive type
+			}	
+			if (t==Type.ENUMPRIM){
+				this.pars.add(new Pair<String,Type>(name, Type.ENUM)); // we added as an INT 
 				this.primPars.add(name); // and we add it as a primitive type
 			}		
 		}
@@ -272,7 +317,7 @@ public class ProcessAux {
 			this.addError(init.getError());
 			ok = false;
 		}
-		if (initType == Type.INT){
+		if (initType != Type.BOOL){
 			this.addError("Initial condition is not a boolean formula, line: " + init.getLine());
 			ok = false;
 		}
