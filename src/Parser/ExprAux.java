@@ -3,6 +3,7 @@ package Parser;
 import java.util.*;
 
 import FormulaSpec.*;
+import Spec.*;
 
 
 public class ExprAux {
@@ -51,6 +52,7 @@ public class ExprAux {
 		this.line = line;
 	}
 	
+	
 	/**
 	 * Constructor for int constants
 	 * @param val
@@ -66,8 +68,10 @@ public class ExprAux {
 		this.line = line;
 	}
 	
+	
 	/**
-	 * Constructor for vars
+	 * Constructor for vars this constructor is used also for constant 
+	 * we provide a methods (below) for indicate that it is a constant
 	 * @param val
 	 */
 	public ExprAux(String name, int line){
@@ -81,7 +85,9 @@ public class ExprAux {
 		this.line = line;
 	}
 	
-		
+	public void isEnumCons(){
+		this.operator = Operator.ECONS;
+	}
 
 	public int getLine(){
 		return line;
@@ -147,29 +153,44 @@ public class ExprAux {
 	/**
 	 * 
 	 * @param table	a table with the type of variables
-	 * @param enums	the collection of enumerables, this allows us to distiguish between enum constant and vars
+	 * @param enums	the collection of enumerables, this allows us to distinguish between enum constant and vars
 	 * @return	the expression corresponding to the syntactical tree
 	 */
 	public Expression getExpr(HashMap<String, Type> table, SpecAux mySpec){
 		switch(operator){
-		case VAR:if (table.get(this.name) == Type.INT){
-					return new IntVar(this.name);
-				 }
-				 if (table.get(this.name) == Type.BOOL){
-					 return new BoolVar(this.name);
-				 }
-				 // treatment of enums, an enum var could be a constant or a variable, we use the given type to distinguish between them
-				 if (mySpec.isEnumCons(name)){
-					 return new EnumConstant(this.name);
-				 }
-				 if (table.get(this.name) == Type.ENUM){
-					 return new EnumVar(this.name);
-				 }
-				 throw new RuntimeException("Wrong typed var:"+this.name);
+		case VAR:
+				if (this.owner.equals("global") || this.owner.equals("this") ||  this.owner.equals("par")){
+					if (table.get(this.getUnqualifiedName()) == Type.INT){
+						return new IntVar(this.name);
+					}
+					if (table.get(this.getUnqualifiedName()) == Type.BOOL){
+						return new BoolVar(this.name);
+					}
+					if (table.get(this.getUnqualifiedName()) == Type.LOCK){
+						return new Lock(this.name, true);
+					}
+					if (table.get(this.getUnqualifiedName()) == Type.ENUM){
+						return new EnumVar(this.name);
+					}
+				}//
+				else{
+					if (mySpec.getTypeVarFromInstance(this.getUnqualifiedName(), this.owner)==Type.BOOL)
+						return new BoolVar(this.name);						
+					if (mySpec.getTypeVarFromInstance(this.getUnqualifiedName(), this.owner) == Type.INT)
+							return new IntVar(this.name);
+					if (mySpec.getTypeVarFromInstance(this.getUnqualifiedName(), this.owner) == Type.BOOL)
+							return new BoolVar(this.name);
+					if (mySpec.getTypeVarFromInstance(this.getUnqualifiedName(), this.owner) == Type.LOCK)
+							return new Lock(this.name, true);
+					if (mySpec.getTypeVarFromInstance(this.getUnqualifiedName(), this.owner) == Type.ENUM)
+							return new EnumVar(this.name);
+					throw new RuntimeException("Wrong typed var:"+this.name);
+				}			 
 		case AV: 	return new Av((Var) op1.getExpr(table, mySpec));
 		case OWN: 	return new Own((Var) op1.getExpr(table, mySpec));
 		case ICONS: return new IntConstant(this.ival);
 		case BCONS: return new BoolConstant(this.bval);
+		case ECONS: return new EnumConstant(this.name);
 		case EX:	return new EX((Formula) this.op1.getExpr(table, mySpec));
 		case AX:	return new AX((Formula) this.op1.getExpr(table, mySpec));
 		case NOT:	return new Negation((Formula) this.op1.getExpr(table, mySpec));
@@ -262,6 +283,7 @@ public class ExprAux {
 						}						
 			case ICONS: return Type.INT;
 			case BCONS: return Type.BOOL;
+			case ECONS: return Type.ENUM;
 			case AV:
 			case OWN: 	
 						if(op1.getOperator() == Operator.VAR){
@@ -494,7 +516,7 @@ public class ExprAux {
 			result.addAll(op2.getClausePos(table, mySpec, context));
 		}
 		if (operator == Operator.VAR || operator == Operator.EQ || operator == Operator.AV || operator == Operator.OWN){
-			result.add((ElemFormula) this.getExpr(table));
+			result.add((ElemFormula) this.getExpr(table, mySpec));
 		}
 		// otherwise it is a negated formula
 		return result;
@@ -510,7 +532,7 @@ public class ExprAux {
 			result.addAll(op2.getClauseNeg(table, mySpec, context));
 		}
 		if (operator == Operator.NOT){
-			ElemNegation neg = new ElemNegation((ElemFormula) op1.getExpr(table));
+			ElemNegation neg = new ElemNegation((ElemFormula) op1.getExpr(table, mySpec));
 			result.add(neg);
 		}
 		// otherwise it is a positive formula
@@ -536,7 +558,8 @@ public class ExprAux {
 		switch(operator){
 		case VAR:	return false;
 		case AV: 	
-		case OWN:	return true;				
+		case OWN:	return true;		
+		case ECONS:
 		case ICONS: 
 		case BCONS: return false;
 		case DEC:
@@ -559,113 +582,6 @@ public class ExprAux {
 }
 	}
 	
-	/**
-	 * This function checks whether the accesses to variables are ok from a given process.
-	 * @return	returns false when the woner are worng, the errors are saved in this.errors
-	 */
-	/*public boolean checkOwnersOK(ProcessAux process){
-		switch(operator){
-				case VAR:	if (this.owner.equals("this") || this.owner.equals("global")){
-								return true;
-							}
-							else{
-								this.error = this.error + "incorrect access to variable: "+ this.owner + this.name + ", line"+ this.line + "\n";
-								return false;
-							}
-				case AV: 	
-				case OWN:	if (op1.getOwner().equals("global")){
-								return true;
-							}
-							else{
-								this.error = this.error + "av and own can only applied to global vars, line"+ this.line;
-								return false;
-							}
-							
-				case ICONS: 
-				case BCONS: return true;
-				case EX:	
-				case AX:	
-				case NOT:	if (op1.checkOwnersOK(process)){
-								return true;
-							}
-							else{
-								this.error = this.error + op1.getError() + "\n";
-								return false;
-							}
-				case OR:	
-				case AU:	
-				case EU:	
-				case AW:	
-				case EW:	
-				case AND:	
-				case MINUS: 
-				case MULT:  
-				case DIV:	
-				case SUM:					
-				case EQ:	if (op1.checkOwnersOK(process) && op2.checkOwnersOK(process)){
-								return true;
-							}
-							else{
-								this.error = this.error + op1.getError() + op2.getError() + "\n";
-								return false;
-							}			
-				default: return true;
-		}
-	}
-	
-	public boolean checkOwnersOK(SpecAux spec){
-		switch(operator){
-				case VAR:	if (this.owner.equals("this")){
-								this.error = this.error + "incorrect use of keyword this in global property, line"+ this.line + "\n";
-								return false;
-							}
-							if (this.owner.equals("global")){
-								return true;
-							}
-							if (this.owner.equals())
-							else{
-								this.error = this.error + "incorrect access to variable: "+ this.owner + this.name + ", line"+ this.line + "\n";
-								return false;
-							}
-				case AV: 	
-				case OWN:	if (op1.getOwner().equals("global")){
-								return true;
-							}
-							else{
-								this.error = this.error + "av and own can only applied to global vars, line"+ this.line;
-								return false;
-							}
-							
-				case ICONS: 
-				case BCONS: return true;
-				case EX:	
-				case AX:	
-				case NOT:	if (op1.checkOwnersOK(process)){
-								return true;
-							}
-							else{
-								this.error = this.error + op1.getError() + "\n";
-								return false;
-							}
-				case OR:	
-				case AU:	
-				case EU:	
-				case AW:	
-				case EW:	
-				case AND:	
-				case MINUS: 
-				case MULT:  
-				case DIV:	
-				case SUM:					
-				case EQ:	if (op1.checkOwnersOK(spec) && op2.checkOwnersOK(spec)){
-								return true;
-							}
-							else{
-								this.error = this.error + op1.getError() + op2.getError() + "\n";
-								return false;
-							}			
-				default: return true;
-		}
-	}*/
+
 	
 }

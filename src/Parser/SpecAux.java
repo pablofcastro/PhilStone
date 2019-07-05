@@ -187,25 +187,6 @@ public class SpecAux{
 	}
 	
 	
-	/**
-	 * 
-	 * @param name	the name to check
-	 * @return	true iff the name is a constant enum
-	 */
-	public boolean isEnumCons(String name){
-		// if is a possible value of a shared variable then true
-		for (String var:this.sharedEnumValues.keySet()){
-			if (this.sharedEnumValues.get(var).contains(name))
-				return true;
-		}
-		// if it is a value in any process then true
-		for (ProcessAux process:this.processes){
-			if (process.isEnumCons(name))
-				return true;
-		}
-		//otherwise false
-		return false;
-	}
 	
 	public String getErrors(){
 		return this.errors;
@@ -522,6 +503,10 @@ public class SpecAux{
 			}
 			if (this.sharedVars.get(current) ==  Type.BOOL){
 				BoolVar var = new BoolVar(current);
+				result.add(var);
+			}	
+			if (this.sharedVars.get(current) ==  Type.ENUM){
+				EnumVar var = new EnumVar(current);
 				result.add(var);
 			}	
 		}

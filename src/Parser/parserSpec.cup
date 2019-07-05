@@ -70,7 +70,8 @@ terminal NEQ;
 terminal GLOBALLY;
 terminal Integer INTEGER;
 terminal TRUE,FALSE;
-terminal String ID;       
+terminal String ID;    
+terminal String ENUMCONS;   
 terminal ACTION;  
 terminal FRAME;
 terminal AV;
@@ -89,6 +90,7 @@ non terminal  ExprAux initialCond;
 non terminal  HashMap<String, Type> declList;
 non terminal  HashMap<String, Type> decl;
 non terminal  LinkedList<String> varDecls;
+non terminal  LinkedList<String> enumDecls;
 non terminal  ProcessAux process, bodyProcess;
 non terminal  LinkedList<Pair<String, Type>> paramList;
 non terminal  LinkedList<Pair<String,Type>> param;
@@ -173,6 +175,7 @@ specification ::=
 																					spec.addAllSharedVars(varList);
 																					spec.addAllProcesses(pList);
 																					spec.addInvariant(gf);
+																					
 																					// we add the instances
 																					Set<String> keys = main.getFirst().keySet();
 																					Iterator<String> it = keys.iterator();
@@ -194,7 +197,7 @@ specification ::=
 																													  // TBD: enum
 																													  SpecAux spec = new SpecAux(name);
 																											    	  spec.addAllProcesses(pList);
-																													  psec.addAllValuestoEnum(eList);
+																													  spec.addAllValuesToEnum(eList);
 																													  spec.addInvariant(gf);																	 
 																													  RESULT = spec;
                                                      			  											   :}
@@ -259,9 +262,9 @@ globalDecl ::=  varDecls:listNames COLON type:t {:		HashMap<String, Type> vars =
        ;
 enumList ::= enumDecl:listE {: RESULT = listE;   :}
 			 | enumList:list SEMICOLON enumDecl:listE    {:  
- 															for (var:listE.keySet()){
+ 															for (String var:listE.keySet()){
 																if (list.keySet().contains(var))
-																	parser.report_error("Repeated var declaration, line:"+listLeft, list);
+																	parser.report_error("Repeated var declaration, line:"+listleft, list);
 																else
 																	list.put(var, listE.get(var));
 															}
@@ -269,22 +272,22 @@ enumList ::= enumDecl:listE {: RESULT = listE;   :}
 													     :}
 		;
 	
-enumDecl ::= ENUM varDecls:listNames EQ LBRACE varDecls:ids RBRACE {: 
+enumDecl ::= ENUM varDecls:listNames EQ LBRACE enumDecls:ids RBRACE {: 
 																	  HashMap<String, Pair<LinkedList<String>,Type>> result = new HashMap<String, Pair<LinkedList<String>,Type>>();
-																	  for (var:listNames){
+																	  for (String var:listNames){
 																		Pair<LinkedList<String>,Type> description = new Pair<LinkedList<String>,Type>();
 																		description.setFirst(ids);
-																		description.setSecond(Type.Enum);
+																		description.setSecond(Type.ENUM);
 																	  	result.put(var, description);
 																	  }	
 																	  RESULT = result;
 																   :}
-	    | PRIMENUM varDecls:listNames EQ LBRACE varDecls:ids RBRACE {: 
+	    | PRIMENUM varDecls:listNames EQ LBRACE enumDecls:ids RBRACE {: 
 																	  HashMap<String, Pair<LinkedList<String>,Type>> result = new HashMap<String, Pair<LinkedList<String>,Type>>();
-																	  for (var:listNames){
+																	  for (String var:listNames){
 																		Pair<LinkedList<String>,Type> description = new Pair<LinkedList<String>,Type>();
 																		description.setFirst(ids);
-																		description.setSecond(Type.EnumPrim);
+																		description.setSecond(Type.ENUMPRIM);
 																	  	result.put(var, description);
 																	  }	
 																	  RESULT = result;
@@ -351,12 +354,15 @@ bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  acti
 																																					   //proc.setPre(pre);
 																																					   //proc.setPost(post);
 																																					   proc.addAllActions(aList);
-																																					   proc.addAllInvs(inv);						
+																																					   proc.addAllInvs(inv);
+																																				
                                                                                                                                      			       RESULT = proc;
                                                                                                                                       :}
-          	| LBRACE enumList:listE SEMICOLON declList:listD  SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
+          	| LBRACE enumList:listE SEMICOLON declList:listD  SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listEleft);
+																																					   
 																																					   proc.setInit(init);	
-																																					   proc.addAllLocalVars(listD);
+																																					 
+                                                                                                                                                       proc.addAllLocalVars(listD);
 																																					   proc.addAllValuesToEnum(listE);
 																																					   //proc.setPre(pre);
 																																					   //proc.setPost(post);
@@ -364,7 +370,7 @@ bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  acti
 																																					   proc.addAllInvs(inv);						
                                                                                                                                      			       RESULT = proc;
                                                                                                                                       :}
-             | LBRACE enumList:listE SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
+             | LBRACE enumList:listE SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listEleft);
 																																					   proc.setInit(init);																																						  
 																																					   proc.addAllValuesToEnum(listE);
 																																					   //proc.setPre(pre);
@@ -392,7 +398,7 @@ bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  acti
 																																					   proc.addAllInvs(inv);						
                                                                                                                                      			       RESULT = proc;
                                                                                                                                       :}
-              |  LBRACE enumList:listE  SEMICOLON OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
+              |  LBRACE enumList:listE  SEMICOLON OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listEleft);
 																																					   proc.setInit(init);	
 																																					   //proc.addAllLocalVars(listD);
 																																					   proc.addAllValuesToEnum(listE);
@@ -505,6 +511,23 @@ varDecls ::= ID:i  {:  LinkedList<String> list = new LinkedList<String>();
                                        :}
             ; 
 
+enumDecls ::= ENUMCONS:e {:
+						    LinkedList<String> list = new LinkedList<String>();
+							list.add(e);
+							RESULT = list; 
+						:}
+			 | enumDecls:list COMMA ENUMCONS:e {: 
+											if (list.contains(e))
+										  		parser.report_error("Duplicated enum constant declaration, line: "+eleft, e);	
+										  	else{
+												list.add(e);
+                                          		RESULT = list;
+											}
+                                       :}
+            ; 		
+						
+
+
 type ::=   INT    {: RESULT = Type.INT; :}
          | BOOL   {: RESULT = Type.BOOL; :}
          | LOCK   {: RESULT = Type.LOCK; :}
@@ -600,6 +623,12 @@ primary ::= INTEGER:v  {: ExprAux c = new ExprAux(v, vleft);
 					v.setUnqualifiedName(id); // the unqualified name is the same
 	  				RESULT = v;
 	  		     :} 
+	  	  | ENUMCONS:e {: 
+						 ExprAux v = new ExprAux(e, eleft);
+						 
+						 v.isEnumCons();  // we indicate that it is an enum constant
+						 RESULT =v;
+					   :}
 		  | ID:owner DOT ID:id {:
 									ExprAux v = new ExprAux(owner+"."+id, idleft);
 									v.setOwner(owner); // we set the owner could be this, global or any other process

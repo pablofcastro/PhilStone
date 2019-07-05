@@ -230,21 +230,63 @@ public class Action {
 	/**
 	 * These methods are used for generating the Alloy Template, to improve the Alloy code 
 	 * we need one per type...
-	 * @return	the collection of local INT vars that are not in the action frame
+	 * @return	the collection of local ENUM vars that are not in the action frame
 	 */
-	private LinkedList<String> getAllIntFrameComplement(){
-		/*LinkedList<String> vars  = new LinkedList<String>();
+	private LinkedList<String> getAllEnumFrameComplement(){
+		LinkedList<String> localVars  = process.getLocalVarsNamesByType(Type.ENUM); // the local vars
+		LinkedList<String> sharedVars  = process.getSharedVarsNamesByType(Type.ENUM); // the shared vars 
 		LinkedList<String> frameNames = this.getFrame();
-		vars.addAll(process.getLocalVarsNamesByType(Type.INT));
-		vars.addAll(process.getSharedVarsNamesByType(Type.INT));
-		LinkedList<String> result = new LinkedList<String>();
-		for (int i=0; i<vars.size(); i++){
-			String current = vars.get(i);
+		//vars.addAll(process.getLocalVarsNamesByType(Type.BOOL)); // adds the local vars
+		//vars.addAll(process.getSharedVarsNamesByType(Type.BOOL)); // adds the shared vars
+		LinkedList<String> result = new LinkedList<String>(); // the list with the result
+		
+		sharedVars.addAll(process.getSharedVarsNamesByType(Type.ENUMPRIM)); // we add the PRIMINTS
+		
+		// we deal with the local vars
+		for (int i=0; i<localVars.size(); i++){
+			String current = localVars.get(i);
 			if (!frameNames.contains(current)){
 				result.add(current);
 			}
 		}
-		return result;*/
+		
+		// we deal with the shared vars
+		for (int i=0; i<sharedVars.size(); i++){
+			String current = sharedVars.get(i);
+			if (!frameNames.contains(current) && process.usesSharedVar(current)){ // we need to check if the shared var is used
+				result.add(current);
+			}
+		}
+		
+
+		// and the parameters:
+		for (int i=0; i<process.getEnumParNamesWithLock().size(); i++){
+			if (!frameNames.contains(process.getIntParNamesWithLock().get(i)))
+				result.add(process.getIntParNamesWithLock().get(i));
+		}
+		
+		for (int i=0; i<process.getOwnedEnumParNames().size(); i++){
+			if (!frameNames.contains(process.getOwnedEnumParNames().get(i)))
+				result.add(process.getOwnedEnumParNames().get(i));
+		}
+				
+		for (int i=0; i<process.getEnumPrimParNames().size(); i++){
+			if (!frameNames.contains(process.getEnumPrimParNames().get(i)))
+				result.add(process.getEnumPrimParNames().get(i));
+		}
+		
+		return result;
+	}
+	
+	
+	
+	/**
+	 * These methods are used for generating the Alloy Template, to improve the Alloy code 
+	 * we need one per type...
+	 * @return	the collection of local INT vars that are not in the action frame
+	 */
+	private LinkedList<String> getAllIntFrameComplement(){
+		
 		LinkedList<String> localVars  = process.getLocalVarsNamesByType(Type.INT); // the local vars
 		LinkedList<String> sharedVars  = process.getSharedVarsNamesByType(Type.INT); // the shared vars 
 		LinkedList<String> frameNames = this.getFrame();
@@ -333,6 +375,20 @@ public class Action {
 	}
 	
 	/**
+	 * Similar as above but restricted to ENUM
+	 * @return The linked list containing the complement of the frame, when it is a singleton,
+	 * 		   otherwise it returns the empty list 
+	 */
+	public LinkedList<String> getSingletonEnumFrameComplement(){
+		LinkedList<String> result = getAllEnumFrameComplement();
+		LinkedList<String> lockList = getLockFrameComplement();
+		if (result.size() == 1 && lockList.size()==0)
+			return result;
+		else
+			return new LinkedList<String>(); // else we return the empty list
+	}
+	
+	/**
 	 * 
 	 * @return the list of variables not mentioned in the frame, if this set has size 1 we use 
 	 *         the function getSingletonFrameComplement(), this improves the use of StringTemplate
@@ -372,6 +428,18 @@ public class Action {
 	
 	/**
 	 * 
+	 * @return similar as above but restricted to ENUM variables
+	 */
+	public LinkedList<String> getEnumFrameComplement(){
+		LinkedList<String> result = getAllEnumFrameComplement();
+		if (result.size() > 1 || getLockFrameComplement().size()>0)
+			return result;
+		else
+			return new LinkedList<String>(); // emptylist
+	}
+	
+	/**
+	 * 
 	 * @return	the list of variables with locks that are not mentioned in the frame
 	 */
 	public LinkedList<String> getLockFrameComplement(){
@@ -380,6 +448,7 @@ public class Action {
 		//vars.addAll(process.getLocalVarsNames());
 		vars.addAll(process.getSharedVarsNamesByTypeWithLock(Type.BOOL)); // only non primitive types
 		vars.addAll(process.getSharedVarsNamesByTypeWithLock(Type.INT));
+		vars.addAll(process.getSharedVarsNamesByTypeWithLock(Type.ENUM));
 		vars.addAll(process.getBoolParNamesWithLock());
 		vars.addAll(process.getIntParNamesWithLock());
 		vars.addAll(process.getOnlyLocksNames());

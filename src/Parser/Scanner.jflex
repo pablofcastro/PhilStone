@@ -94,8 +94,9 @@ EndOfLineComment     = "// " {InputCharacter}* {LineTerminator}
 	"{" 				{ return symbol(sym.LBRACE, new String(yytext())); }
 	"}" 				{ return symbol(sym.RBRACE, new String(yytext())); }
 	
-	[a-z][a-zA-Z0-9]* { return symbol(sym.ID, new String(yytext())); }
+	[a-z][a-zA-Z0-9]*   { return symbol(sym.ID, new String(yytext())); }
 	/* literals */
+	[A-Z][a-z]*   		{ return symbol(sym.ENUMCONS, new String(yytext())); } /* enum cons, they starts with uppercase */	
 	{IntLiteral} 		{ return symbol(sym.INTEGER, new Integer(Integer.parseInt(yytext()))); }	
 	"True" 				{ return symbol(sym.TRUE, new String(yytext()) ); }
 	"False" 			{ return symbol(sym.FALSE, new String(yytext()) ); }

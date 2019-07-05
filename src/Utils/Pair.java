@@ -9,6 +9,13 @@ public class Pair<F, S> {
     private S second; //second member of pair
 
     /**
+     * Basic constructor
+     */
+    public Pair(){
+    	
+    }
+    
+    /**
      * A Simple Constructor
      * @param first	the first argument
      * @param second	the second argument

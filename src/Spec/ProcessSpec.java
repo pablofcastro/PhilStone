@@ -357,10 +357,35 @@ public class ProcessSpec {
 		return result;	
 	}
 	
+	/**
+	 * 
+	 * @return	the names of non-primitive Enum parameters, excepting those that are in the owns clause
+	 */
+	public LinkedList<String> getEnumParNamesWithLock(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.ENUM && !this.pars.get(i).isPrimType() && !this.isAnOwnedVar(this.pars.get(i).getName())){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
 	public LinkedList<String> getOwnedIntParNames(){
 		LinkedList<String> result = new LinkedList<String>();
 		for (int i=0; i<this.pars.size();i++){
 			if (this.pars.get(i).getType() == Type.INT && this.isAnOwnedVar(this.pars.get(i).getName())){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
+	
+	public LinkedList<String> getOwnedEnumParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.ENUM && this.isAnOwnedVar(this.pars.get(i).getName())){
 				result.add(this.pars.get(i).getName());
 			}
 		}
@@ -396,7 +421,21 @@ public class ProcessSpec {
 		return result;	
 	}
 	
+	/**
+	 * @return	the names of the primitive-one parameter names, excepting those that are in the owns clause
+	 */
+	public LinkedList<String> getEnumPrimParNames(){
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<this.pars.size();i++){
+			if (this.pars.get(i).getType() == Type.ENUM&& this.pars.get(i).isPrimType() && !this.isAnOwnedVar(this.pars.get(i).getName())){
+				result.add(this.pars.get(i).getName());
+			}
+		}
+		return result;	
+	}
+	
 	public String metamodelToString(String templateDir, int scope){
+		
 		
 		// we save the local bool propositions
 		List<String> localBoolProps = new ArrayList<String>();
@@ -418,6 +457,16 @@ public class ProcessSpec {
 		
 		localIntVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.INT));
 		localIntVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.PRIMINT));
+		
+		// we save the enum local vars
+		List<String> localEnumVars = new ArrayList<String>();
+		for (int i = 0; i < localVars.size(); i++){
+			if (localVars.get(i).getType() == Type.ENUM)
+				localEnumVars.add(localVars.get(i).getName());
+		}
+		
+		localEnumVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.ENUM));
+		localEnumVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.ENUMPRIM));
 		
 		// we set the actions
 		List<Action> localActions = new ArrayList<Action>();
@@ -453,6 +502,7 @@ public class ProcessSpec {
 		st.add("name", this.name);
 		st.add("boolProps", localBoolProps); // we add local boolean variables
 		st.add("intVars", localIntVars); // we add the local int variables
+		st.add("enumVars", localEnumVars); // we add the local enum vars
 		
 		LinkedList<String> usedBooleanGlobalVars = new LinkedList<String>(); // a list for the boolean non-primitive global vars	
 																			
@@ -473,9 +523,19 @@ public class ProcessSpec {
 			}
 		}
 		
+		LinkedList<String> usedEnumGlobalVars = new LinkedList<String>(); // a list for the integer global vars	
+		// we add the int global vars used in this process
+		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
+			String currentVar = mySpec.getGlobalVarsNames().get(i);
+			if (this.usesSharedVar(currentVar) && !mySpec.isPrimVar(currentVar)  && !this.isAnOwnedVar(currentVar) && mySpec.getGlobalVarsTypes().get(currentVar) == "ENUM"){
+				usedEnumGlobalVars.add(mySpec.getGlobalVarsNames().get(i));
+			}
+		}
+		
 		// parameters are considered global vars, those parameters in the owns clause are not added
 		usedBooleanGlobalVars.addAll(this.getBoolParNamesWithLock());
 		usedIntGlobalVars.addAll(this.getIntParNamesWithLock());
+		usedEnumGlobalVars.addAll(this.getEnumParNamesWithLock());
 		
 		
 		// define UsedGlobalVars
@@ -488,7 +548,7 @@ public class ProcessSpec {
 		// and the parameters are added 
 		usedGlobalVars.addAll(this.getBoolParNamesWithLock()); // we add the parameters that are not prim types adn not owned
 		usedGlobalVars.addAll(this.getIntParNamesWithLock()); // 
-		
+		usedGlobalVars.addAll(this.getEnumParNamesWithLock());
 		
 		// define UsedGlobalVars with primitive types
 		LinkedList<String> usedPrimGlobalVars = new LinkedList<String>();
@@ -500,6 +560,7 @@ public class ProcessSpec {
 		// and the parameters are added 
 		usedGlobalVars.addAll(this.getBoolPrimParNames()); // we add the parameters that are not prim types
 		usedGlobalVars.addAll(this.getIntPrimParNames()); // 
+		usedGlobalVars.addAll(this.getEnumPrimParNames()); // 
 		
 		
 		// we set the volatile or primitive boolean and int used in the specification
@@ -518,12 +579,24 @@ public class ProcessSpec {
 		// we add the int global vars used in this process
 		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
 			String currentVar = mySpec.getGlobalVarsNames().get(i);
-			if (this.usesSharedVar(currentVar) && mySpec.isPrimVar(currentVar)  && mySpec.getGlobalVarsTypes().get(currentVar) == "INT" && !this.isAnOwnedVar(currentVar)){
+			if (this.usesSharedVar(currentVar) && mySpec.isPrimVar(currentVar)  && mySpec.getGlobalVarsTypes().get(currentVar).equals("PRIMINT") && !this.isAnOwnedVar(currentVar)){
 				usedPrimIntVars.add(mySpec.getGlobalVarsNames().get(i));
 			}
 		}
 		// and the int primitive parameters
-		usedPrimBoolVars.addAll(this.getIntPrimParNames());
+		usedPrimIntVars.addAll(this.getIntPrimParNames());
+		
+		LinkedList<String> usedPrimEnumVars = new LinkedList<String>(); // a list for the enumglobal vars	
+		
+		// we add the int global vars used in this process
+		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
+			String currentVar = mySpec.getGlobalVarsNames().get(i);
+			if (this.usesSharedVar(currentVar) && mySpec.isPrimVar(currentVar)  && mySpec.getGlobalVarsTypes().get(currentVar).equals("PRIMENUM") && !this.isAnOwnedVar(currentVar)){
+				usedPrimEnumVars.add(mySpec.getGlobalVarsNames().get(i));
+			}
+		}
+		// and the int primitive parameters
+		usedPrimEnumVars.addAll(this.getEnumPrimParNames());
 		
 
 		LinkedList<Lock> usedLocks= new LinkedList<Lock>();
@@ -541,10 +614,14 @@ public class ProcessSpec {
 			}
 		}
 		
+		
+		
 		usedLocks.addAll(this.getLockPars());
 		onlyLocks.addAll(this.getLockPars());
 		onlyLocksNames.addAll(this.getLockParNames());
 		//System.out.println(usedLocks); // aca hay un error
+		
+		
 		
 		
 		// we set the important global vars for the locks, those variables in the owns clause are excepted
@@ -556,12 +633,10 @@ public class ProcessSpec {
 			currentLock.addAllUsedBooleanGlobalVars(usedBooleanGlobalVars);
 			currentLock.addAllUsedIntGlobalVars(usedIntGlobalVars);
 			currentLock.addAllUsedIntGlobalVars(usedPrimIntVars);
+			currentLock.addAllUsedEnumGlobalVars(usedEnumGlobalVars);
+			currentLock.addAllUsedEnumGlobalVars(usedPrimEnumVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
-			//currentLock.setUsedGlobalVars(usedGlobalVars);
-			//currentLock.setUsedBooleanGlobalVars(usedBooleanGlobalVars);
-			//currentLock.setUsedIntGlobalVars(usedIntGlobalVars);
-			//System.out.println(this.mySpec.getLocks().get(i).getOtherGlobalVars());
 		}
 		
 		for (int i=0; i<this.getLockPars().size();i++){
@@ -572,6 +647,8 @@ public class ProcessSpec {
 			currentLock.addAllUsedBooleanGlobalVars(usedBooleanGlobalVars);
 			currentLock.addAllUsedIntGlobalVars(usedIntGlobalVars);
 			currentLock.addAllUsedIntGlobalVars(usedPrimIntVars);
+			currentLock.addAllUsedEnumGlobalVars(usedEnumGlobalVars);
+			currentLock.addAllUsedEnumGlobalVars(usedPrimEnumVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
 		}
@@ -585,6 +662,8 @@ public class ProcessSpec {
 			parLock.addAllUsedBooleanGlobalVars(usedBooleanGlobalVars);
 			parLock.addAllUsedIntGlobalVars(usedIntGlobalVars);
 			parLock.addAllUsedIntGlobalVars(usedPrimIntVars);
+			parLock.addAllUsedEnumGlobalVars(usedEnumGlobalVars);
+			parLock.addAllUsedEnumGlobalVars(usedPrimEnumVars);
 			parLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
 			parLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
 			usedLocks.add(parLock);
@@ -597,8 +676,21 @@ public class ProcessSpec {
 			usedLocks.add(parLock);
 		}
 		
+		// Non-primitive int parameters are also considered locks 
+		for (int i=0; i<this.getEnumParNamesWithLock().size();i++){
+			Lock parLock = new Lock(this.getEnumParNamesWithLock().get(i), this.mySpec);
+			parLock.setUsedGlobalVars(usedGlobalVars);
+			usedLocks.add(parLock);
+		}
+		
 		for (int i=0; i<usedLocks.size(); i++){
 			usedLocks.get(i).getOtherGlobalVars();
+		}
+		
+		for (Lock l:usedLocks){
+			System.out.println(l.getName());
+			System.out.println(l.getOtherGlobalVarsWithLocks());
+			
 		}
 		
 		// we calculate the sets of integers used by the program
@@ -611,8 +703,10 @@ public class ProcessSpec {
 		
 		st.add("sharedBoolProps", usedBooleanGlobalVars); // we take the parameters as a global variables
 		st.add("sharedIntVars", usedIntGlobalVars);
+		st.add("sharedEnumVars", usedEnumGlobalVars);
 		st.add("sharedPrimBoolProps", usedPrimBoolVars); // the primitive/volatile shared bool vars
 		st.add("sharedPrimIntVars", usedPrimIntVars); // the primitive/volatile shared int vars
+		st.add("sharedPrimEnumVars", usedPrimEnumVars); // the primitive/volatile shared enum vars
 		st.add("locks", usedLocks); //for now the global vars are locks
 		st.add("onlyLocks", onlyLocksNames); // those locks that do not have any variables associated to them
 		
@@ -623,6 +717,8 @@ public class ProcessSpec {
 		allSharedVars.addAll(usedPrimBoolVars);
 		allSharedVars.addAll(usedPrimIntVars);
 		allSharedVars.addAll(onlyLocksNames);
+		allSharedVars.addAll(usedEnumGlobalVars);
+		allSharedVars.addAll(usedPrimEnumVars);
 		st.add("allSharedVars", allSharedVars);
 		
 		st.add("localActions", localActions);
@@ -638,6 +734,10 @@ public class ProcessSpec {
 								  // specifying the behavior of the environment, .e.g., to state that the environment can
 								  // set any possible integer to a shared int variable.
 		
+		boolean containsEnum = !localEnumVars.isEmpty() || !usedEnumGlobalVars.isEmpty() || !usedPrimEnumVars.isEmpty();
+		boolean containsInt = !localIntVars.isEmpty() || !usedIntGlobalVars.isEmpty() || !usedPrimIntVars.isEmpty();
+		st.add("containsEnums", containsEnum);
+		st.add("containsInts", containsInt);
 		
 		String result = st.render();
 		return result;

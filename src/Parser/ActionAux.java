@@ -142,21 +142,34 @@ public class ActionAux {
 						var.setIsPrim(true);
 					result.addVarToFrame(var);
 				}
+				if (mySpec.getTypeVar(this.frame.get(i), "global") == Type.ENUM){
+					EnumVar var = new EnumVar(this.frame.get(i));
+					if (mySpec.isPrimTypeVar(this.frame.get(i)) || myProcess.isPrimPar(this.frame.get(i)))
+						var.setIsPrim(true);
+					result.addVarToFrame(var);
+				}
 				if (mySpec.getTypeVar(this.frame.get(i), "global") == Type.LOCK){
 					Lock l = new Lock(this.frame.get(i), true);
 					result.addVarToFrame(l);
 				}
-				// DO SOMETHING WITH LOCKS!!!!
 			}
 			else{
-				if (myProcess.getLocalVarType(this.frame.get(i)) == Type.BOOL){
+				if (myProcess.getLocalVarType(this.frame.get(i)) == Type.BOOL || myProcess.getParType(this.frame.get(i)) == Type.BOOL){
 					BoolVar var = new BoolVar(this.frame.get(i));
-					result.addVarToFrame(var);			
+					result.addVarToFrame(var);	
 				}
-				else{
+				if (myProcess.getLocalVarType(this.frame.get(i)) == Type.INT || myProcess.getParType(this.frame.get(i)) == Type.INT){
 					IntVar var = new IntVar(this.frame.get(i));
 					result.addVarToFrame(var);
 				}		
+				if (myProcess.getLocalVarType(this.frame.get(i)) == Type.ENUM || myProcess.getParType(this.frame.get(i)) == Type.ENUM){
+					EnumVar var = new EnumVar(this.frame.get(i));
+					result.addVarToFrame(var);
+				}	
+				if (myProcess.getLocalVarType(this.frame.get(i)) == Type.LOCK || myProcess.getParType(this.frame.get(i))  == Type.LOCK){
+					Lock l = new Lock(this.frame.get(i), true);
+					result.addVarToFrame(l);
+				}
 			}		
 		}		
 		return result;

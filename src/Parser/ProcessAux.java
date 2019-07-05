@@ -90,13 +90,6 @@ public class ProcessAux {
 		return this.primPars.contains(name);
 	}
 	
-	public boolean isEnumCons(String name){
-		for (String var:this.enumVars.keySet()){
-			if (this.enumVars.get(var).contains(name))
-				return true;
-		}
-		return false;
-	}
 	
 	public void setSpec(SpecAux spec){
 		this.mySpec =  spec;
@@ -183,7 +176,7 @@ public class ProcessAux {
 	}
 	
 	/**
-	 * This methods adds the values correspoding to a collection of enum vars
+	 * This methods adds the values corresponding to a collection of enum vars
 	 * @param values	the collection of enum variables to which the values will be added
 	 */
 	public void addAllValuesToEnum(HashMap<String, Pair<LinkedList<String>,Type>> values){
@@ -198,19 +191,24 @@ public class ProcessAux {
 			this.addError("Duplicated variable in Process, line: "+line);
 		}
 		else{
-			if (t==Type.BOOL || t==Type.INT || t==Type.LOCK || t==Type.ENUM)
+			if (t==Type.BOOL || t==Type.INT || t==Type.LOCK || t==Type.ENUM){
 				this.pars.add(new Pair<String,Type>(name, t));
+				return;
+			}
 			if (t==Type.PRIMBOOL){
 				this.pars.add(new Pair<String,Type>(name, Type.BOOL)); // we added as an INT 
 				this.primPars.add(name); // and we add it as a primitive type
+				return;
 			}
 			if (t==Type.PRIMINT){
 				this.pars.add(new Pair<String,Type>(name, Type.INT)); // we added as an INT 
 				this.primPars.add(name); // and we add it as a primitive type
+				return;
 			}	
 			if (t==Type.ENUMPRIM){
 				this.pars.add(new Pair<String,Type>(name, Type.ENUM)); // we added as an INT 
 				this.primPars.add(name); // and we add it as a primitive type
+				return;
 			}		
 		}
 	}
@@ -274,7 +272,10 @@ public class ProcessAux {
 	}
 	
 	public Type getLocalVarType(String name){
-		return this.localVars.get(name);
+		if (localVars.containsKey(name))
+			return this.localVars.get(name);
+		else 
+			return Type.ERROR;
 	}
 	
 	/**
@@ -329,8 +330,19 @@ public class ProcessAux {
 	 * @param table
 	 * @return	The process corresponding to this expression
 	 */
-	public ProcessSpec getProcessSpec(HashMap<String, Type> table){
+	public ProcessSpec getProcessSpec(HashMap<String, Type> t){
 		ProcessSpec result = new ProcessSpec(this.name);
+		HashMap<String, Type> table = new HashMap<String, Type>();
+		for (String val:t.keySet()){
+			table.put(val, t.get(val));
+		}
+		
+		// we add the parameters in the table
+		for (Pair<String, Type> p:this.pars){
+			if (table.containsKey(p.getFirst()))
+				throw new RuntimeException("repeated var name");
+			table.put(p.getFirst(), p.getSecond());
+		}
 		
 		// we add the actions
 		for (int i=0; i<actions.size(); i++){
@@ -351,7 +363,11 @@ public class ProcessAux {
 			if (table.get(currentVar) == Type.BOOL){
 				BoolVar v = new BoolVar(currentVar);
 				result.addLocalVar(v);
-			}		
+			}	
+			if (table.get(currentVar) == Type.ENUM){
+				EnumVar v = new EnumVar(currentVar);
+				result.addLocalVar(v);
+			}	
 		}
 		
 		// we add the parameters
@@ -368,12 +384,19 @@ public class ProcessAux {
 					v.setIsPrim(true);
 				result.addPar(v);
 			}	
+			if (pars.get(i).getSecond() == Type.ENUM){
+				EnumVar v = new EnumVar(pars.get(i).getFirst());
+				if (this.isPrimPar(pars.get(i).getFirst()))
+					v.setIsPrim(true);
+				result.addPar(v);
+			}	
 			// We add the parameters that are locks
 			if (pars.get(i).getSecond() == Type.LOCK){
 				Lock l = new Lock(pars.get(i).getFirst(), true);
 				result.addPar(l);
 			}
 		}
+		
 		
 		for (int i=0; i<this.ownedVars.size(); i++){
 			result.addOwnedVar(this.ownedVars.get(i));
@@ -382,11 +405,11 @@ public class ProcessAux {
 		
 		// we add the invariants
 		for (int i=0; i<invs.size();i++){
-			result.addInv((TemporalFormula) invs.get(i).getExpr(table));
+			result.addInv((TemporalFormula) invs.get(i).getExpr(table, this.mySpec));
 		}
 		
 		// and the initial condition
-		result.setInit((Formula) init.getExpr(table));
+		result.setInit((Formula) init.getExpr(table, this.mySpec));
 		return result;
 	}
 }

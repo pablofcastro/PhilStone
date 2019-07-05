@@ -243,8 +243,8 @@ public class Spec {
 				result.put(globalVars.get(i).getName(), "PRIMBOOL");
 			if (globalVars.get(i).getType() == Type.PRIMINT)
 				result.put(globalVars.get(i).getName(), "PRIMINT");
-			if (globalVars.get(i).getType() == Type.PRIMINT)
-				result.put(globalVars.get(i).getName(), "ENUMPRIM");
+			if (globalVars.get(i).getType() == Type.ENUMPRIM)
+				result.put(globalVars.get(i).getName(), "PRIMENUM");
 			
 		}
 		// and the locks that are not variables are added

@@ -1,6 +1,6 @@
 // This file describes the alloy metamodel for processes
 // Author: Pablo Castro
-Metamodel(name, boolProps, sharedBoolProps, sharedPrimBoolProps, sharedPrimIntVars, intVars, intSet, sharedIntVars, containsEnums, containsInts, sharedEnumVars, sharedPrimEnumVars, EnumVars, enumTypes, locks, onlyLocks, localActions, envActions, actions, auxVars, auxAxioms, auxPreds, invariants, init, scope, allSharedVars)  ::=
+Metamodel(name, boolProps, sharedBoolProps, sharedPrimBoolProps, sharedPrimIntVars, intVars, intSet, sharedIntVars, containsEnums, containsInts, sharedEnumVars, sharedPrimEnumVars, enumVars, enumTypes, locks, onlyLocks, localActions, envActions, actions, auxVars, auxAxioms, auxPreds, invariants, init, scope, allSharedVars)  ::=
 <<
 open util/relation
 

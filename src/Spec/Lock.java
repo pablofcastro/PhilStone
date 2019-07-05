@@ -9,6 +9,7 @@ public class Lock implements Var{
 	private LinkedList<String> usedGlobalVars;
 	private LinkedList<String> usedBooleanGlobalVars;
 	private LinkedList<String> usedIntGlobalVars;
+	private LinkedList<String> usedEnumGlobalVars;
 	private boolean onlyLock; // this variable is use to point out that the associated variable is only a lock, do not need more data
 	
 	
@@ -26,6 +27,7 @@ public class Lock implements Var{
 		this.usedGlobalVars = new LinkedList<String>();
 		this.usedBooleanGlobalVars = new LinkedList<String>();
 		this.usedIntGlobalVars = new LinkedList<String>();
+		this.usedEnumGlobalVars = new LinkedList<String>();
 	}
 	
 	public Lock(String varName, boolean onlyLock){
@@ -36,6 +38,7 @@ public class Lock implements Var{
 		this.usedGlobalVars = new LinkedList<String>();
 		this.usedBooleanGlobalVars = new LinkedList<String>();
 		this.usedIntGlobalVars = new LinkedList<String>();
+		this.usedEnumGlobalVars = new LinkedList<String>();
 	}
 	
 	/**
@@ -53,6 +56,8 @@ public class Lock implements Var{
 		this.usedGlobalVars = new LinkedList<String>();
 		this.usedBooleanGlobalVars = new LinkedList<String>();
 		this.usedIntGlobalVars = new LinkedList<String>();
+		this.usedEnumGlobalVars = new LinkedList<String>();
+		
 	}
 	
 	public String getName(){
@@ -75,6 +80,7 @@ public class Lock implements Var{
     	this.usedGlobalVars.clear();
     	this.usedBooleanGlobalVars.clear();
     	this.usedIntGlobalVars.clear();
+    	this.usedEnumGlobalVars.clear();
     }
 	
 	
@@ -138,19 +144,43 @@ public class Lock implements Var{
 	}
 	
 	public void addAllUsedGlobalVars(LinkedList<String> list){
-		this.usedGlobalVars.addAll(list);
+		for (String var:list){
+			if (!this.usedGlobalVars.contains(var))
+				this.usedGlobalVars.add(var);
+		}
+		//this.usedGlobalVars.addAll(list);
 	}
 	
 	public void addAllUsedBooleanGlobalVars(LinkedList<String> list){
-		this.usedBooleanGlobalVars.addAll(list);
+		for (String var:list){
+			if (!this.usedBooleanGlobalVars.contains(var))
+				this.usedBooleanGlobalVars.add(var);
+		}
+		//this.usedBooleanGlobalVars.addAll(list);
 	}
 	
 	public void addAllUsedIntGlobalVars(LinkedList<String> list){
-		this.usedIntGlobalVars.addAll(list);
+		for (String var:list){
+			if (!this.usedIntGlobalVars.contains(var))
+				this.usedIntGlobalVars.add(var);
+		}
+		//this.usedIntGlobalVars.addAll(list);
+	}
+	
+	public void addAllUsedEnumGlobalVars(LinkedList<String> list){
+		for (String var:list){
+			if (!this.usedEnumGlobalVars.contains(var))
+				this.usedEnumGlobalVars.add(var);
+		}
+		//this.usedEnumGlobalVars.addAll(list);
 	}
 	
 	public void addAllUsedGlobalVarsWithLocks(LinkedList<String> list){
-		this.usedGlobalVarsWithLocks.addAll(list);
+		for (String var:list){
+			if (!this.usedGlobalVarsWithLocks.contains(var))
+				this.usedGlobalVarsWithLocks.add(var);
+		}
+		//this.usedGlobalVarsWithLocks.addAll(list);
 	}
 	
 	/**
@@ -175,6 +205,14 @@ public class Lock implements Var{
 	 */
 	public void setUsedIntGlobalVars(LinkedList<String> list){
 		this.usedIntGlobalVars = list;
+	}
+	
+	/**
+	 * A Basic Setter
+	 * @param list	the list of used enum vars in the associated specification
+	 */
+	public void setUsedEnumGlobalVars(LinkedList<String> list){
+		this.usedEnumGlobalVars = list;
 	}
 	
 	/**
@@ -235,6 +273,21 @@ public class Lock implements Var{
 		for (int i=0; i<usedIntGlobalVars.size(); i++){
 			if (!usedIntGlobalVars.get(i).equals(varName)){
 				result.add(usedIntGlobalVars.get(i));
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * 
+	 * @return	the list of ENUM shared vars different from the actual one residing in the specification
+	 */
+	public LinkedList<String> getOtherEnumGlobalVars(){
+		//we calculate this using a process and the method above setUsedGlobalVars
+		LinkedList<String> result = new LinkedList<String>();
+		for (int i=0; i<usedEnumGlobalVars.size(); i++){
+			if (!usedEnumGlobalVars.get(i).equals(varName)){
+				result.add(usedEnumGlobalVars.get(i));
 			}
 		}
 		return result;

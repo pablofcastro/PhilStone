@@ -31,7 +31,7 @@ process phil(left:boolean, right:boolean) {
 				post: own(right);
 			}
 
-	action	eat () {
+	action	eat() {
 				frame: eating, hungry;
 				pre: this.hungry && own(left) && own(right);
 				post: this.eating && !this.hungry;

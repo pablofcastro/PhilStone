@@ -28,6 +28,7 @@ public enum Operator {
 	AW,
 	BCONS,
 	ICONS,
+	ECONS, // for enum constants
 	MINUS,
 	AV,
 	OWN,
