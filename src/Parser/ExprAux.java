@@ -152,11 +152,13 @@ public class ExprAux {
 	
 	/**
 	 * 
-	 * @param table	a table with the type of variables
-	 * @param enums	the collection of enumerables, this allows us to distinguish between enum constant and vars
+	 * @param table				a table with the type of variables
+	 * @param enums				the collection of enumerables, this allows us to distinguish between enum constant and vars
+	 * @param mySpec 			needed in the case of a global var or a parameter to find the type and possible values of a variables
+	 * @param myProcess			needed in the case of a process var for finding some feature of the var 
 	 * @return	the expression corresponding to the syntactical tree
 	 */
-	public Expression getExpr(HashMap<String, Type> table, SpecAux mySpec){
+	public Expression getExpr(HashMap<String, Type> table, SpecAux mySpec, ProcessAux myProcess){
 		switch(operator){
 		case VAR:
 				if (this.owner.equals("global") || this.owner.equals("this") ||  this.owner.equals("par")){
@@ -169,8 +171,16 @@ public class ExprAux {
 					if (table.get(this.getUnqualifiedName()) == Type.LOCK){
 						return new Lock(this.name, true);
 					}
-					if (table.get(this.getUnqualifiedName()) == Type.ENUM){
-						return new EnumVar(this.name);
+					if (table.get(this.getUnqualifiedName()) == Type.ENUM){ // in the case of an enum var we have to find its values
+						EnumVar result = new EnumVar(this.name);
+						EnumType myType = new EnumType();
+						result.setEnumType(myType);
+						if	(this.owner.equals("global")) // if global we search in the main spec
+							myType.addValues(mySpec.getValuesVarFromInstance(this.getUnqualifiedName(), "global"));
+						if (this.owner.equals("this")) // if local we search in the process
+							myProcess.getValuesForVar(this.getUnqualifiedName());
+						// TBD: deal with parameters
+						return result;
 					}
 				}//
 				else{
@@ -182,36 +192,41 @@ public class ExprAux {
 							return new BoolVar(this.name);
 					if (mySpec.getTypeVarFromInstance(this.getUnqualifiedName(), this.owner) == Type.LOCK)
 							return new Lock(this.name, true);
-					if (mySpec.getTypeVarFromInstance(this.getUnqualifiedName(), this.owner) == Type.ENUM)
-							return new EnumVar(this.name);
+					if (mySpec.getTypeVarFromInstance(this.getUnqualifiedName(), this.owner) == Type.ENUM){
+						EnumVar result = new EnumVar(this.name);
+						EnumType myType = new EnumType();
+						myType.addValues(mySpec.getValuesVarFromInstance(this.getUnqualifiedName(), this.owner));
+						result.setEnumType(myType);
+						return result;
+					}
 					throw new RuntimeException("Wrong typed var:"+this.name);
 				}			 
-		case AV: 	return new Av((Var) op1.getExpr(table, mySpec));
-		case OWN: 	return new Own((Var) op1.getExpr(table, mySpec));
+		case AV:	return new Av((Var) op1.getExpr(table, mySpec, myProcess));
+		case OWN: 	return new Own((Var) op1.getExpr(table, mySpec, myProcess));
 		case ICONS: return new IntConstant(this.ival);
 		case BCONS: return new BoolConstant(this.bval);
 		case ECONS: return new EnumConstant(this.name);
-		case EX:	return new EX((Formula) this.op1.getExpr(table, mySpec));
-		case AX:	return new AX((Formula) this.op1.getExpr(table, mySpec));
-		case NOT:	return new Negation((Formula) this.op1.getExpr(table, mySpec));
-		case OR:	return new Disjunction((Formula) this.op1.getExpr(table, mySpec), (Formula) this.op2.getExpr(table,mySpec));
-		case IMP:	return new Implication((Formula) this.op1.getExpr(table, mySpec), (Formula) this.op2.getExpr(table, mySpec));
-		case AU:	return new AU((TemporalFormula) this.op1.getExpr(table, mySpec), (TemporalFormula) this.op2.getExpr(table, mySpec));
-		case EU:	return new EU((TemporalFormula) this.op1.getExpr(table, mySpec), (TemporalFormula) this.op2.getExpr(table, mySpec));
-		case AW:	return new AW((TemporalFormula) this.op1.getExpr(table, mySpec), (TemporalFormula) this.op2.getExpr(table, mySpec));
-		case EW:	return new EW((TemporalFormula) this.op1.getExpr(table, mySpec), (TemporalFormula) this.op2.getExpr(table, mySpec));
-		case AND:	return new Conjunction((Formula) this.op1.getExpr(table, mySpec), (Formula) this.op2.getExpr(table, mySpec));
-		case AG:	return new AG((Formula) this.op1.getExpr(table, mySpec));
-		case EG:	return new EG((Formula) this.op1.getExpr(table, mySpec));
-		case EF:	return new EF((Formula) this.op1.getExpr(table, mySpec));
-		case AF: 	return new AF((Formula) this.op1.getExpr(table, mySpec));
-		case MINUS: return new NegExpression((AritExpression) this.op1.getExpr(table, mySpec));
-		case DEC: 	return new DecEnum((EnumExpression) this.op1.getExpr(table, mySpec));
-		case INC: 	return new IncEnum((EnumExpression) this.op1.getExpr(table, mySpec));
-		case MULT:  return new MultExpression((AritExpression) this.op1.getExpr(table, mySpec), (AritExpression) this.op1.getExpr(table, mySpec));
-		case DIV:	return new DivExpression((AritExpression) this.op1.getExpr(table, mySpec), (AritExpression) this.op1.getExpr(table, mySpec));
-		case SUM:	return new SumExpression((AritExpression) this.op1.getExpr(table, mySpec), (AritExpression) this.op1.getExpr(table, mySpec));				
-		case EQ:	return new EqComparison((Expression) this.op1.getExpr(table, mySpec), (Expression) this.op1.getExpr(table, mySpec));			
+		case EX:	return new EX((Formula) this.op1.getExpr(table, mySpec, myProcess));
+		case AX:	return new AX((Formula) this.op1.getExpr(table, mySpec, myProcess));
+		case NOT:	return new Negation((Formula) this.op1.getExpr(table, mySpec, myProcess));
+		case OR:	return new Disjunction((Formula) this.op1.getExpr(table, mySpec, myProcess), (Formula) this.op2.getExpr(table,mySpec, myProcess));
+		case IMP:	return new Implication((Formula) this.op1.getExpr(table, mySpec, myProcess), (Formula) this.op2.getExpr(table, mySpec, myProcess));
+		case AU:	return new AU((TemporalFormula) this.op1.getExpr(table, mySpec, myProcess), (TemporalFormula) this.op2.getExpr(table, mySpec, myProcess));
+		case EU:	return new EU((TemporalFormula) this.op1.getExpr(table, mySpec, myProcess), (TemporalFormula) this.op2.getExpr(table, mySpec, myProcess));
+		case AW:	return new AW((TemporalFormula) this.op1.getExpr(table, mySpec, myProcess), (TemporalFormula) this.op2.getExpr(table, mySpec, myProcess));
+		case EW:	return new EW((TemporalFormula) this.op1.getExpr(table, mySpec, myProcess), (TemporalFormula) this.op2.getExpr(table, mySpec, myProcess));
+		case AND:	return new Conjunction((Formula) this.op1.getExpr(table, mySpec, myProcess), (Formula) this.op2.getExpr(table, mySpec, myProcess));
+		case AG:	return new AG((Formula) this.op1.getExpr(table, mySpec, myProcess));
+		case EG:	return new EG((Formula) this.op1.getExpr(table, mySpec, myProcess));
+		case EF:	return new EF((Formula) this.op1.getExpr(table, mySpec, myProcess));
+		case AF: 	return new AF((Formula) this.op1.getExpr(table, mySpec, myProcess));
+		case MINUS: return new NegExpression((AritExpression) this.op1.getExpr(table, mySpec, myProcess));
+		case DEC: 	return new DecEnum((EnumExpression) this.op1.getExpr(table, mySpec, myProcess));
+		case INC: 	return new IncEnum((EnumExpression) this.op1.getExpr(table, mySpec, myProcess));
+		case MULT:  return new MultExpression((AritExpression) this.op1.getExpr(table, mySpec, myProcess), (AritExpression) this.op1.getExpr(table, mySpec, myProcess));
+		case DIV:	return new DivExpression((AritExpression) this.op1.getExpr(table, mySpec, myProcess), (AritExpression) this.op1.getExpr(table, mySpec, myProcess));
+		case SUM:	return new SumExpression((AritExpression) this.op1.getExpr(table, mySpec, myProcess), (AritExpression) this.op1.getExpr(table, mySpec, myProcess));				
+		case EQ:	return new EqComparison((Expression) this.op1.getExpr(table, mySpec, myProcess), (Expression) this.op2.getExpr(table, mySpec, myProcess));			
 		default: return null;
 		}
 	}
@@ -516,7 +531,7 @@ public class ExprAux {
 			result.addAll(op2.getClausePos(table, mySpec, context));
 		}
 		if (operator == Operator.VAR || operator == Operator.EQ || operator == Operator.AV || operator == Operator.OWN){
-			result.add((ElemFormula) this.getExpr(table, mySpec));
+			result.add((ElemFormula) this.getExpr(table, mySpec, mySpec.getProcessByName(context)));
 		}
 		// otherwise it is a negated formula
 		return result;
@@ -532,7 +547,7 @@ public class ExprAux {
 			result.addAll(op2.getClauseNeg(table, mySpec, context));
 		}
 		if (operator == Operator.NOT){
-			ElemNegation neg = new ElemNegation((ElemFormula) op1.getExpr(table, mySpec));
+			ElemNegation neg = new ElemNegation((ElemFormula) op1.getExpr(table, mySpec, mySpec.getProcessByName(context)));
 			result.add(neg);
 		}
 		// otherwise it is a positive formula

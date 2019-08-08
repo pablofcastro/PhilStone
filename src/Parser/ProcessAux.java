@@ -225,6 +225,13 @@ public class ProcessAux {
 		}
 	}
 	
+	public LinkedList<String> getValuesForVar(String name){
+		if (this.enumVars.containsKey(name))
+			return enumVars.get(name);
+		else
+			throw new RuntimeException("Wrong var name");
+	}
+	
 	public int getNumberPars(){
 		return this.pars.size();
 	}
@@ -366,7 +373,12 @@ public class ProcessAux {
 			}	
 			if (table.get(currentVar) == Type.ENUM){
 				EnumVar v = new EnumVar(currentVar);
+				EnumType myType = new EnumType();
+				myType.setName(currentVar+this.getName()+"enum");
+				myType.addValues(this.getValuesForVar(currentVar));
+				v.setEnumType(myType);
 				result.addLocalVar(v);
+				result.addEnumType(myType);
 			}	
 		}
 		
@@ -405,11 +417,11 @@ public class ProcessAux {
 		
 		// we add the invariants
 		for (int i=0; i<invs.size();i++){
-			result.addInv((TemporalFormula) invs.get(i).getExpr(table, this.mySpec));
+			result.addInv((TemporalFormula) invs.get(i).getExpr(table, this.mySpec, this));
 		}
 		
 		// and the initial condition
-		result.setInit((Formula) init.getExpr(table, this.mySpec));
+		result.setInit((Formula) init.getExpr(table, this.mySpec, this));
 		return result;
 	}
 }

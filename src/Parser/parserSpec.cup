@@ -627,7 +627,7 @@ primary ::= INTEGER:v  {: ExprAux c = new ExprAux(v, vleft);
 						 ExprAux v = new ExprAux(e, eleft);
 						 
 						 v.isEnumCons();  // we indicate that it is an enum constant
-						 RESULT =v;
+						 RESULT = v;
 					   :}
 		  | ID:owner DOT ID:id {:
 									ExprAux v = new ExprAux(owner+"."+id, idleft);

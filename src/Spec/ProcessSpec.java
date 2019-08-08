@@ -13,19 +13,19 @@ import JFlex.Out;
  * A Class for the Specification of a Process
  */
 public class ProcessSpec {
-	String name; // the name of the process
-	LinkedList<Action> actions; // the actions of the process
-	LinkedList<Var> sharedVars; // the global vars
-	LinkedList<Var> localVars;  // the local vars of the process
-	LinkedList<Var> pars;		// the parameters of the process
-	LinkedList<String> ownedVars; // this list keeps track of those vars that are "owned" by the process, i.e.,
+	private String name; // the name of the process
+	private LinkedList<Action> actions; // the actions of the process
+	private LinkedList<Var> sharedVars; // the global vars
+	private LinkedList<Var> localVars;  // the local vars of the process
+	private LinkedList<Var> pars;		// the parameters of the process
+	private LinkedList<String> ownedVars; // this list keeps track of those vars that are "owned" by the process, i.e.,
 								  // the process always has the lock of the variable, this allows for optimizations
 								  // these are global vars.
-	LinkedList<TemporalFormula> invs; // the invariants of the process
-	LinkedList<String> instances; // the instances of the specification
+	private LinkedList<TemporalFormula> invs; // the invariants of the process
+	private LinkedList<String> instances; // the instances of the specification
 	private LinkedList<EnumType> enums; // the enums defined in the specification
-	Spec mySpec;
-	Formula init;
+	private Spec mySpec;
+	private Formula init;
 	int intSize; // the size of the ints
 	
 	/**
@@ -97,6 +97,15 @@ public class ProcessSpec {
 	 */
 	public void addSharedVar(Var v){
 		sharedVars.add(v);
+	}
+	
+	
+	/**
+	 * Adds an enum type tu the process spec
+	 * @param e	the enumtype to be added
+	 */
+	public void addEnumType(EnumType e){
+		this.enums.add(e);
 	}
 	
 	public void addOwnedVar(String v){
@@ -174,6 +183,42 @@ public class ProcessSpec {
 		return result;
 	}
 	
+	
+	public Type getSharedVarType(String var){
+		return this.mySpec.getGlobalVarType(var);
+	}
+	
+	
+	public Var getLocalVarByName(String name){
+		for (Var v:this.localVars){
+			if (v.getName().equals(name))
+				return v;
+		}
+		throw new RuntimeException("wrong var name...");
+	}
+	
+	public Spec getSpec(){
+		return this.mySpec;
+	}
+	
+	/**
+	 * 
+	 * @return	the collection of enum types in this process
+	 */
+	public LinkedList<EnumType> getEnumTypes(){
+		return this.enums;
+	}
+	
+	public LinkedList<String> getValuesForEnum(String var){
+		LinkedList<String> result = new LinkedList<String>();
+		for (Var v:this.localVars){
+			if (v.getName().equals(var) && v.getType() == Type.ENUM){
+				result.addAll(((EnumVar) v).getValues());
+				return result;
+			}
+		}
+		throw new RuntimeException("Enum Variable not Found");
+	}
 	
 	public LinkedList<String> getSharedVarsNamesByType(Type t){
 		return this.mySpec.getGlobalVarsNamesByType(t);
@@ -460,11 +505,20 @@ public class ProcessSpec {
 		
 		// we save the enum local vars
 		List<String> localEnumVars = new ArrayList<String>();
+		// a list to save the possible enum values
+		List<String> enumValues = new ArrayList<String>();
 		for (int i = 0; i < localVars.size(); i++){
-			if (localVars.get(i).getType() == Type.ENUM)
+			if (localVars.get(i).getType() == Type.ENUM){
 				localEnumVars.add(localVars.get(i).getName());
+				// we add the values of the variables to the enum values
+				for(String v:((EnumVar) localVars.get(i)).getValues()){
+					if (!enumValues.contains(v))
+						enumValues.add(v);
+				}
+			}
 		}
-		
+
+	
 		localEnumVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.ENUM));
 		localEnumVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.ENUMPRIM));
 		
@@ -524,11 +578,15 @@ public class ProcessSpec {
 		}
 		
 		LinkedList<String> usedEnumGlobalVars = new LinkedList<String>(); // a list for the integer global vars	
-		// we add the int global vars used in this process
+		// we add the enum global vars used in this process
 		for (int i=0; i< mySpec.getGlobalVarsNames().size(); i++){
 			String currentVar = mySpec.getGlobalVarsNames().get(i);
 			if (this.usesSharedVar(currentVar) && !mySpec.isPrimVar(currentVar)  && !this.isAnOwnedVar(currentVar) && mySpec.getGlobalVarsTypes().get(currentVar) == "ENUM"){
 				usedEnumGlobalVars.add(mySpec.getGlobalVarsNames().get(i));
+				for(String v:((EnumVar) mySpec.getGlobalVarByName(mySpec.getGlobalVarsNames().get(i))).getValues()){
+					if (!enumValues.contains(v))
+						enumValues.add(v);
+				}
 			}
 		}
 		
@@ -624,7 +682,7 @@ public class ProcessSpec {
 		
 		
 		
-		// we set the important global vars for the locks, those variables in the owns clause are excepted
+		// we set the important global vars for the locks, those variables in the owns clause are skipped
 		for (int i=0; i<usedLocks.size();i++){
 			Lock currentLock = usedLocks.get(i);
 			currentLock.addAllUsedGlobalVars(usedGlobalVars);
@@ -687,11 +745,6 @@ public class ProcessSpec {
 			usedLocks.get(i).getOtherGlobalVars();
 		}
 		
-		for (Lock l:usedLocks){
-			System.out.println(l.getName());
-			System.out.println(l.getOtherGlobalVarsWithLocks());
-			
-		}
 		
 		// we calculate the sets of integers used by the program
 		// for now, we only consider positive integers, 
@@ -709,6 +762,8 @@ public class ProcessSpec {
 		st.add("sharedPrimEnumVars", usedPrimEnumVars); // the primitive/volatile shared enum vars
 		st.add("locks", usedLocks); //for now the global vars are locks
 		st.add("onlyLocks", onlyLocksNames); // those locks that do not have any variables associated to them
+		st.add("enumTypes", enumValues);
+		
 		
 		// we create a collection for all the shared variables
 		LinkedList<String> allSharedVars = new LinkedList<String>();

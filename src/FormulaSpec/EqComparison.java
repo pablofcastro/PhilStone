@@ -31,7 +31,7 @@ public class EqComparison implements ElemFormula {
     }
 	
     public String toAlloy(String metaName, String state){
-    	String result = exp1.toAlloy(metaName,state) + " = "  + exp2.toAlloy(metaName,state);
+    	String result = "("+exp1.toAlloy(metaName,state) + " = "  + exp2.toAlloy(metaName,state)+")";
     	return result;
     }
     

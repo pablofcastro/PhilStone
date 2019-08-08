@@ -3,11 +3,13 @@ import java.io.*;
 import java.util.*;
 import javax.xml.parsers.DocumentBuilderFactory;
 import Spec.*;
+import FormulaSpec.*;
 
 import JFlex.Out;
 
 import javax.xml.parsers.DocumentBuilder;
 import Utils.*;
+import edu.mit.csail.sdg.alloy4compiler.translator.A4Options;
 
 /**
  * A simple class to manipulate and visualize labeled transition systems
@@ -18,7 +20,9 @@ public class LTS {
 	
 	private HashMap<String, Node> nodes; // the nodes of the graph with their edges
 	private LinkedList<String> props; // all the propositions in the model	
+	private LinkedList<String> enums; // the enums in the model
 	private LinkedList<String> globalProps; // only the global propositions
+	private LinkedList<String> globalEnums; // only the global enums
 	private LinkedList<String> actions; // the actions of the model
 	private LinkedList<String> env; // the environmental actions
 	private LinkedList<String> localInvs; // the local properties corresponding to the associated process
@@ -38,6 +42,8 @@ public class LTS {
 		this.localInvs = new LinkedList<String>();
 		this.env = new LinkedList<String>(); // the environmental actions of the model
 		this.globalProps = new LinkedList<String>();
+		this.globalEnums = new LinkedList<String>(); // the global enums
+		this.enums = new LinkedList<String>();
 		this.name = "NoName"; // a default name if none is provided
 	}
 	
@@ -47,9 +53,11 @@ public class LTS {
 	public LTS(ProcessSpec myProcess) {
 		this.nodes = new HashMap<String, Node>(); // the nodes of the model		
 		this.props = new LinkedList<String>(); // the proposition in the model
+		this.enums = new LinkedList<String>(); // the enums in the model
 		this.actions = new LinkedList<String>(); // the actions of the model
 		this.env = new LinkedList<String>(); // the environmental actions of the model
 		this.globalProps = new LinkedList<String>();
+		this.globalEnums = new LinkedList<String>();
 		this.name = myProcess.getName(); // a default name
 		this.processSpec = myProcess;
 		this.localInvs = new LinkedList<String>();
@@ -66,10 +74,12 @@ public class LTS {
 	public LTS(String name) {
 		this.nodes = new HashMap<String, Node>(); // the nodes of the model		
 		this.props = new LinkedList<String>(); // the proposition in the model
+		this.enums = new LinkedList<String>(); // the enums in the model
 		this.actions = new LinkedList<String>(); // the actions of the model
 		this.localInvs = new LinkedList<String>();
 		this.env = new LinkedList<String>(); // the environmental actions of the model
 		this.globalProps = new LinkedList<String>();
+		this.globalEnums = new LinkedList<String>();
 		this.name = name;
 	}
 	
@@ -80,6 +90,8 @@ public class LTS {
 	public void setName(String name){
 		this.name = name;
 	}
+	
+	
 	/**
 	 * Adds a node to the list
 	 * @param n	the node to be added
@@ -105,6 +117,15 @@ public class LTS {
 		}
 	}
 	
+	public void addEnum(String e){
+		if (!this.enums.contains(e)){
+			enums.add(e);
+			if (this.processSpec.getSharedVarsNames().contains(e.replace("EnumVar_", ""))) // if this happens then it is a global var
+					globalEnums.add(e);
+		}
+	}
+	
+	
 	/**
 	 * Adds a local property to the collection of properties of the LTS
 	 * @param prop	the property to be added
@@ -120,6 +141,30 @@ public class LTS {
 	
 	public LinkedList<String> getGlobalProps(){
 		return this.globalProps;
+	}
+	
+	public LinkedList<String> getEnums(){
+		return this.enums;
+	}
+	
+	/**
+	 * Given the name of an enum caputes its possible values
+	 * @param v	the name of the variable
+	 * @return	the possible values of this enum in this model
+	 */
+	public LinkedList<String> computePossibleValuesForEnum(String v){
+		LinkedList<String> result = new LinkedList<String>();
+		for (String n:this.nodes.keySet()){
+			Node current = nodes.get(n);
+			if (!result.contains(current.getEnumVarValue(v)))
+				result.add(current.getEnumVarValue(v));
+		}
+		return result;
+	}
+	
+	
+	public LinkedList<String> getGlobalEnums(){
+		return this.globalEnums;
 	}
 	
 	public UnionFind getUnionFind(){
@@ -178,6 +223,7 @@ public class LTS {
 	public String getInitialNode(){
 		return this.initialNode;
 	}
+	
 	public LinkedList<String> getEqClassesNames(){
 		LinkedList<String> result = new LinkedList<String>();
 		Iterator<String> it = this.nodes.keySet().iterator();
@@ -216,7 +262,7 @@ public class LTS {
 	}
 	
 	/**
-	 * This method is useful to retrieve the collection of arcs corresponding to an arc between an arc in the equivalence classes
+	 * This method is useful to retrieve the collection of arcs corresponding to an arc between equivalence classes
 	 * @param origin
 	 * @param target
 	 * @return	a collection of edge matching the transition between equiv. classes
@@ -245,7 +291,7 @@ public class LTS {
 	
 	
 	/**
-	 * Creates an alloy specification for  the possible instance from this LTS
+	 * Creates an alloy specification for  the possible instance for this LTS
 	 * Note: the instance only preserves properties of ACTL, this could be extended to all CTL...
 	 * @param output	
 	 * @param scope		the scope that will passed to Alloy
@@ -266,10 +312,34 @@ public class LTS {
 				writer.println("one sig "+listNodes.get(i)+ " extends Node{}");
 			}
 			// write down the propositions
-			writer.println("abstract sig Prop{}");		
+			writer.println("abstract sig Prop{}");	
+			
 			for (int i=0; i<props.size(); i++){
 				writer.println("one sig "+props.get(i)+ " extends Prop{}");
 				writer.println("pred "+props.get(i)+"[m:Instance"+name+",n:Node]{"+props.get(i)+" in m.val[n]}");
+			}
+			
+			// write down the enum constants
+			writer.println("abstract sig Enum{}");
+			// let us calculate the enum constants in the spec
+			LinkedList<String> enumCons = new LinkedList<String>();
+			for (String v: this.enums){
+				if (this.globalEnums.contains(v)){ // if a global var
+					for  (String cons:((EnumVar) this.processSpec.getSpec().getGlobalVarByName(v)).getValues()){
+						writer.println("one sig "+cons+" extends Enum{}");
+					}
+				}
+				else{
+					for  (String cons:((EnumVar) this.processSpec.getLocalVarByName(v.replace("EnumVar_", ""))).getValues()){
+						writer.println("one sig "+cons+" extends Enum{}");
+					}
+				}		
+			}
+			
+			writer.println("abstract sig EnumVar{}");
+			for (int i=0; i<enums.size(); i++){
+				writer.println("one sig "+enums.get(i)+ " extends EnumVar{}");
+				writer.println("fun "+" Val_"+enums.get(i).replace("EnumVar_", "")+"[m:Instance"+name+",n:Node]:Enum { m.enums[n]["+enums.get(i)+"]} ");
 			}
 			
 			LinkedList<String> auxVars = new LinkedList<String>();
@@ -291,6 +361,8 @@ public class LTS {
 			writer.println(space + "nodes : set Node,");
 			writer.println(space + "succs : nodes -> nodes,");
 			writer.println(space + "val: nodes -> Prop,");
+			if (enums.size() > 0)
+				writer.println(space + "enums : (nodes-> EnumVar) -> one Enum,");
 			// print the actions
 			for (int i=0; i<actions.size(); i++){
 				writer.println(space + actions.get(i)+": nodes -> nodes,");
@@ -350,6 +422,21 @@ public class LTS {
 			}
 			//writer.print(" in val");
 			writer.println("");
+			
+			if (this.enums.size()>0){
+				// the enums: TBD
+				writer.print(space + "enums = ");
+				for (int i=0; i<listNodes.size();i++){	
+					for (int j=0; j<this.enums.size();j++){
+						if (j==0 && i==0)
+							writer.print(listNodes.get(i)+"->"+enums.get(j)+"->"+this.nodes.get(listNodes.get(i)).getEnumVarValue(enums.get(j)));
+						else
+							writer.print(" + "+listNodes.get(i)+"->"+enums.get(j)+"->"+this.nodes.get(listNodes.get(i)).getEnumVarValue(enums.get(j)));
+					}
+					
+				}
+				writer.println("");
+			}
 			
 			// the succs relation
 			writer.print(space+"succs = ");
@@ -631,7 +718,7 @@ public class LTS {
 			org.w3c.dom.Document doc = dBuilder.parse(inputFile);
 			doc.getDocumentElement().normalize();
 			
-			// get the instance form the model
+			// get the instance for the model
 			org.w3c.dom.Node instance = getInstance(doc);
 			LinkedList<Node> states = getNodes(instance);
 					
@@ -644,14 +731,15 @@ public class LTS {
 			// we obtain the properties of the model
 			extractProperties(instance);
 			
+			// we extract the enums
+			extractEnums(instance);
+			
 			// we obtain the actions of the model
 			extractActions(instance);
 			setEnvActions(instance);
 			this.initialNode = this.getInitialNode(instance);
 			
-			//this.toDot("sample.dot");
 			
-			// we obtain the actions
 			
 		}catch (Exception e) {
 			e.printStackTrace();
@@ -665,7 +753,7 @@ public class LTS {
 	 * @param stateProcess	the name of the state space of the process  (an enum type)
 	 * @return	A description of the LTS for Model Checking, using the FAULTY language
 	 */
-	public String toMCProcess(HashMap<String,String> parameters, String processName, String stateProcess){
+	public String	toMCProcess(HashMap<String,String> parameters, String processName, String stateProcess){
 		String result = "";
 		if (!parameters.isEmpty()){
 			result += "Process " + processName + "(";
@@ -674,22 +762,32 @@ public class LTS {
 			while (it.hasNext()){
 				String current = it.next();
 				if (it.hasNext()){
-					if (parameters.get(current).equals("BOOL") || parameters.get(current).equals("INT"))
+					if (parameters.get(current).equals("BOOL"))
 						result += "Prop_"+current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL,"; // ADD THIS WHNE NOT LOCK
+					if (parameters.get(current).equals("INT"))
+						result += "IntVar_"+current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL,";
+					if (parameters.get(current).equals("ENUM"))
+						result += "EnumVar_"+current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL,";
 					if (parameters.get(current).equals("PRIMBOOL"))
 						result += "Prop_"+current +":BOOL";
+					if (parameters.get(current).equals("PRIMENUM"))
+						result += "Prop_"+current +":ENUM";
 					if (parameters.get(current).equals("LOCK"))
 						result += "Av_"+current+":BOOL,"; // for now we only take into account the Av
 				}
 				else{ 
-					if (parameters.get(current).equals("BOOL") || parameters.get(current).equals("INT"))
+					if (parameters.get(current).equals("BOOL"))
 						result += "Prop_"+current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL"; // ADD THIS WHNE NOT LOCK
+					if (parameters.get(current).equals("INT"))
+						result += "IntVar_"+current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL";
+					if (parameters.get(current).equals("ENUM"))
+						result += "EnumVar_"+current +":"+parameters.get(current)+", "+"Av_"+current+":BOOL";
 					if (parameters.get(current).equals("PRIMBOOL"))
 						result += "Prop_"+current +":BOOL";
+					if (parameters.get(current).equals("PRIMENUM"))
+						result += "Prop_"+current +":ENUM";		
 					if (parameters.get(current).equals("LOCK"))
 						result += "Av_"+current+":BOOL"; // for now we only take into account the Av
-					//result += current +":"+parameters.get(current) +", "+"Av_"+current+":BOOL";
-					//result += "Av_"+current+":BOOL";
 				}
 			}
 			result+="){\n";
@@ -698,25 +796,51 @@ public class LTS {
 			result += "Process " + processName + "{\n";
 		}
 		LinkedList<String> globalVars = new LinkedList<String>();
-		for (int i=0;i<this.processSpec.getSharedVarsNames().size();i++)
-			globalVars.add("Prop_"+this.processSpec.getSharedVarsNames().get(i)); // we add Prop_ to the shared vars
+		for (int i=0;i<this.processSpec.getSharedVarsNames().size();i++){
+			String var = this.processSpec.getSharedVarsNames().get(i);
+			switch(this.processSpec.getSharedVarType(var)){
+				case PRIMBOOL:
+				case BOOL: 	globalVars.add("Prop_"+this.processSpec.getSharedVarsNames().get(i));
+						 	break;
+				case ENUMPRIM:
+				case ENUM: 	globalVars.add("EnumVar_"+this.processSpec.getSharedVarsNames().get(i));
+					   		break;
+				case PRIMINT:
+				case INT: 	globalVars.add("IntVar_"+this.processSpec.getSharedVarsNames().get(i));
+							break;
+				default:
+							throw new RuntimeException("Wrong Type Variable Detected in Model Checking");
+			}
+			//if (this.processSpec.getSharedVarType(var).equals(Type.BOOL))
+			//	globalVars.add("Prop_"+this.processSpec.getSharedVarsNames().get(i)); // we add Prop_ to the shared vars
+			
+		}
 		boolean ftime = true;
 		boolean someVar = false;
 		for (int i=0; i < this.props.size(); i++){
 			if (!props.get(i).contains("Av") && !globalVars.contains(props.get(i)) && !parameters.containsKey(props.get(i).replace("Prop_", ""))){ // we check that it is not a global var
+				someVar = true;
 				if (ftime){
 					result += props.get(i);
 					ftime = false;
-					someVar = true;
 				}
 				else{
 					result += ", "+props.get(i);
-					someVar = true;
 				}
 			}
 		}
 		if (someVar)
 			result += " : BOOL;\n"; // until now we deal only with booleans 
+		
+		// Now, we declare the local enums
+		someVar = false;
+		for (String v:this.enums){
+			if (!this.globalEnums.contains(v)){ // if not global
+					result += v + ":" + v+this.name + "enum;"; // we declare the var, the type is its name plus the process plus enum by convention
+			}
+		}
+		result += "\n";
+		
 		result += "state : " + "state"+stateProcess+";\n";
 		// we compute the equivalence classes
 		//if (this.eqClasses == null)
@@ -725,22 +849,15 @@ public class LTS {
 		// the get equivalence class of the initial node
 		Node init = this.eqClasses.find(this.nodes.get(initialNode)); 
 		
-		/**
-		// we set the initial condition
-		result += "Initial : state == "+init.getName();
-		//LinkedList<String> ps = init.getProperties(); // test this
-		LinkedList<String> ps = this.getPropertiesOfEquivClass(init);
-		for (int i=0; i< this.props.size(); i++){
-			if (ps.contains(this.props.get(i)))
-				result += " && " +this.props.get(i);
-			else
-				result += " && !" +this.props.get(i);
-		}
-		result += ";\n";
-		*/
 		// we set the initial condition
 		//result += "Initial : state == " + initialNode;
 		result += "Initial : state == " + init.getName();
+		
+		// we set the global enums
+		for (String e:this.enums){
+			result += "&&" + e + " == " + init.getEnumVarValue(e);
+		}
+		
 		//LinkedList<String> ps = init.getProperties(); // test this
 		LinkedList<String> ps = this.nodes.get(initialNode).getProperties();
 		for (int i=0; i< this.props.size(); i++){
@@ -759,7 +876,6 @@ public class LTS {
 		
 		
 		Iterator<Node> it2 = nodes.values().iterator();
-		
 		
 		
 		while (it2.hasNext()){
@@ -792,22 +908,29 @@ public class LTS {
 		for (int i=0; i< parList.size(); i++){
 			String current = parList.get(i);
 			if (i< parList.size()-1){
-				if (parameters.get(current).equals("BOOL") || parameters.get(current).equals("INT"))
+				if (parameters.get(current).equals("BOOL"))
 					result += "Prop_"+current +", "+"Av_"+current+","; // ADD THIS WHNE NOT LOCK
 				if (parameters.get(current).equals("PRIMBOOL"))
 					result += "Prop_"+current+",";
 				if (parameters.get(current).equals("LOCK"))
 					result += "Av_"+current+","; // for now we only take into account the Av
+				if (parameters.get(current).equals("ENUM"))
+					result += "EnumVar_"+current +", "+"Av_"+current+","; 
+				if (parameters.get(current).equals("PRIMENUM"))
+					result += "EnumVar_"+current +","; 
+				
 			}
 			else{ 
-				if (parameters.get(current).equals("BOOL") || parameters.get(current).equals("INT"))
+				if (parameters.get(current).equals("BOOL"))
 					result += "Prop_"+current +", "+"Av_"+current; // ADD THIS WHNE NOT LOCK
 				if (parameters.get(current).equals("PRIMBOOL"))
 					result += "Prop_"+current;
 				if (parameters.get(current).equals("LOCK"))
 					result += "Av_"+current; // for now we only take into account the Av
-				//result += current +":"+parameters.get(current) +", "+"Av_"+current+":BOOL";
-				//result += "Av_"+current+":BOOL";
+				if (parameters.get(current).equals("ENUM"))
+					result += "EnumVar_"+current +", "+"Av_"+current; 
+				if (parameters.get(current).equals("PRIMENUM"))
+					result += "EnumVar_"+current; 
 			}
 		}
 		result+=")\n";
@@ -821,6 +944,20 @@ public class LTS {
 		for (int i=0; i < this.props.size(); i++){
 			if (!props.get(i).contains("Av") && !globalVars.contains(props.get(i)) && !parameters.containsKey(props.get(i).replace("Prop_", ""))){ // we check that it is not a global var
 				result += space + props.get(i)+":boolean;\n";
+			}
+		}
+		// and we declare the local enum vars
+		for (int i=0; i < this.enums.size(); i++){
+			if (!globalVars.contains(enums.get(i)) && !parameters.containsKey(enums.get(i).replace("EnumVar_", ""))){ // we check that it is not a global var
+				result += space + enums.get(i)+":{";
+				LinkedList<String> values = this.computePossibleValuesForEnum(enums.get(i));
+				for (int k=0; k<values.size();k++){
+					if (k==0)
+						result += values.get(k);
+					else
+						result += ","+values.get(k);
+				}
+				result += "};\n";
 			}
 		}
 		//if (someVar)
@@ -853,6 +990,12 @@ public class LTS {
 					result += space + "init("+this.props.get(i)+") := FALSE;\n";
 			}
 		}
+		
+		for (int i=0; i<this.enums.size();i++){
+			if (!this.globalEnums.contains(this.props.get(i)) && !parList.contains(this.props.get(i))){
+					result += space + "init("+this.enums.get(i)+") :="+this.nodes.get(initialNode).getEnumVarValue(enums.get(i)) +";\n";
+			}
+		}
 		// we set the initial value to pars
 		//for (String currentPar:pars){
 		//	if (parameters.get(currentPar).equals("BOOL") || parameters.get(currentPar).equals("LOCK"))
@@ -875,6 +1018,17 @@ public class LTS {
 			result += space + space + "TRUE : {"+props.get(j)+"};\n";
 			result += space + "esac;\n";
 		}
+		
+		for(int j=0;j<enums.size();j++){
+			result += space + "next("+enums.get(j)+"):=case\n";
+			for(String nodeName : this.nodes.keySet()){
+				result+=nodes.get(nodeName).getNuSMVCommandForVar(this.eqClasses, enums.get(j), "Enum");
+			}
+			result += space + space + "TRUE : {"+enums.get(j)+"};\n"; // default transition
+			result += space + "esac;\n";
+		}
+			
+			
 		result += "next(state):= case\n"; 
 		for(String nodeName : this.nodes.keySet()){
 			result+=nodes.get(nodeName).getNuSMVCommandForVar(this.eqClasses, "state", "State");
@@ -994,6 +1148,27 @@ public class LTS {
 			}
 		}
 		
+	}
+	
+	private void extractEnums(org.w3c.dom.Node instance){
+		org.w3c.dom.Node xmlprops = getItemFromAttr(instance, "enums");
+		if (xmlprops != null){
+			org.w3c.dom.NodeList items = xmlprops.getChildNodes();
+			for (int i=0; i<items.getLength(); i++){
+				if (items.item(i).getNodeType()!= org.w3c.dom.Node.TEXT_NODE){
+					if (items.item(i).getNodeName().equals("tuple")){
+						String state = getIthFromTuple(items.item(i), 2).getAttributes().item(0).getNodeValue();
+						String var = getIthFromTuple(items.item(i), 3).getAttributes().item(0).getNodeValue();	
+						String val = getIthFromTuple(items.item(i), 4).getAttributes().item(0).getNodeValue();
+						nodes.get(removeDollarSign(state)).setEnumVarValue(var.replace('$','0').replaceAll("0",""), val.replace('$','0').replaceAll("0",""));
+						//nodes.get(state.replace('$', '0')).addProperty(prop.replace('$','0').replaceAll("0",""));		
+						//nodes.get(removeDollarSign(state)).addProperty(prop.replace('$','0').replaceAll("0",""));	
+						this.addEnum(var.replace('$','0').replaceAll("0",""));
+					}
+					
+				}
+			}
+		}
 	}
 	
 	/**

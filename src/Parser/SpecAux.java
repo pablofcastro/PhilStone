@@ -187,7 +187,6 @@ public class SpecAux{
 	}
 	
 	
-	
 	public String getErrors(){
 		return this.errors;
 	}
@@ -320,18 +319,25 @@ public class SpecAux{
 				result.addLock(l);
 			}
 			
-			// we add the locks
+			// we add the enums
 			if (this.sharedVars.get(current) == Type.ENUM){
 				EnumVar v = new EnumVar(current);
+				EnumType myType = new EnumType();
+				myType.setName(v.getName()+"enum");
+				myType.addValues(this.sharedEnumValues.get(current));
+				// we relate the var with ots enum type
+				v.setEnumType(myType);
 				if (this.isPrimTypeVar(current))
 					v.setIsPrim(true);
 				result.addGlobalVar(v);
+				// we add the corresponding enumtype
+				result.addEnumType(myType);
 			}
 		}
 		
 		// get the invariants
 		for (int i=0; i<this.invs.size(); i++){
-			result.addInv((TemporalFormula) invs.get(i).getExpr(table, this));
+			result.addInv((TemporalFormula) invs.get(i).getExpr(table, this, null));
 		}
 		
 		// the instances
@@ -467,6 +473,25 @@ public class SpecAux{
 		
 	}
 	
+	public LinkedList<String> getValuesVarFromInstance(String name, String instance){
+		if (instance.equals("global")){
+			if (this.sharedVars.containsKey(name)){
+				return this.sharedEnumValues.get(name);
+			}
+			else{
+				throw new RuntimeException("Wrong var enum name...");
+			}	
+			
+		}
+		else{ // else it is a local var		
+			if (!instances.containsKey(instance))
+				throw new RuntimeException("Wrong instance name...");
+			else{
+				return instances.get(instance).getValuesForVar(name);
+			}
+		}
+	
+	}
 	
 	public Type getTypeVarFromInstance(String name, String instance){
 		if (instance.equals("global")){

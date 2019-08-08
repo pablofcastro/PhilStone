@@ -45,11 +45,16 @@ public class Spec {
 		if (!v.isPrimType()){
 			Lock l = new Lock(v.getName(), this);
 			locks.add(l);
-		}
-		
-		
+		}		
 	}
 	
+	/**
+	 * Adds an Enum type to the collection of Enumtype corresponding to the shared variables
+	 * @param e	the enum type to be added
+	 */
+	public void addEnumType(EnumType e){
+		this.enums.add(e);
+	}
 	
 	/**
 	 * It sets the type enum for the given var
@@ -151,6 +156,14 @@ public class Spec {
 	
 	public String getName(){
 		return this.name;
+	}
+	
+	/**
+	 * 
+	 * @return the list of all enum types of GLOBAL variables
+	 */
+	public LinkedList<EnumType> getEnumTypes(){
+		return this.enums;
 	}
 	
 	public ProcessSpec getProcessSpec(String instance){

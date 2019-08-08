@@ -185,7 +185,6 @@ public class CounterExampleSearch {
 	 */
 	public void startSearch(){
 		System.out.println("Using Search Guided by Counterexamples for Synthesis...");
-		
 		// STEP 1: We generate the laxest model for each instance
 		for (int i=0; i<processes.size(); i++){
 			long startTime = System.currentTimeMillis();    
@@ -217,7 +216,8 @@ public class CounterExampleSearch {
 				world = CompUtil.parseEverything_fromFile(rep, null, outputPath+currentProcess+"Template.als");
 				A4Options opt = new A4Options();
 				opt.originalFilename = outputPath+currentProcess+"Template.als"; // the specification metamodel
-				opt.solver = A4Options.SatSolver.SAT4J;
+				//opt.solver = A4Options.SatSolver.SAT4J;
+				opt.solver = A4Options.SatSolver.MiniSatProverJNI;
 				Command cmd = world.getAllCommands().get(0);
 				A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
 				assert sol.satisfiable();
@@ -334,7 +334,8 @@ public class CounterExampleSearch {
 						mapInsModels.get(currentIns).getAlloyInstancesSpec(writer,scope, actualCexs);	
 						A4Options opt = new A4Options();
 						opt.originalFilename = outputPath+"Instances.als"; // the specification metamodel
-						opt.solver = A4Options.SatSolver.SAT4J;
+						//opt.solver = A4Options.SatSolver.SAT4J;
+						opt.solver = A4Options.SatSolver.MiniSatProverJNI;
 						world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"Instances.als");
 						Command cmd = world.getAllCommands().get(0);
 						A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
@@ -433,8 +434,8 @@ public class CounterExampleSearch {
 							mapInsModels.get(currentIns).getAlloyInstancesSpec(writer,scope, actualCexs);		
 							A4Options opt = new A4Options();
 							opt.originalFilename = outputPath+"Instances.als"; // the specification metamodel
-							opt.solver = A4Options.SatSolver.SAT4J;
-							//opt.solver = A4Options.SatSolver.MiniSatJNI;
+							//opt.solver = A4Options.SatSolver.SAT4J;
+							opt.solver = A4Options.SatSolver.MiniSatProverJNI;
 							world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"Instances.als");
 							Command cmd = world.getAllCommands().get(0);
 							A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
@@ -609,21 +610,77 @@ public class CounterExampleSearch {
 			program += "};\n";
 		}
 		
+		// we define the enum types used in the program
+		for (EnumType et:this.mySpec.getEnumTypes()){
+			program += "Enum "+ et.getName()+"={";
+			for (int j=0; j<et.getValues().size(); j++){
+				if (j==0)
+					program+=et.getValues().get(j);
+				else
+					program+="," + et.getValues().get(j);
+			}
+			program += "};\n";
+		}
 		
-		// now for those 
+		/*for (String p:this.mySpec.getProcessesNames()){
+			LinkedList<EnumType> currentTypes = mySpec.getProcessByName(p).getEnumTypes();
+			for (int j=0; j<currentTypes.size();j++){
+				program+= "Enum "+"EnumVar_"+currentTypes.get(j).getName()+"= {";
+				for (int k=0; k<currentTypes.get(j).getValues().size(); k++){
+					if (k==0)
+						program+=currentTypes.get(j).getValues().get(k);
+					else
+						program+="," + currentTypes.get(j).getValues().get(k);
+				}
+				program += "};\n";
+				
+			}
+		}*/
+		
+		// we also write down the enum types for enum variables in the processes
+		for (String p:definedProcesses){
+			if (mapProcessModels.containsKey(p)){ // if an original process
+				LinkedList<EnumType> currentTypes = mySpec.getProcessByName(p).getEnumTypes();
+				for (int j=0; j<currentTypes.size();j++){
+					program+= "Enum "+"EnumVar_"+currentTypes.get(j).getName()+"= {";
+					for (int k=0; k<currentTypes.get(j).getValues().size(); k++){
+						if (k==0)
+							program+=currentTypes.get(j).getValues().get(k);
+						else
+							program+="," + currentTypes.get(j).getValues().get(k);
+					}
+					program += "};\n";
+				
+				}
+			}
+			else{ // it has its own defined process
+				LinkedList<String> enumVars = this.mapInsModels.get(p).getEnums();
+				for (String e:enumVars){
+					program+= "Enum "+e+p+"enum "+"= {";
+					LinkedList<String> values = this.mapInsModels.get(p).computePossibleValuesForEnum(e);
+					for (int k=0; k<values.size(); k++){
+						if (k==0)
+							program+=values.get(k);
+						else
+							program+="," + values.get(k);
+					}
+					program += "};\n";
+				}
+				
+			}
+		}
+		
+		
+		
 		// now the global vars
 		Iterator<String> it2 = globalVars.keySet().iterator();
 		//program += "Global ";
 		while (it2.hasNext()){
-			String currentVar = it2.next();
-			//if (it2.hasNext())
-			//	program += currentVar+" : "+ globalVars.get(currentVar)+",";
-			//else
-				//program += "Global "+currentVar+" : "+ globalVars.get(currentVar)+";\n"; // this has to be added when we have monitors			
-				if (!mySpec.isPrimVar(currentVar))
-					program += "Global "+"Av_"+currentVar+" : BOOL;\n"; // for each global var we have a lock
-				if (globalVars.get(currentVar).equals("BOOL") || globalVars.get(currentVar).equals("PRIMBOOL"))
-					program += "Global "+ "Prop_"+currentVar+" : BOOL;\n"; // and the corresponding current var
+			String currentVar = it2.next();		
+			if (!mySpec.isPrimVar(currentVar))
+				program += "Global "+"Av_"+currentVar+" : BOOL;\n"; // for each global var we have a lock
+			if (globalVars.get(currentVar).equals("BOOL") || globalVars.get(currentVar).equals("PRIMBOOL"))
+				program += "Global "+ "Prop_"+currentVar+" : BOOL;\n"; // and the corresponding current var
 				// TO DO: ADD INTEGERS
 				// we need to distinguish between locks, ints and bools
 		}
@@ -1268,7 +1325,7 @@ public class CounterExampleSearch {
 	
 	/**
 	 * 
-	 * @return	A NuSMV Model correspoding to the Concurrent Program
+	 * @return	A NuSMV Model corresponding to the Concurrent Program
 	 */
 	private String generateNuSMVSpec(){
 	
@@ -1324,10 +1381,25 @@ public class CounterExampleSearch {
 					program += space + "Av_"+currentVar+" : boolean;\n"; // for each global var we have a lock
 				if (globalVars.get(currentVar).equals("BOOL") || globalVars.get(currentVar).equals("PRIMBOOL"))
 					program += space + "Prop_"+currentVar+" : boolean;\n"; // and the corresponding current var
+				// we add the enums
+				if (globalVars.get(currentVar).equals("ENUM") || globalVars.get(currentVar).equals("PRIMENUM")){
+					program += space + "EnumVar_"+currentVar+":{";
+					LinkedList<String> values = ((EnumVar) mySpec.getGlobalVarByName(currentVar)).getValues();
+					for (int k=0; k<values.size();k++){
+						if (k==0)
+							program += values.get(k);
+						else
+							program += ","+ values.get(k);
+					}
+					program += "};\n";
+				}
+				//	program += space + "EnumVar_"+currentVar+""
 				// TO DO: ADD INTEGERS
 				// we need to distinguish between locks, ints and bools
 		}
 		program += "\n";
+		
+		// TBD: add the enums
 		
 		// we generate the instances for the processes 
 		//Iterator<String> it5 = instances.keySet().iterator();

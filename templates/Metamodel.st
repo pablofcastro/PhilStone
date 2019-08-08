@@ -43,19 +43,19 @@ abstract sig EnumVar{}
 <sharedPrimEnumVars:{p | one sig EnumVar_<p> extends EnumVar{\}}; separator="\n">
 
 -- definition of the enums, one enum for each possible value
-<enumTypes:{t  | one sig <t.name> extends Enum{\}}; separator="\n">
+<enumTypes:{t  | one sig <t> extends Enum{\}}; separator="\n">
 
 -- definition of the inc fun for every enum type
-<enumTypes:{t  | fun <t.name>Inc:Enum->Enum { <t.AlloyCode>\} }; separator="\n">
+<enumTypes:{t  | --fun <t.name>Inc:Enum->Enum { <t.AlloyCode>\} }; separator="\n">
 
 -- definition of the dec fun for every enum type
-<enumTypes:{t  | fun <t.name>Dec:Enum->Enum { <t.AlloyCode>\} }; separator="\n">
+<enumTypes:{t  | -- fun <t.name>Dec:Enum->Enum { <t.AlloyCode>\} }; separator="\n">
 
 <boolProps:{p | pred Prop_<p>[m:<name>Meta,n:Node]{Prop_<p> in m.val[n] \}}; separator="\n">
 
-<intVars:{p | fun Val_<p>[m:<name>Meta,n:Node]{m.ints[n][NumVar_<p>] \}}; separator="\n">
+<intVars:{p | fun Val_<p>[m:<name>Meta,n:Node]:Int {m.ints[n][NumVar_<p>] \}}; separator="\n">
 
-<enumVars:{p | fun Val_<p>[m:<name>Meta,n:Node]{m.enums[n][EnumVar_<p>] \}}; separator="\n">
+<enumVars:{p | fun Val_<p>[m:<name>Meta,n:Node]:Enum {m.enums[n][EnumVar_<p>] \}}; separator="\n">
 
 <sharedBoolProps:{p | pred Prop_<p>[m:<name>Meta,n:Node]{Prop_<p> in m.val[n] \}}; separator="\n">
 
@@ -110,8 +110,8 @@ abstract sig EnumVar{}
 one sig <name>Meta{
 	nodes:set Node,
 	val: nodes -> Prop,
-    <if(containsInts)>ints: (nodes -> NumVar) -> one Int,<endif>
-    <if(containsEnums)>enums : (nodes-> EnumVar) -> one Enum <endif>
+    <if(containsInts)>ints: (nodes -> NumVar) -> one Int,<endif>,
+    <if(containsEnums)>enums : (nodes-> EnumVar) -> one Enum <endif>,
 	succs : nodes -> nodes,
 	local: nodes -> nodes,
 	env: nodes -> nodes,
@@ -347,6 +347,10 @@ one sig <name>Meta{
     <if(intVars)> 
         and 
         <intVars: {v |  (Val_<v>[<name>Meta,s] = Val_<v>[<name>Meta, s'])}; separator=" and " >
+    <endif>
+     <if(enumVars)> 
+        and 
+        <enumVars: {v |  (Val_<v>[<name>Meta,s] = Val_<v>[<name>Meta, s'])}; separator=" and " >
     <endif>
     <if(l.otherGlobalVarsWithLocks)>
             and
