@@ -653,6 +653,21 @@ public class LTS {
 		//writer.print(" in val");
 		result = result + "\n";
 		
+		// the enums
+		if (!this.enums.isEmpty()){
+			// TBD
+			result += "enums = ";
+			for (int i=0; i<listNodes.size();i++){
+				for (int j=0; j<enums.size(); j++){
+					Node currentNode = this.nodes.get(listNodes.get(i));
+					if (i==0 && j==0)
+						result += listNodes.get(i) +"->"+enums.get(j)+"->"+currentNode.getEnumVarValue(enums.get(j));
+					else
+						result += " + " + listNodes.get(i) +"->"+enums.get(j)+"->"+currentNode.getEnumVarValue(enums.get(j));
+				}
+			}
+		}
+		
 		// the succs relation
 		result = result + space+"succs = ";
 		for (int i=0;i<actions.size();i++){

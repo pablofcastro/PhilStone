@@ -1601,6 +1601,9 @@ public class CounterExampleSearch {
 		// at this point, all the nodes has been defined 
 		// now, we define the propositions
 		HashSet<String> props = new HashSet<String>();
+		// and a set for the enums
+		HashSet<String> enums = new HashSet<String>();
+		HashSet<String> enumsValues = new HashSet<String>();
 		Iterator<String> it1 = definedProcesses.iterator();
 		while (it1.hasNext()){
 			String currentProcess = it1.next();
@@ -1610,6 +1613,11 @@ public class CounterExampleSearch {
 			else // otherwise is an instance with its own process definition
 				currentLTS = this.mapInsModels.get(currentProcess);	
 			props.addAll(currentLTS.getProps());
+			enums.addAll(currentLTS.getEnums());
+			// we compute the enum constants
+			for (String e:enums){
+				enumsValues.addAll(currentLTS.computePossibleValuesForEnum(e));
+			}
 		}		
 		
 		spec += "abstract sig Prop{} \n";
@@ -1619,12 +1627,29 @@ public class CounterExampleSearch {
 			String p = propsIt.next();
 			spec += "one sig "+p+" extends Prop{} \n";
 			
-			// and thecorresponding predicates
+			// and the corresponding predicates
 			spec += "pred "+p+"[m:TS,n:Node]{"+p+" in m.val[n]}\n";
 		}
 		
+		// signature for enums
+		if (!enums.isEmpty()){
+			spec += "abstract sig Enum{} \n";
+			for (String e:enumsValues){
+				spec += "one sig "+e+" extends Enum{} \n";
+			}
+			// and the enum variables
+			spec += "abstract sig EnumVar{} \n";
+			for (String ev:enums){
+				spec  += "one sig "+ev+" extends EnumVar{} \n";
+				spec += "fun Val_"+ev.replace("EnumVar_", "")+"[m:TS,n:Node]:Enum{ m.enums[n]["+ev+"] } \n";
+			}
+		}
+		if (enums.isEmpty())
 		// we define an abstract signature for Transition Systems
-		spec += "abstract sig TS{\n nodes: set Node, \n succs: nodes -> nodes,\n val: nodes -> Prop,\n local: nodes -> nodes,\n env: nodes ->nodes \n }\n";
+			spec += "abstract sig TS{\n nodes: set Node, \n succs: nodes -> nodes,\n val: nodes -> Prop,\n local: nodes -> nodes,\n env: nodes ->nodes \n }\n";
+		else
+			spec += "abstract sig TS{\n nodes: set Node, \n succs: nodes -> nodes,\n val: nodes -> Prop,\n enums : (nodes-> EnumVar) -> one Enum,\n local: nodes -> nodes,\n env: nodes ->nodes \n }\n";
+		
 		
 		// now we define all the instances
 		Iterator<String> it2 = definedProcesses.iterator();
@@ -1712,9 +1737,16 @@ public class CounterExampleSearch {
 		LinkedList<String> globals = mySpec.getGlobalVarsNames();
 		for (int j=0; j<globals.size(); j++){
 			for (int k=0; k<this.instancesList.size()-1;k++){
-				String leftPart = "Prop_"+globals.get(j) + "["+this.mapInsModels.get(this.instancesList.get(k)).getName()+"Process,"+this.instancesList.get(k)+"]";
-				String rightPart = "Prop_"+globals.get(j) + "["+this.mapInsModels.get(this.instancesList.get(k+1)).getName()+"Process,"+this.instancesList.get(k+1)+"]";
-				spec+= leftPart + " iff " + rightPart+"\n";
+				if ((mySpec.getGlobalVarType(globals.get(j)) == Type.BOOL) || (mySpec.getGlobalVarType(globals.get(j)) == Type.PRIMBOOL)){
+					String leftPart = "Prop_"+globals.get(j) + "["+this.mapInsModels.get(this.instancesList.get(k)).getName()+"Process,"+this.instancesList.get(k)+"]";
+					String rightPart = "Prop_"+globals.get(j) + "["+this.mapInsModels.get(this.instancesList.get(k+1)).getName()+"Process,"+this.instancesList.get(k+1)+"]";
+					spec+= leftPart + " iff " + rightPart+"\n";
+				}
+				if ((mySpec.getGlobalVarType(globals.get(j)) == Type.ENUM) || (mySpec.getGlobalVarType(globals.get(j)) == Type.PRIMBOOL)){
+					String leftPart = "Val_"+globals.get(j) + "["+this.mapInsModels.get(this.instancesList.get(k)).getName()+"Process,"+this.instancesList.get(k)+"]";
+					String rightPart = "Val_"+globals.get(j) + "["+this.mapInsModels.get(this.instancesList.get(k+1)).getName()+"Process,"+this.instancesList.get(k+1)+"]";
+					spec+= leftPart + " = " + rightPart+"\n";
+				}
 			}
 		}
 		
