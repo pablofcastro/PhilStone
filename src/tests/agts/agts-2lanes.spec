@@ -5,7 +5,7 @@ landingLane,takeOffLane,c3,c4:lock;
 process airplane{
 	enum st={Arflow, Touchdown, Takeoff, Parked, Depflow,Tax16lc3,  Tax16lb2, Tax16lc4};
 	init: this.st=Parked && 
-          av(global.landingLane) && av(global.takeOffLane) && !own(global.c3) && !own(global.c4);
+          av(global.landingLane) && av(global.takeOffLane) && !own(global.c3);
 
 	action tryLand(){
 		frame: st, landingLane;
@@ -37,7 +37,7 @@ process airplane{
         post: (this.st=Depflow) && av(global.takeOffLane);
     }
     
-	invariant: AG[this.st = this.st];
+	invariant: AG[(this.st=Depflow) || !(this.st=Depflow)];
 
 }
 

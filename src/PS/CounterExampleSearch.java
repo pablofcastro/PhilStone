@@ -838,6 +838,7 @@ public class CounterExampleSearch {
 		try{
 			FileWriter fw = new FileWriter(outputPath+"spec.smv");
 			fw.write(this.generateNuSMVSpec());
+			//System.out.println(this.generateNuSMVSpec());
 			fw.close();
 		}
 		catch(Exception e){
@@ -1424,9 +1425,9 @@ public class CounterExampleSearch {
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.BOOL)
 						program+= "Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.PRIMBOOL)
-						program+= "Prop_"+parameters.get(i)+", ";
+						program+= "Prop_"+parameters.get(i);
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.LOCK)
-						program+= "Av_"+parameters.get(i)+", ";
+						program+= "Av_"+parameters.get(i);
 				}
 				else{
 					//program+=","+parameters.get(i)+ ", Av_"+parameters.get(i);
@@ -1436,7 +1437,7 @@ public class CounterExampleSearch {
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.PRIMBOOL)
 						program+= ","+"Prop_"+parameters.get(i);
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.LOCK)
-						program+= "Av_"+parameters.get(i);
+						program+= ","+"Av_"+parameters.get(i);
 				}
 			}
 			program += ");\n";
@@ -1474,7 +1475,7 @@ public class CounterExampleSearch {
 					program += "init(Av_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue("Av_"+gvar) + ";\n";					
 				}
 				if (mySpec.getGlobalVarType(gvar) == Type.PRIMBOOL)
-					program += "init(Prop-"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue(gvar) + ";\n";
+					program += "init(Prop_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue(gvar) + ";\n";
 				if (mySpec.getGlobalVarType(gvar) == Type.LOCK)
 					program += "init(Av_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue("Av_"+gvar) + ";\n";
 			}
@@ -1566,7 +1567,7 @@ public class CounterExampleSearch {
 			}
 		}
 		
-		
+		//System.out.println(program);
 		return program;
 	}
 	
