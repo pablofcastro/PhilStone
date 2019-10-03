@@ -151,10 +151,10 @@ one sig <name>Meta{
 <if(actions)>
     <actions : {a | fact Action_<a.name>_Ax1{ all s:<name>Meta.nodes | all s':<name>Meta.ACT<a.name>[s] | <a.pre> implies <a.post> \} }; separator="\n"> 
 <endif>
+
 <if(actions)>
     <actions : {a | fact Action_<a.name>_Ax2{ all s:<name>Meta.nodes | (not <a.pre>) implies (no <name>Meta.ACT<a.name>[s])\} }; separator="\n"> 
 <endif>
-
 
 <if(actions)>
     <actions : {a | fact Action_<a.name>_Ax3{ all s:<name>Meta.nodes | <a.pre> implies (some <name>Meta.ACT<a.name>[s])  \} }; separator="\n"> 

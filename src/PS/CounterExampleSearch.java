@@ -71,6 +71,7 @@ public class CounterExampleSearch {
 	boolean nuSMVSearch = false; // to indicate taht the search is performed using NuSMV
 	int pathBound = 0; // the bound for the counterexamples in the case that BMC is used
 	int scope;
+	int iterations = 0; // a number for storing the number of iterations performed by the algo
 	
 	
 	
@@ -263,7 +264,7 @@ public class CounterExampleSearch {
 		boolean found = counterExampleSearch(0, scope);
 		if (found){
 			System.out.println("Program Synthesized, saved to output folder.."); 
-			
+			System.out.println("Number of iterations: "+iterations);
 			if (this.printPDF){  // we print the dots			
 				for (int i=0; i<this.instancesList.size(); i++)
 					this.mapInsModels.get(instancesList.get(i)).toDot(outputPath+instancesList.get(i)+"final.dot");
@@ -278,8 +279,10 @@ public class CounterExampleSearch {
 				System.out.println(e);
 			}
 		}
-		else
+		else{
 			System.out.println("Program not found.."); 
+			System.out.println("Number of iterations: "+iterations);
+		}
 	}
 	
 	public boolean counterExampleSearch(int insNumber, int scope){
@@ -297,6 +300,7 @@ public class CounterExampleSearch {
 			//if (modelCheck(currentIns, new LinkedList<LinkedList<String>>())){ // if false, we add the counterexamples to the corresponding queues
 			boolean checkResult = false;
 			// we choose the model checker
+			this.iterations++;
 			if (this.alloySearch)
 				checkResult = alloyBoundedModelCheck(currentIns, new LinkedList<LinkedList<String>>(), this.pathBound, this.scope);
 			if (this.electrumSearch || this.nuXMVSearch)
@@ -368,7 +372,7 @@ public class CounterExampleSearch {
 								checkResult = this.electrumBoundedModelCheck(currentIns, actualCexs, this.pathBound, this.scope);
 							if (!this.alloySearch && !this.electrumSearch && !this.nuXMVSearch && !this.nuSMVSearch)
 								checkResult = modelCheck(currentIns, actualCexs);
-								
+							iterations++;	
 							if (checkResult)
 								return true;
 						
