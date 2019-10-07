@@ -6,14 +6,27 @@ public class BoolVar implements ElemFormula, Var {
 	
 	private String name;
 	private boolean isPrim;
+	private LinkedList<Var> otherVars; // it is needed to keep track of the other vars in the spec
+									   // useful for StringTemplate :(
 	
 	public BoolVar(String n){
 		this.name = n;
 		this.isPrim = false; // by default the vars are not prim
+		this.otherVars = new LinkedList<Var>();
 	}
+	
 	
 	public void setIsPrim(boolean v){
 		this.isPrim = v;
+	}
+	
+	public void addOtherVars(LinkedList<Var> others){
+		this.otherVars.addAll(others);
+	}
+	
+	public void addOtherVariable(Var other){
+		if (!this.otherVars.contains(other))
+			this.otherVars.add(other);
 	}
 	
 	public boolean isPrimType(){
@@ -40,6 +53,15 @@ public class BoolVar implements ElemFormula, Var {
     		return Type.BOOL;
     	else
     		return Type.PRIMBOOL;
+    }
+    
+    public LinkedList<String> getOtherPrimsBooleanNames(){
+    	LinkedList<String> result = new LinkedList<>();
+    	for (Var v:this.otherVars){
+    		if (v.getType() == Type.PRIMBOOL && !v.getName().equals(this.name))
+    			result.add(v.getName());
+    	}
+    	return result;
     }
     
     public String toAlloy(String metaName, String state){

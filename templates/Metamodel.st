@@ -1,6 +1,6 @@
 // This file describes the alloy metamodel for processes
 // Author: Pablo Castro
-Metamodel(name, boolProps, sharedBoolProps, sharedPrimBoolProps, sharedPrimIntVars, intVars, intSet, sharedIntVars, containsEnums, containsInts, sharedEnumVars, sharedPrimEnumVars, enumVars, enumTypes, locks, onlyLocks, localActions, envActions, actions, auxVars, auxAxioms, auxPreds, invariants, init, scope, allSharedVars)  ::=
+Metamodel(name, boolProps, sharedBoolProps, sharedPrimBoolProps, sharedPrimIntVars, intVars, intSet, sharedIntVars, containsEnums, containsInts, sharedEnumVars, sharedPrimEnumVars, enumVars, enumTypes, locks, onlyLocks, localActions, envActions, actions, auxVars, auxAxioms, auxPreds, invariants, init, scope, allSharedVars, primContainer)  ::=
 <<
 open util/relation
 
@@ -143,7 +143,9 @@ one sig <name>Meta{
 	<if(allSharedVars)>
         env = <allSharedVars : {s | ACTchange_<s>}; separator="+">
     <endif>
-	   no (local & env)
+	/* 
+        no (local & env)
+    */
     <auxAxioms: {s | <s>}; separator="\n">
 }
 
@@ -374,8 +376,8 @@ one sig <name>Meta{
 <endif>
 
 -- for volatile vars we just say that local and non-volatile vars are not changed by the environmental methods that change volatile vars
-<if(sharedPrimBoolProps)><sharedPrimBoolProps: {s | fact FrameAxioms<s>{ 
-    all s:<name>Meta.nodes | all s':<name>Meta.ACTchange_<s>[s] | true
+<if(primContainer)><primContainer: {s | fact FrameAxioms<s.name>{ 
+    all s:<name>Meta.nodes | all s':<name>Meta.ACTchange_<s.name>[s] | true
     <if(boolProps)>
         and
         <boolProps: {v |  (Prop_<v>[<name>Meta,s] iff Prop_<v>[<name>Meta, s'])}; separator=" and " >
@@ -411,6 +413,10 @@ one sig <name>Meta{
         <sharedEnumVars: {fr |  (Own_<fr>[<name>Meta,s] iff Own_<fr>[<name>Meta, s'])}; separator="and" >
         and 
         <sharedEnumVars: {fr | (Val_<fr>[<name>Meta,s] = Val_<fr>[<name>Meta, s'])}; separator=" and " >
+    <endif>
+    <if(s.rest)>
+        and 
+        <s.rest: {v | (Prop_<v>[<name>Meta,s] iff Prop_<v>[<name>Meta, s'])}; separator=" and " >
     <endif>
 \}
 }

@@ -6,10 +6,14 @@ public class IntPar implements IntegerExpression, Var{
 
 	private String name;
 	private IntVar myVar; // the var which the parameter references to
+	private LinkedList<Var> otherVars; // it is needed to keep track of the other vars in the spec
+	   // useful for StringTemplate :(
 	
 	public IntPar(String name){
 		this.name = name;
+		this.otherVars = new LinkedList<Var>();
 	}
+	
 
 	public IntPar(String name, IntVar myVar){
 		this.name = name;
@@ -22,6 +26,15 @@ public class IntPar implements IntegerExpression, Var{
 	
 	public void setVar(IntVar myVar){
 		this.myVar = myVar;
+	}
+	
+	public void addOtherVars(LinkedList<Var> others){
+		this.otherVars.addAll(others);
+	}
+	
+	public void addOtherVariable(Var other){
+		if (!this.otherVars.contains(other))
+			this.otherVars.add(other);
 	}
 	
 	public String getName(){
@@ -50,6 +63,15 @@ public class IntPar implements IntegerExpression, Var{
 		else
 			return Type.PRIMINT;
 	}
+	
+	public LinkedList<String> getOtherPrimsBooleanNames(){
+    	LinkedList<String> result = new LinkedList<>();
+    	for (Var v:this.otherVars){
+    		if (v.getType() == Type.PRIMBOOL && !v.getName().equals(this.name))
+    			result.add(v.getName());
+    	}
+    	return result;
+    }
 	
 	public String getOwner(){
 	    String result = name;

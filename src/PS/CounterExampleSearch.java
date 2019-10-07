@@ -1404,8 +1404,6 @@ public class CounterExampleSearch {
 		}
 		program += "\n";
 		
-		// TBD: add the enums
-		
 		// we generate the instances for the processes 
 		//Iterator<String> it5 = instances.keySet().iterator();
 		Iterator<String> it5 = mapInsModels.keySet().iterator();
@@ -1424,6 +1422,7 @@ public class CounterExampleSearch {
 					parameters.add(gvar);
 			}
 			for (int i=parameters.size()-1; i>=0;i--){
+				System.out.println(parameters.size());
 				if (i==parameters.size()-1 && parameters.size()>1){
 						//program+=parameters.get(i) + ", Av_"+parameters.get(i); // this must be changed for monitors
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.BOOL)
@@ -1440,8 +1439,12 @@ public class CounterExampleSearch {
 						program+= ","+"Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.PRIMBOOL)
 						program+= ","+"Prop_"+parameters.get(i);
-					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.LOCK)
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.LOCK && parameters.size()>1){
 						program+= ","+"Av_"+parameters.get(i);
+					}
+					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.LOCK && parameters.size()==1){
+						program+= "Av_"+parameters.get(i);
+					}
 				}
 			}
 			program += ");\n";
@@ -1488,6 +1491,7 @@ public class CounterExampleSearch {
 		// the global property is written down
 		program += "LTLSPEC\n";
 		program += space + generateNuSMVFormula(mySpec.getGlobalProperty())+"\n";
+		
 		// the processes are written down
 		//Iterator<String> it3 = processes.keySet().iterator();
 		Iterator<String> it3 = definedProcesses.iterator();
@@ -1571,7 +1575,7 @@ public class CounterExampleSearch {
 			}
 		}
 		
-		//System.out.println(program);
+		System.out.println(program);
 		return program;
 	}
 	
@@ -1860,11 +1864,33 @@ public class CounterExampleSearch {
 		return this.mapProcessModels.get(process);
 	}
 	
+	
+	/**
+	 * @param e	an expression
+	 * @return	The NuSMV representation of the expression
+	 */
+	private String generateNuSMVExpr(Expression e){
+		String result = "";
+		if (e instanceof EnumConstant){
+			result += e.toString();
+			return result;	
+		}
+		if (e instanceof EnumVar){
+			EnumVar theVar = (EnumVar) e;
+			if (theVar.getOwner().equals("global"))
+				result += "Prop_"+((EnumVar) e).getUnqualifiedName();
+			else
+				result +=  theVar.getOwner()+".EnumVar_"+theVar.getUnqualifiedName();
+			return result;
+		}
+		throw new RuntimeException("nuSMV Bounded Model Checking not defined for the given expression.");
+	}
+	
 	/**
 	 * 
 	 * @param f
 	 * @param state
-	 * @return	A String respresentation of the global formula in NuSMV spec language
+	 * @return	A String representation of the global formula in NuSMV spec language
 	 */
 	private String generateNuSMVFormula(Formula f){
 		String result = "";
@@ -1878,6 +1904,10 @@ public class CounterExampleSearch {
 			else
 				//result +=  ((BoolVar) f).toAlloy(mapInsModels.get(theVar.getOwner()).getName()+"Process", "s."+theVar.getOwner());
 				result +=  theVar.getOwner()+".Prop_"+theVar.getUnqualifiedName();
+			return result;
+		}
+		if (f instanceof EqComparison){
+			result += "("+generateNuSMVExpr(((EqComparison) f).getExp1())+"="+generateNuSMVExpr(((EqComparison) f).getExp2())+")";
 			return result;
 		}
 		if (f instanceof Own){

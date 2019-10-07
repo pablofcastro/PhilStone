@@ -517,7 +517,6 @@ public class ProcessSpec {
 				}
 			}
 		}
-
 	
 		localEnumVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.ENUM));
 		localEnumVars.addAll(this.getOwnedSharedVarsNamesbyType(Type.ENUMPRIM));
@@ -533,9 +532,9 @@ public class ProcessSpec {
 		}
 		
 		List<String> invariants = new ArrayList<String>(); // the invariants of the specification
-		List<String> auxVars = new ArrayList<String>(); // the auxiliar vars needed for translating CTL to Alloy
-		List<String> auxAxioms = new ArrayList<String>(); // the auxiliar axioms needed for translating CTL to Alloy
-		List<String> auxPreds = new ArrayList<String>(); // the auxiliar axioms needed for translating CTL to Alloy
+		List<String> auxVars = new ArrayList<String>();    // the auxiliar vars needed for translating CTL to Alloy
+		List<String> auxAxioms = new ArrayList<String>();  // the auxiliar axioms needed for translating CTL to Alloy
+		List<String> auxPreds = new ArrayList<String>();   // the auxiliar axioms needed for translating CTL to Alloy
 		for (int i=0; i<this.invs.size(); i++){
 			invariants.add(invs.get(i).toAlloy(name+"Meta", "s"));
 			auxVars.addAll(invs.get(i).generateAuxProps(name+"Meta"));
@@ -671,16 +670,10 @@ public class ProcessSpec {
 				}
 			}
 		}
-		
-		
-		
+				
 		usedLocks.addAll(this.getLockPars());
 		onlyLocks.addAll(this.getLockPars());
 		onlyLocksNames.addAll(this.getLockParNames());
-		//System.out.println(usedLocks); // aca hay un error
-		
-		
-		
 		
 		// we set the important global vars for the locks, those variables in the owns clause are skipped
 		for (int i=0; i<usedLocks.size();i++){
@@ -710,6 +703,7 @@ public class ProcessSpec {
 			currentLock.addAllUsedGlobalVarsWithLocks(usedGlobalVars);
 			currentLock.addAllUsedGlobalVarsWithLocks(onlyLocksNames); 	
 		}
+		
 		// Non-primitive Boolean parameters are also considered locks 
 		for (int i=0; i<this.getBoolParNamesWithLock().size();i++){
 			Lock parLock = new Lock(this.getBoolParNamesWithLock().get(i), this.mySpec);
@@ -754,6 +748,37 @@ public class ProcessSpec {
 			i++;
 		}
 		
+		
+		
+		// a ugly solution to produce the complement of each primvar..
+		// and anonimous class
+		class VarContainer{
+			String name;
+			LinkedList<String> rest;
+			
+			public VarContainer(String name, LinkedList<String> rest){
+				this.name = name;
+				this.rest = rest;
+			}
+			public String getName(){
+				return this.name;
+			}
+			public LinkedList<String> getRest(){
+				LinkedList<String> result = new LinkedList<String>();
+				for (String v:rest){
+					if (!this.name.equals(v))
+						result.add(v);
+				}
+				return result;
+			}
+		}
+		
+		LinkedList<VarContainer> primContainer = new LinkedList<VarContainer>();
+		for (String v:usedPrimBoolVars){
+			VarContainer vc = new VarContainer(v, usedPrimBoolVars);		
+			primContainer.add(vc);
+		}
+		
 		st.add("sharedBoolProps", usedBooleanGlobalVars); // we take the parameters as a global variables
 		st.add("sharedIntVars", usedIntGlobalVars);
 		st.add("sharedEnumVars", usedEnumGlobalVars);
@@ -763,6 +788,7 @@ public class ProcessSpec {
 		st.add("locks", usedLocks); //for now the global vars are locks
 		st.add("onlyLocks", onlyLocksNames); // those locks that do not have any variables associated to them
 		st.add("enumTypes", enumValues);
+		st.add("primContainer", primContainer);
 		
 		
 		// we create a collection for all the shared variables
