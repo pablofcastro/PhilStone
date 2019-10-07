@@ -1422,7 +1422,6 @@ public class CounterExampleSearch {
 					parameters.add(gvar);
 			}
 			for (int i=parameters.size()-1; i>=0;i--){
-				System.out.println(parameters.size());
 				if (i==parameters.size()-1 && parameters.size()>1){
 						//program+=parameters.get(i) + ", Av_"+parameters.get(i); // this must be changed for monitors
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.BOOL)
