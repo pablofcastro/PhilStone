@@ -846,7 +846,7 @@ public class CounterExampleSearch {
 		try{
 			FileWriter fw = new FileWriter(outputPath+"spec.smv");
 			fw.write(this.generateNuSMVSpec());
-			System.out.println(this.generateNuSMVSpec());
+			//System.out.println(this.generateNuSMVSpec());
 			fw.close();
 		}
 		catch(Exception e){
@@ -870,7 +870,7 @@ public class CounterExampleSearch {
 		//System.out.println(mcResult);
 		// If a "is true" string found then the model checker didnt find a counterexample
 		result = mcResult.contains("is true");
-		System.out.println(mcResult);
+		//System.out.println(mcResult);
 		if (!result){ // if a counterexamples was found
 			// We create a new counterexample
 			CounterExample c = new CounterExample();
