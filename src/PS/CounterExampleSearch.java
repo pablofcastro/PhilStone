@@ -861,6 +861,7 @@ public class CounterExampleSearch {
 		    	mcResult += line+"\n";  
 			}  
 		    input.close();  
+		    int exitValue = nusmv.waitFor();
 		    if (nusmv.exitValue()!=0) // then we get an error from nusmv
 				throw new Error("Error in NuSMV specification");
 		}
@@ -870,7 +871,7 @@ public class CounterExampleSearch {
 		//System.out.println(mcResult);
 		// If a "is true" string found then the model checker didnt find a counterexample
 		result = mcResult.contains("is true");
-		System.out.println(mcResult);
+		//System.out.println(mcResult);
 		if (!result){ // if a counterexamples was found
 			// We create a new counterexample
 			CounterExample c = new CounterExample();
