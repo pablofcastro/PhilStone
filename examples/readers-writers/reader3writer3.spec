@@ -1,6 +1,6 @@
 spec readerwriter
 
-r,read1,read2,read3:boolean; /*r is the common resource*/
+r,read1,read2,read3:lock; /*r is the common resource*/
 
 process writer{
 	ncs, cs: boolean;
@@ -27,20 +27,20 @@ process writer{
 
 }
 
-process reader (lock: boolean){
+process reader (mylock: lock){
 	reading:boolean;
-	init: !this.reading && !own(global.r) && !own(lock);
+	init: !this.reading && !own(global.r) && !own(mylock);
 
 	action startRead(){
-		frame: reading, lock;
-		pre: !this.reading && av(global.r) && av(lock);
-		post: this.reading && own(lock);
+		frame: reading, mylock;
+		pre: !this.reading && av(global.r) && av(mylock);
+		post: this.reading && own(mylock);
 	}
 
 	action finishRead(){
-		frame: reading, lock;
-		pre: this.reading && av(global.r) && own(lock);
-		post: !this.reading && !own(lock);
+		frame: reading, mylock;
+		pre: this.reading && av(global.r) && own(mylock);
+		post: !this.reading && !own(mylock);
 	}
 	invariant: this.reading || !this.reading;
 }
