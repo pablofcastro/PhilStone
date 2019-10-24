@@ -2268,7 +2268,7 @@ public class CounterExampleSearch {
 					}
 				}
 			}
-			System.out.println(plainText);
+			//System.out.println(plainText);
 			plainText.removeFirst();// a $ is removed
 			// we set the first state
 			int i=0;	
@@ -2282,7 +2282,7 @@ public class CounterExampleSearch {
 								HashMap<String,String> h = new HashMap<String,String>();		
 								result.add(i,h);
 							}
-							System.out.println(current);
+							//System.out.println(current);
 							result.get(i).put(ins, current.replace(ins+".state =", "").trim());
 						}
 					} 
