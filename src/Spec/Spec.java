@@ -190,6 +190,9 @@ public class Spec {
 		for (int i = 0; i<globalVars.size(); i++){
 			result.add(globalVars.get(i).getName());
 		}
+		for (int i=0; i<locks.size(); i++){
+			result.add(locks.get(i).getName());
+		}
 		return result;
 	}
 	

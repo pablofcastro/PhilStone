@@ -315,10 +315,13 @@ public class CounterExampleSearch {
 			else{
 				this.cexFound = false; 
 				// we try to get a program for all the cex
+				
+				//old line cexNumber = 0
 				int cexNumber = 0; // we use -1 for the case when no counterexample is analyzed
 				// we use a collection of actual counterexamples, the idea is to add new counterexample found during hte execution of the algorithm
 				LinkedList<LinkedList<String>> actualCexs = new LinkedList<LinkedList<String>>();
 				this.disjointCexFound.put(currentIns, new Boolean(false));
+				
 				
 				while (cexNumber < this.cexForInstance.get(this.instancesList.get(insNumber)).size() & !this.disjointCexFound.get(currentIns)){
 				//while (cexNumber < this.cexForInstance.get(this.instancesList.get(insNumber)).size()){	
@@ -404,6 +407,7 @@ public class CounterExampleSearch {
 			}
 		}// end of base case
 		else{ // recursive case
+			
 			int cexNumber = -1; // at the beginning we start with no counterexample
 			LinkedList<LinkedList<String>> actualCexs = new LinkedList<LinkedList<String>>();
 			// while there are counterexamples in the queue try...
@@ -444,7 +448,7 @@ public class CounterExampleSearch {
 							Command cmd = world.getAllCommands().get(0);
 							A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
 							while (sol.satisfiable()){  // !disjointCexFound.get(currentIns)??
-								if (showInfo)
+								//if (showInfo)
 									System.out.println("Instance "+ currentIns + ", Iteration Number:"+p);
 								sol.writeXML(outputPath+"temp.xml");
 								lts.fromAlloyXML(outputPath+"temp.xml");
@@ -842,7 +846,7 @@ public class CounterExampleSearch {
 		try{
 			FileWriter fw = new FileWriter(outputPath+"spec.smv");
 			fw.write(this.generateNuSMVSpec());
-			//System.out.println(this.generateNuSMVSpec());
+			System.out.println(this.generateNuSMVSpec());
 			fw.close();
 		}
 		catch(Exception e){
@@ -857,6 +861,8 @@ public class CounterExampleSearch {
 		    	mcResult += line+"\n";  
 			}  
 		    input.close();  
+		    if (nusmv.exitValue()!=0) // then we get an error from nusmv
+				throw new Error("Error in NuSMV specification");
 		}
 		catch(Exception e){
 			e.printStackTrace();
@@ -864,7 +870,7 @@ public class CounterExampleSearch {
 		//System.out.println(mcResult);
 		// If a "is true" string found then the model checker didnt find a counterexample
 		result = mcResult.contains("is true");
-		//System.out.println(mcResult);
+		System.out.println(mcResult);
 		if (!result){ // if a counterexamples was found
 			// We create a new counterexample
 			CounterExample c = new CounterExample();
@@ -1421,8 +1427,9 @@ public class CounterExampleSearch {
 				if (!parameters.contains(gvar) && mySpec.getProcessSpec(currentInstance).usesSharedVar(gvar))
 					parameters.add(gvar);
 			}
-			for (int i=parameters.size()-1; i>=0;i--){
-				if (i==parameters.size()-1 && parameters.size()>1){
+			//for (int i=parameters.size()-1; i>=0;i--){
+			for (int i=0; i<parameters.size();i++){
+				if (i==0 && parameters.size()>=1){
 						//program+=parameters.get(i) + ", Av_"+parameters.get(i); // this must be changed for monitors
 					if (mySpec.getGlobalVarType(parameters.get(i)) == Type.BOOL)
 						program+= "Prop_"+parameters.get(i)+", Av_"+parameters.get(i);
@@ -1448,6 +1455,8 @@ public class CounterExampleSearch {
 			}
 			program += ");\n";
 		}
+		
+		
 		// we set the init formula
 		program += "ASSIGN\n";
 		LinkedList<String> initialisedVars = new LinkedList<String>();
@@ -1477,11 +1486,11 @@ public class CounterExampleSearch {
 		for (String gvar:globalVars.keySet()){
 			if (!initialisedVars.contains(gvar)){ // if not initialased
 				if (mySpec.getGlobalVarType(gvar) == Type.BOOL){
-					program += "init(Prop_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue(gvar) + ";\n";
+					program += "init(Prop_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue("Prop_"+gvar) + ";\n";
 					program += "init(Av_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue("Av_"+gvar) + ";\n";					
 				}
 				if (mySpec.getGlobalVarType(gvar) == Type.PRIMBOOL)
-					program += "init(Prop_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue(gvar) + ";\n";
+					program += "init(Prop_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue("Prop_"+gvar) + ";\n";
 				if (mySpec.getGlobalVarType(gvar) == Type.LOCK)
 					program += "init(Av_"+gvar+") := "+ mapInsModels.get(lastInstance).getNuXMVInitValue("Av_"+gvar) + ";\n";
 			}
@@ -1574,7 +1583,7 @@ public class CounterExampleSearch {
 			}
 		}
 		
-		System.out.println(program);
+		//System.out.println(program);
 		return program;
 	}
 	
@@ -2247,7 +2256,8 @@ public class CounterExampleSearch {
 				k++;
 				String current = tokens.nextToken();
 				if (current.contains("-> State") && k>0){
-					plainText.add("$");
+					if (plainText.isEmpty() || !plainText.getLast().equals("$")) // to skip stuttering setps
+						plainText.add("$");
 					continue;
 				}
 				if (current.contains("state")){
@@ -2257,6 +2267,7 @@ public class CounterExampleSearch {
 					}
 				}
 			}
+			System.out.println(plainText);
 			plainText.removeFirst();// a $ is removed
 			// we set the first state
 			int i=0;	
@@ -2270,6 +2281,7 @@ public class CounterExampleSearch {
 								HashMap<String,String> h = new HashMap<String,String>();		
 								result.add(i,h);
 							}
+							System.out.println(current);
 							result.get(i).put(ins, current.replace(ins+".state =", "").trim());
 						}
 					} 

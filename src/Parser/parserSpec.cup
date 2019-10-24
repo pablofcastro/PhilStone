@@ -143,8 +143,7 @@ start with mainSpecification;
 mainSpecification ::= specification:prog {: RESULT = prog; :}
                     ;
 
-specification ::=  
-                  
+specification ::=                    
                    SPEC ID:name enumList:eList SEMICOLON globalVarList:varList SEMICOLON   processList:pList program:main PROPERTY COLON expr:gf  SEMICOLON
                                                                                  {: 
 																					// TBD: ADD ENUM ACTIONS
@@ -370,7 +369,7 @@ bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  acti
 																																					   proc.addAllInvs(inv);						
                                                                                                                                      			       RESULT = proc;
                                                                                                                                       :}
-             | LBRACE enumList:listE SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listEleft);
+            | LBRACE enumList:listE SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listEleft);
 																																					   proc.setInit(init);																																						  
 																																					   proc.addAllValuesToEnum(listE);
 																																					   //proc.setPre(pre);
@@ -398,7 +397,7 @@ bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  acti
 																																					   proc.addAllInvs(inv);						
                                                                                                                                      			       RESULT = proc;
                                                                                                                                       :}
-              |  LBRACE enumList:listE  SEMICOLON OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listEleft);
+           |  LBRACE enumList:listE  SEMICOLON OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listEleft);
 																																					   proc.setInit(init);	
 																																					   //proc.addAllLocalVars(listD);
 																																					   proc.addAllValuesToEnum(listE);
@@ -409,7 +408,7 @@ bodyProcess::= LBRACE declList:listD  SEMICOLON initialCond:init SEMICOLON  acti
 																																					   proc.addAllInvs(inv);						
                                                                                                                                      			       RESULT = proc;
                                                                                                                                       :}                                                                                                                         
-            |  LBRACE enumList:listE SEMICOLON declList:listD  SEMICOLON OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
+           |  LBRACE enumList:listE SEMICOLON declList:listD  SEMICOLON OWNS COLON varDecls:ownsList SEMICOLON initialCond:init SEMICOLON  actionlist:aList invariantList:inv SEMICOLON RBRACE {: 					   ProcessAux proc = new ProcessAux(listDleft);
 																																					   proc.setInit(init);	
 																																					   proc.addAllLocalVars(listD);
 																																					   proc.addAllValuesToEnum(listE);

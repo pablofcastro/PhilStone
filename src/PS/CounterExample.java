@@ -24,6 +24,7 @@ public class CounterExample {
 	}
 	
 	public void addRuns(LinkedList<HashMap<String, String>> cex){
+		System.out.println(cex);
 		for (int i=0; i< cex.size(); i++){
 			if (i==0){ // if it is the first state
 				HashMap<String, String> currentMap = cex.get(i);

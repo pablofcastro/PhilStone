@@ -357,7 +357,7 @@ public class LTS {
 			}
 			
 			// writes down the metamodel of the signature
-			writer.println("abstract sig Instance"+name+"{"  );
+			writer.println("one sig Instance"+name+"{"  );
 			writer.println(space + "nodes : set Node,");
 			writer.println(space + "succs : nodes -> nodes,");
 			writer.println(space + "val: nodes -> Prop,");
@@ -411,11 +411,14 @@ public class LTS {
 			// the propositions
 			writer.print(space + "val = ");
 			writer.print(space);
+			boolean first = true;
 			for (int i=0; i<listNodes.size();i++){	
 				LinkedList<String> propList = nodes.get(listNodes.get(i)).getProperties();	
 				for (int j=0; j<propList.size(); j++){
-					if (j==0 && i==0)
+					if (j==0 && first){
 						writer.print(listNodes.get(i)+"->"+propList.get(j));
+						first =false;
+					}
 					else
 						writer.print(" + "+listNodes.get(i)+"->"+propList.get(j));
 				}
@@ -540,8 +543,9 @@ public class LTS {
 			for (int i=0; i<this.localInvs.size(); i++){
 				writer.println(this.localInvs.get(i));
 			}
-			writer.println("all n':(*(Instance"+name+".succs))[s] | some n'':(*(Instance"+name+".succs))[n'] | some Instance"+name+".local[n'']}");
-					
+			//no sure why this
+			//writer.println("all n':(*(Instance"+name+".succs))[s] | some n'':(*(Instance"+name+".succs))[n'] | some Instance"+name+".local[n'']}");
+			writer.println("}");
 			//		+ "\n all n':(*(Instance"+name+".succs))[s] | some n'':(*(Instance"+name+".succs))[n'] | some InstanceNoName.local[n'']}");
 			writer.println("run compile for "+scope + " but 1 Instance"+name);
 			writer.close();
@@ -650,6 +654,8 @@ public class LTS {
 					result = result + " + "+listNodes.get(i)+"->"+propList.get(j);
 			}
 		}
+		
+		
 		//writer.print(" in val");
 		result = result + "\n";
 		
@@ -713,7 +719,9 @@ public class LTS {
 	 */
 	public String getNuXMVInitValue(String var){
 		this.computeEqClasses();
-		if (this.eqClasses.find(this.nodes.get(this.initialNode)).getGlobalBooleanVarValue(var))
+		//if (this.eqClasses.find(this.nodes.get(this.initialNode)).getGlobalBooleanVarValue(var))
+		// the equivalence class is not a good choice
+		if (this.nodes.get(this.initialNode).getGlobalBooleanVarValue(var))
 			return "TRUE";
 		else
 			return "FALSE";
@@ -1050,6 +1058,8 @@ public class LTS {
 		}
 		result += space + space + "TRUE :  { state };\n";
 		result += space + "esac;\n";
+		result += "FAIRNESS";
+		result += "    running;";
 		return result;
 	}
 	
