@@ -15,12 +15,12 @@ process proc1{
     }
     
     /*Adding a loop for waiting affects the perfomance! */
-    action wait(){
+   /* action wait(){
         frame: s1;
         pre: !global.s1;
         post: !global.s1;
     }
-    
+    */
     
     action startB(){
         frame: a1, s1;
@@ -55,11 +55,12 @@ process proc2{
     }
 
         /*Adding a loop for waiting affects the perfomance! */
-    action wait(){
+   /* action wait(){
         frame: s2;
         pre: !global.s2;
         post: !global.s2;
     }
+    */
     
     action startB(){
         frame: a2, s2;
@@ -94,12 +95,12 @@ process proc3{
     }
 
         /*Adding a loop for waiting affects the perfomance! */
-    action wait(){
+    /*action wait(){
         frame: s3;
         pre: !global.s3;
         post: !global.s3;
     }
-    
+    */
     action startB(){
         frame: a3, s3;
         pre: global.a3 && !global.s3;
