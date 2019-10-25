@@ -1,5 +1,5 @@
 spec mutex
-m:boolean;
+m:lock;
 process p{
 	try, ncs, cs:boolean;
 	init : this.ncs && !this.cs && !this.try && av(global.m);

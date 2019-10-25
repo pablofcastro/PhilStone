@@ -786,7 +786,9 @@ public class ProcessSpec {
 		st.add("sharedPrimIntVars", usedPrimIntVars); // the primitive/volatile shared int vars
 		st.add("sharedPrimEnumVars", usedPrimEnumVars); // the primitive/volatile shared enum vars
 		st.add("locks", usedLocks); //for now the global vars are locks
+		//System.out.println(usedLocks);
 		st.add("onlyLocks", onlyLocksNames); // those locks that do not have any variables associated to them
+		//System.out.println(usedLocks);
 		st.add("enumTypes", enumValues);
 		st.add("primContainer", primContainer);
 		
