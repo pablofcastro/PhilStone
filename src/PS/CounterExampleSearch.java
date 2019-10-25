@@ -218,8 +218,8 @@ public class CounterExampleSearch {
 				A4Options opt = new A4Options();
 				opt.originalFilename = outputPath+currentProcess+"Template.als"; // the specification metamodel
 				//opt.solver = A4Options.SatSolver.SAT4J;
-				//opt.solver = A4Options.SatSolver.MiniSatProverJNI;
-				opt.solver = A4Options.SatSolver.MiniSatJNI;
+				opt.solver = A4Options.SatSolver.MiniSatProverJNI;
+				//opt.solver = A4Options.SatSolver.MiniSatJNI;
 				Command cmd = world.getAllCommands().get(0);
 				A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
 				assert sol.satisfiable();
@@ -343,8 +343,8 @@ public class CounterExampleSearch {
 						A4Options opt = new A4Options();
 						opt.originalFilename = outputPath+"Instances.als"; // the specification metamodel
 						//opt.solver = A4Options.SatSolver.SAT4J;
-						//opt.solver = A4Options.SatSolver.MiniSatProverJNI;
-						opt.solver = A4Options.SatSolver.MiniSatJNI;
+						opt.solver = A4Options.SatSolver.MiniSatProverJNI;
+						//opt.solver = A4Options.SatSolver.MiniSatJNI;
 						world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"Instances.als");
 						Command cmd = world.getAllCommands().get(0);
 						A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
@@ -445,8 +445,8 @@ public class CounterExampleSearch {
 							A4Options opt = new A4Options();
 							opt.originalFilename = outputPath+"Instances.als"; // the specification metamodel
 							//opt.solver = A4Options.SatSolver.SAT4J;
-							//opt.solver = A4Options.SatSolver.MiniSatProverJNI;
-							opt.solver = A4Options.SatSolver.MiniSatJNI;
+							opt.solver = A4Options.SatSolver.MiniSatProverJNI;
+							//opt.solver = A4Options.SatSolver.MiniSatJNI;
 							world = CompUtil.parseEverything_fromFile(rep, null, outputPath+"Instances.als");
 							Command cmd = world.getAllCommands().get(0);
 							A4Solution sol = TranslateAlloyToKodkod.execute_command(rep, world.getAllReachableSigs(), cmd, opt);
